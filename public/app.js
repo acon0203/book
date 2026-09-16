@@ -1,4 +1,4 @@
-// === Book Studio 클라이언트 애플리케이션 ===
+// === 연재서재 클라이언트 애플리케이션 ===
 
 const state = {
   currentView: 'view-library',
@@ -10,7 +10,9 @@ const state = {
   activeChapterId: null,
   activeSectionId: null,
   selectedVaultIds: [],
-  activeTagFilter: 'ALL'
+  activeTagFilter: 'ALL',
+  selectedEditorRange: null,
+  activePolishPreset: 'expand'
 };
 
 // --- 초기화 ---
@@ -312,22 +314,32 @@ function renderToc() {
 
 function loadCurrentSectionIntoEditor() {
   const titleInput = document.getElementById('currentSectionTitle');
-  const textarea = document.getElementById('sectionEditorText');
+  const richEditor = document.getElementById('richEditor');
   const wordCount = document.getElementById('currentWordCount');
 
   const currentSec = getCurrentSection();
   if (!currentSec) {
     titleInput.value = '';
-    textarea.value = '';
+    if (richEditor) richEditor.innerHTML = '';
     wordCount.textContent = '0 자';
-    renderMarkdownPreview('');
     return;
   }
 
   titleInput.value = currentSec.title || '';
-  textarea.value = currentSec.content || '';
-  updateWordCount(textarea.value);
-  renderMarkdownPreview(textarea.value);
+  const content = currentSec.content || '';
+
+  if (richEditor) {
+    if (content.trim().startsWith('<') && content.includes('</')) {
+      richEditor.innerHTML = content;
+    } else if (content.trim().length > 0) {
+      richEditor.innerHTML = marked.parse(content);
+    } else {
+      richEditor.innerHTML = '';
+    }
+    updateWordCount(richEditor.innerText);
+  }
+
+  state.selectedEditorRange = null;
 }
 
 function getCurrentSection() {
@@ -337,15 +349,6 @@ function getCurrentSection() {
     if (sec) return sec;
   }
   return null;
-}
-
-function renderMarkdownPreview(markdownText) {
-  const preview = document.getElementById('sectionMarkdownPreview');
-  if (!markdownText || !markdownText.trim()) {
-    preview.innerHTML = '<p style="color:var(--text-dim); text-align:center; padding-top:4rem;">작성된 내용이 여기에 실시간 마크다운 서식으로 표시됩니다.</p>';
-    return;
-  }
-  preview.innerHTML = marked.parse(markdownText);
 }
 
 function updateWordCount(text) {
@@ -420,20 +423,10 @@ function setupEventListeners() {
   });
   document.getElementById('btnConfirmCreateVault').addEventListener('click', handleCreateVault);
 
-  // 에디터 타이핑 시 실시간 미리보기 및 글자수 카운트
-  const textarea = document.getElementById('sectionEditorText');
-  textarea.addEventListener('input', (e) => {
-    const text = e.target.value;
-    updateWordCount(text);
-    renderMarkdownPreview(text);
-
-    // 인메모리 섹션 업데이트
-    const sec = getCurrentSection();
-    if (sec) {
-      sec.content = text;
-      sec.wordCount = text.trim().length;
-    }
-  });
+  // 리치 에디터 및 AI 교정 패널, 미리보기 모달 초기화
+  setupRichEditor();
+  setupAiPolishPanel();
+  setupHtmlPreviewModal();
 
   // 소목차 제목 변경 시
   document.getElementById('currentSectionTitle').addEventListener('input', (e) => {
@@ -448,11 +441,13 @@ function setupEventListeners() {
   // AI 소목차 집필 버튼
   document.getElementById('btnGenerateSectionAI').addEventListener('click', handleGenerateSectionAI);
 
-  // 문장 다듬기 모달
-  document.getElementById('btnPolishModal').addEventListener('click', () => {
-    openModal('modalPolish');
-  });
-  document.getElementById('btnExecutePolish').addEventListener('click', handleExecutePolish);
+  // 자료 금고 연동 모달/토글
+  const btnVaultRef = document.getElementById('btnOpenVaultReference');
+  if (btnVaultRef) {
+    btnVaultRef.addEventListener('click', () => {
+      switchView('view-vault');
+    });
+  }
 
   // 목차 기획 AI 버튼
   document.getElementById('btnReOutline').addEventListener('click', handleReOutline);
@@ -526,6 +521,326 @@ async function handleCreateBook() {
   }
 }
 
+// --- 리치 텍스트 에디터 설정 ---
+function setupRichEditor() {
+  const richEditor = document.getElementById('richEditor');
+  if (!richEditor) return;
+
+  // 본문 입력 시 인메모리 데이터 및 글자 수 업데이트
+  richEditor.addEventListener('input', () => {
+    const sec = getCurrentSection();
+    if (sec) {
+      sec.content = richEditor.innerHTML;
+      sec.wordCount = richEditor.innerText.trim().length;
+    }
+    updateWordCount(richEditor.innerText);
+  });
+
+  // 선택 영역(Selection) 감지 -> 상태 저장 및 우측 AI 교정 입력창 연동
+  const updateSelectionState = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+
+    const range = sel.getRangeAt(0);
+    if (richEditor.contains(range.commonAncestorContainer)) {
+      const selectedText = sel.toString().trim();
+      if (selectedText.length > 0) {
+        state.selectedEditorRange = range.cloneRange();
+        const diffInput = document.getElementById('aiDiffInput');
+        if (diffInput && !diffInput.value) {
+          diffInput.value = selectedText;
+        }
+      }
+    }
+  };
+
+  richEditor.addEventListener('mouseup', updateSelectionState);
+  richEditor.addEventListener('keyup', updateSelectionState);
+
+  // 툴바 단락 스타일 (Normal, H1, H2, H3, Blockquote)
+  const formatSelect = document.getElementById('toolFormatBlock');
+  if (formatSelect) {
+    formatSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      document.execCommand('formatBlock', false, val);
+      richEditor.focus();
+    });
+  }
+
+  // 툴바 일반 서식 버튼들
+  document.querySelectorAll('.tool-btn[data-command]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const cmd = btn.getAttribute('data-command');
+      if (cmd === 'blockquote') {
+        document.execCommand('formatBlock', false, 'blockquote');
+      } else if (cmd === 'code') {
+        const sel = window.getSelection();
+        if (sel && sel.toString().trim()) {
+          document.execCommand('insertHTML', false, `<code>${escapeHtml(sel.toString())}</code>`);
+        } else {
+          document.execCommand('formatBlock', false, 'pre');
+        }
+      } else {
+        document.execCommand(cmd, false, null);
+      }
+      richEditor.focus();
+    });
+  });
+
+  // 글자색 변경
+  const foreColorInput = document.getElementById('toolForeColor');
+  if (foreColorInput) {
+    foreColorInput.addEventListener('input', (e) => {
+      document.execCommand('foreColor', false, e.target.value);
+      const bar = document.getElementById('fontColorBar');
+      if (bar) bar.style.background = e.target.value;
+      richEditor.focus();
+    });
+  }
+
+  // 배경/형광펜 색 변경
+  const hiliteColorInput = document.getElementById('toolHiliteColor');
+  if (hiliteColorInput) {
+    hiliteColorInput.addEventListener('input', (e) => {
+      document.execCommand('hiliteColor', false, e.target.value);
+      const bar = document.getElementById('bgColorBar');
+      if (bar) bar.style.background = e.target.value;
+      richEditor.focus();
+    });
+  }
+
+  // 링크 삽입 버튼
+  const btnLink = document.getElementById('toolInsertLink');
+  if (btnLink) {
+    btnLink.addEventListener('click', () => {
+      const url = prompt('삽입할 링크 URL을 입력하세요:', 'https://');
+      if (url) {
+        document.execCommand('createLink', false, url);
+        richEditor.focus();
+      }
+    });
+  }
+}
+
+// --- 우측 AI 문장 교정 / 첨삭 스튜디오 패널 설정 ---
+function setupAiPolishPanel() {
+  // 프리셋 칩 선택 이벤트
+  document.querySelectorAll('.preset-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.activePolishPreset = chip.getAttribute('data-preset') || 'expand';
+    });
+  });
+
+  // [선택 영역 가져오기] 버튼
+  const btnFetch = document.getElementById('btnFetchSelection');
+  if (btnFetch) {
+    btnFetch.addEventListener('click', () => {
+      const sel = window.getSelection();
+      const richEditor = document.getElementById('richEditor');
+      if (sel && sel.toString().trim() && richEditor.contains(sel.anchorNode)) {
+        state.selectedEditorRange = sel.getRangeAt(0).cloneRange();
+        document.getElementById('aiDiffInput').value = sel.toString().trim();
+      } else if (state.selectedEditorRange) {
+        document.getElementById('aiDiffInput').value = state.selectedEditorRange.toString().trim();
+      } else if (richEditor && richEditor.innerText.trim()) {
+        document.getElementById('aiDiffInput').value = richEditor.innerText.trim();
+      } else {
+        alert('에디터에서 교정할 문장을 먼저 마우스로 드래그하여 선택해 주세요.');
+      }
+    });
+  }
+
+  // [수정 전 비우기] 버튼
+  const btnClearInput = document.getElementById('btnClearDiffInput');
+  if (btnClearInput) {
+    btnClearInput.addEventListener('click', () => {
+      document.getElementById('aiDiffInput').value = '';
+    });
+  }
+
+  // [AI 교정 실행] 버튼
+  const btnRun = document.getElementById('btnRunAiPolish');
+  if (btnRun) {
+    btnRun.addEventListener('click', handleRunAiPolish);
+  }
+
+  // [수정 후 복사] 버튼
+  const btnCopy = document.getElementById('btnCopyDiffOutput');
+  if (btnCopy) {
+    btnCopy.addEventListener('click', () => {
+      const text = document.getElementById('aiDiffOutput').value;
+      if (!text.trim()) return alert('복사할 교정 결과가 없습니다.');
+      navigator.clipboard.writeText(text).then(() => {
+        alert('교정 결과가 클립보드에 복사되었습니다.');
+      });
+    });
+  }
+
+  // [수정 후 비우기] 버튼
+  const btnClearOutput = document.getElementById('btnClearDiffOutput');
+  if (btnClearOutput) {
+    btnClearOutput.addEventListener('click', () => {
+      document.getElementById('aiDiffOutput').value = '';
+    });
+  }
+
+  // [본문에 즉시 적용하기] 버튼
+  const btnApply = document.getElementById('btnApplyAiDiff');
+  if (btnApply) {
+    btnApply.addEventListener('click', handleApplyAiDiff);
+  }
+}
+
+// --- AI 교정 실행 핸들러 ---
+async function handleRunAiPolish() {
+  const inputEl = document.getElementById('aiDiffInput');
+  const text = (inputEl ? inputEl.value : '').trim();
+  if (!text) {
+    return alert('교정할 원문 텍스트를 입력하거나 본문에서 마우스로 드래그하여 선택해 주세요.');
+  }
+
+  const preset = state.activePolishPreset || 'expand';
+  const custom = (document.getElementById('aiDiffInstruction')?.value || '').trim();
+
+  let instruction = '';
+  if (preset === 'expand') instruction = '내용에 구체적인 근거와 실전 사례, 부연 설명을 풍부하게 덧붙여 살을 붙여주세요.';
+  else if (preset === 'clear') instruction = '문맥을 명쾌하고 신뢰감 있는 전문 칼럼니스트 문체로 다듬어주세요.';
+  else if (preset === 'grammar') instruction = '맞춤법, 띄어쓰기, 문법적 오류, 어색한 조사 및 오탈자를 정밀하게 교정해 주세요.';
+  else if (preset === 'concise') instruction = '군더더기 표현을 과감히 쳐내고 핵심 메시지만 명료하고 직관적으로 요약 정돈해 주세요.';
+  else if (preset === 'friendly') instruction = '독자에게 말을 건네듯 친근하고 부드러운 대화체로 윤문해 주세요.';
+
+  if (custom) instruction += `\n[추가 특별 요청]: ${custom}`;
+
+  const btn = document.getElementById('btnRunAiPolish');
+  const btnText = document.getElementById('btnRunPolishText');
+  const originalHtml = btnText ? btnText.innerHTML : '🚀 AI 교정 실행';
+
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = '⏳ AI 분석 및 교정 중...';
+
+  try {
+    const res = await fetch('/api/generate/polish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        instruction,
+        tone: state.activeBook?.tone || 'professional'
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const outputEl = document.getElementById('aiDiffOutput');
+    if (outputEl) {
+      outputEl.value = data.text;
+      outputEl.focus();
+    }
+  } catch (err) {
+    alert('AI 교정 오류: ' + err.message);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.innerHTML = originalHtml;
+  }
+}
+
+// --- 본문에 교정 결과 즉시 적용 핸들러 ---
+function handleApplyAiDiff() {
+  const outputEl = document.getElementById('aiDiffOutput');
+  const polishedText = (outputEl ? outputEl.value : '').trim();
+  if (!polishedText) {
+    return alert('본문에 적용할 교정 결과가 없습니다. 먼저 AI 교정을 실행해 주세요.');
+  }
+
+  const richEditor = document.getElementById('richEditor');
+  if (!richEditor) return;
+
+  richEditor.focus();
+
+  // 마크다운이나 일반 텍스트를 에디터용 HTML로 파싱
+  const formattedHtml = marked.parse(polishedText).trim();
+  let applied = false;
+
+  // 1순위: 이전에 저장된 Selection Range가 있고 여전히 richEditor 내부에 있을 때
+  if (state.selectedEditorRange && richEditor.contains(state.selectedEditorRange.commonAncestorContainer)) {
+    try {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(state.selectedEditorRange);
+      document.execCommand('insertHTML', false, formattedHtml);
+      applied = true;
+    } catch (e) {
+      console.warn('Range insertHTML 실패, 대체 방식 시도', e);
+    }
+  }
+
+  // 2순위: 원본 텍스트 매칭 치환
+  if (!applied) {
+    const origText = (document.getElementById('aiDiffInput')?.value || '').trim();
+    if (origText && richEditor.innerText.includes(origText)) {
+      richEditor.innerHTML = richEditor.innerHTML.replace(origText, formattedHtml);
+      applied = true;
+    }
+  }
+
+  // 3순위: 그 외의 경우 커서 위치 또는 끝에 덧붙이기
+  if (!applied) {
+    document.execCommand('insertHTML', false, `<br>${formattedHtml}`);
+    applied = true;
+  }
+
+  // 섹션 인메모리 및 글자 수 업데이트
+  const sec = getCurrentSection();
+  if (sec) {
+    sec.content = richEditor.innerHTML;
+    sec.wordCount = richEditor.innerText.trim().length;
+  }
+  updateWordCount(richEditor.innerText);
+
+  // 선택 영역 초기화
+  state.selectedEditorRange = null;
+
+  alert('교정된 내용이 본문에 성공적으로 적용되었습니다! ✨');
+}
+
+// --- HTML 전자책 미리보기 모달 설정 ---
+function setupHtmlPreviewModal() {
+  const btnOpen = document.getElementById('btnOpenHtmlPreview');
+  if (btnOpen) {
+    btnOpen.addEventListener('click', () => {
+      const richEditor = document.getElementById('richEditor');
+      const sec = getCurrentSection();
+      const chap = getChapterOfSection(sec?.id);
+
+      const previewMeta = document.getElementById('htmlPreviewMeta');
+      if (previewMeta) {
+        previewMeta.innerHTML = `<strong>${chap ? escapeHtml(chap.title) : '전자책 본문'}</strong> · <span>${sec ? escapeHtml(sec.title) : '소목차'}</span>`;
+      }
+
+      const previewContent = document.getElementById('htmlPreviewContent');
+      if (previewContent) {
+        const html = (richEditor && richEditor.innerHTML.trim())
+          ? richEditor.innerHTML
+          : '<p style="color:#718096; text-align:center; padding: 3rem 0;">작성된 본문 내용이 없습니다. 리치 에디터에서 내용을 작성해 보세요.</p>';
+        previewContent.innerHTML = html;
+      }
+
+      openModal('modalHtmlPreview');
+    });
+  }
+
+  const btnPrint = document.getElementById('btnPrintHtmlPreview');
+  if (btnPrint) {
+    btnPrint.addEventListener('click', () => {
+      window.print();
+    });
+  }
+}
+
 // --- AI 소목차 집필 핸들러 ---
 async function handleGenerateSectionAI() {
   const sec = getCurrentSection();
@@ -557,7 +872,7 @@ async function handleGenerateSectionAI() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    sec.content = data.content;
+    sec.content = marked.parse(data.content);
     sec.status = 'completed';
     sec.wordCount = data.content.trim().length;
 
@@ -572,10 +887,13 @@ async function handleGenerateSectionAI() {
   }
 }
 
-// --- 문장 다듬기 핸들러 ---
+// --- 문장 다듬기 핸들러 (기존 모달 지원) ---
 async function handleExecutePolish() {
   const sec = getCurrentSection();
-  if (!sec || !sec.content || !sec.content.trim()) {
+  const richEditor = document.getElementById('richEditor');
+  const textToPolish = (richEditor ? richEditor.innerText : (sec?.content || '')).trim();
+
+  if (!textToPolish) {
     return alert('다듬을 본문 내용이 없습니다.');
   }
 
@@ -599,7 +917,7 @@ async function handleExecutePolish() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        text: sec.content,
+        text: textToPolish,
         instruction,
         tone: state.activeBook.tone || 'professional'
       })
@@ -608,9 +926,14 @@ async function handleExecutePolish() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    sec.content = data.text;
-    sec.wordCount = data.text.trim().length;
-    loadCurrentSectionIntoEditor();
+    if (richEditor) {
+      richEditor.innerHTML = marked.parse(data.text);
+      if (sec) {
+        sec.content = richEditor.innerHTML;
+        sec.wordCount = richEditor.innerText.trim().length;
+      }
+      updateWordCount(richEditor.innerText);
+    }
     closeModal('modalPolish');
     alert('문장 다듬기가 완료되었습니다!');
   } catch (err) {
@@ -618,6 +941,34 @@ async function handleExecutePolish() {
   } finally {
     btn.disabled = false;
     btn.innerHTML = '✨ 다듬기 실행';
+  }
+}
+
+// --- 저장 핸들러 ---
+async function saveCurrentSection() {
+  const sec = getCurrentSection();
+  if (!sec || !state.activeBook) return;
+
+  const richEditor = document.getElementById('richEditor');
+  if (richEditor) {
+    sec.content = richEditor.innerHTML;
+    sec.wordCount = richEditor.innerText.trim().length;
+  }
+
+  try {
+    await fetch(`/api/books/${state.activeBook.id}/sections/${sec.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: sec.title,
+        content: sec.content,
+        status: (sec.wordCount && sec.wordCount > 50) ? 'completed' : 'pending'
+      })
+    });
+    renderToc();
+    alert('성공적으로 저장되었습니다. 💾');
+  } catch (err) {
+    alert('저장 실패: ' + err.message);
   }
 }
 
@@ -679,27 +1030,6 @@ async function handleReOutline() {
   } finally {
     btn.disabled = false;
     btn.innerHTML = '🤖 목차 기획';
-  }
-}
-
-// --- 저장 핸들러 ---
-async function saveCurrentSection() {
-  const sec = getCurrentSection();
-  if (!sec || !state.activeBook) return;
-
-  try {
-    await fetch(`/api/books/${state.activeBook.id}/sections/${sec.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: sec.title,
-        content: sec.content,
-        status: sec.content?.trim().length > 100 ? 'completed' : 'pending'
-      })
-    });
-    alert('성공적으로 저장되었습니다.');
-  } catch (err) {
-    alert('저장 실패: ' + err.message);
   }
 }
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Studio - AI 전자책 자동화 제작 스튜디오</title>
+  <title>연재서재 - AI 전자책 자동화 제작 스튜디오</title>
   <!-- 구글 폰트: Inter & Noto Sans KR -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,7 @@
   <aside class="global-sidebar">
     <div class="brand-header">
       <div class="brand-icon">📚</div>
-      <div class="brand-title">Book Studio</div>
+      <div class="brand-title">연재서재</div>
     </div>
 
     <nav class="nav-menu">
@@ -99,7 +99,7 @@
         </div>
       </div>
 
-      <!-- 3열: 메인 에디터 및 미리보기 공간 -->
+      <!-- 3열: 메인 리치 텍스트 에디터 및 AI 교정 스튜디오 -->
       <div class="editor-workspace">
         <div class="editor-toolbar">
           <input type="text" class="section-title-input" id="currentSectionTitle" placeholder="소목차 제목을 입력하세요">
@@ -108,9 +108,6 @@
             <span class="word-count-badge" id="currentWordCount">0 자</span>
             <button class="btn btn-secondary" id="btnOpenVaultReference" title="자료 금고의 내용을 참고하여 프롬프트에 주입합니다">
               💡 자료 금고 연동
-            </button>
-            <button class="btn btn-secondary" id="btnPolishModal">
-              ✨ 문장 다듬기 / 살 붙이기
             </button>
             <button class="btn btn-primary" id="btnGenerateSectionAI">
               🤖 AI 소목차 집필
@@ -121,13 +118,150 @@
           </div>
         </div>
 
+        <!-- 에디터 서브 탑바 (첫번째 사진 스타일: 본문 내용 작성 타이틀 & HTML 미리보기 팝업 버튼) -->
+        <div class="editor-sub-topbar">
+          <div class="editor-sub-title">본문 내용 작성 (리치 텍스트 편집기)</div>
+          <button class="btn-html-preview-popup" id="btnOpenHtmlPreview" title="작성 중인 원고의 완성된 전자책 스타일 뷰를 팝업으로 봅니다">
+            <span class="preview-eye-icon">👁</span> HTML 미리보기 팝업
+          </button>
+        </div>
+
         <div class="editor-split-container">
-          <div class="editor-pane">
-            <textarea class="editor-textarea" id="sectionEditorText" placeholder="마크다운 형식으로 원고를 작성하거나 상단의 '🤖 AI 소목차 집필' 버튼을 눌러보세요..."></textarea>
+          <!-- 좌측: 리치 텍스트 편집기 영역 -->
+          <div class="rich-editor-pane">
+            <!-- 리치 텍스트 서식 툴바 -->
+            <div class="rich-toolbar" id="richToolbar">
+              <div class="toolbar-group">
+                <select class="toolbar-select" id="toolFormatBlock" title="단락 서식">
+                  <option value="p">Normal</option>
+                  <option value="h2">제목 1 (H1)</option>
+                  <option value="h3">제목 2 (H2)</option>
+                  <option value="h4">제목 3 (H3)</option>
+                  <option value="blockquote">인용문 (Quote)</option>
+                </select>
+              </div>
+
+              <div class="toolbar-divider"></div>
+
+              <div class="toolbar-group">
+                <button type="button" class="tool-btn" data-command="bold" title="굵게 (Ctrl+B)"><b>B</b></button>
+                <button type="button" class="tool-btn" data-command="italic" title="기울임 (Ctrl+I)"><i>I</i></button>
+                <button type="button" class="tool-btn" data-command="underline" title="밑줄 (Ctrl+U)"><u>U</u></button>
+                <button type="button" class="tool-btn" data-command="strikeThrough" title="취소선"><s>S</s></button>
+              </div>
+
+              <div class="toolbar-divider"></div>
+
+              <div class="toolbar-group">
+                <div class="color-picker-wrap" title="글자색">
+                  <span class="tool-btn-color-icon">A<span class="color-bar-indicator" id="fontColorBar" style="background:#00e5ff;"></span></span>
+                  <input type="color" id="toolForeColor" value="#00e5ff" class="hidden-color-input">
+                </div>
+                <div class="color-picker-wrap" title="형광펜 / 배경색">
+                  <span class="tool-btn-color-icon bg-highlight">A<span class="color-bar-indicator" id="bgColorBar" style="background:#ffea79;"></span></span>
+                  <input type="color" id="toolHiliteColor" value="#ffea79" class="hidden-color-input">
+                </div>
+              </div>
+
+              <div class="toolbar-divider"></div>
+
+              <div class="toolbar-group">
+                <button type="button" class="tool-btn" data-command="insertUnorderedList" title="글머리 기호 목록">•≡</button>
+                <button type="button" class="tool-btn" data-command="insertOrderedList" title="번호 매기기 목록">1≡</button>
+                <button type="button" class="tool-btn" data-command="blockquote" title="인용 블록">❞</button>
+                <button type="button" class="tool-btn" data-command="code" title="인라인/코드 블록">&lt;/&gt;</button>
+                <button type="button" class="tool-btn" id="toolInsertLink" title="하이퍼링크 삽입">🔗</button>
+                <button type="button" class="tool-btn" data-command="removeFormat" title="서식 지우기">T<sub>x</sub></button>
+              </div>
+            </div>
+
+            <!-- 리치 텍스트 편집 본문 -->
+            <div class="rich-editor-viewport">
+              <div class="rich-editor-body" id="richEditor" contenteditable="true" spellcheck="false"></div>
+            </div>
           </div>
-          <div class="preview-pane">
-            <div class="markdown-body" id="sectionMarkdownPreview">
-              <!-- 실시간 마크다운 렌더링 -->
+
+          <!-- 우측: AI 문장 교정 / 첨삭 패널 (첫번째 사진의 카드 구성 차용) -->
+          <div class="ai-polish-pane">
+            <div class="polish-panel-header">
+              <div class="polish-panel-title">
+                <span class="polish-badge-icon">💛</span>
+                <span>AI 문장 교정 스튜디오 (선택 첨삭 & 퇴고)</span>
+              </div>
+              <span class="polish-panel-sub">본문에서 특정 문장을 드래그하여 선택하면 자동으로 입력됩니다</span>
+            </div>
+
+            <div class="polish-cards-container">
+              <!-- 1. 수정 전 (입력창) -->
+              <div class="polish-card">
+                <div class="polish-card-header">
+                  <div class="polish-card-title">
+                    <span>📎 수정 전 (교정할 원문 입력창)</span>
+                  </div>
+                  <div class="polish-card-actions">
+                    <button class="card-mini-btn" id="btnFetchSelection" title="에디터에서 현재 마우스로 드래그한 선택 영역을 가져옵니다">
+                      📋 선택 영역 가져오기
+                    </button>
+                    <button class="card-mini-btn" id="btnClearDiffInput" title="입력창 비우기">
+                      ✕ 비우기
+                    </button>
+                  </div>
+                </div>
+                <div class="polish-card-body">
+                  <textarea class="polish-textarea" id="aiDiffInput" placeholder="교정하거나 다듬고 싶은 문장을 본문에서 마우스로 드래그하여 선택하거나, 이곳에 직접 입력하세요..."></textarea>
+                </div>
+              </div>
+
+              <!-- 2. 교정 옵션 및 특별 지침 -->
+              <div class="polish-card">
+                <div class="polish-card-header">
+                  <div class="polish-card-title">
+                    <span>💡 교정 지침 & 스타일 (INSTRUCTIONS)</span>
+                  </div>
+                </div>
+                <div class="polish-card-body polish-options-body">
+                  <div class="polish-preset-chips">
+                    <button type="button" class="preset-chip active" data-preset="expand">🌱 풍부하게 살 붙이기</button>
+                    <button type="button" class="preset-chip" data-preset="clear">✨ 문맥 다듬기 / 윤문</button>
+                    <button type="button" class="preset-chip" data-preset="grammar">🔍 맞춤법 & 오탈자 교정</button>
+                    <button type="button" class="preset-chip" data-preset="concise">✂️ 핵심만 명료하게 정돈</button>
+                    <button type="button" class="preset-chip" data-preset="friendly">💬 친근한 대화체 변환</button>
+                  </div>
+
+                  <div class="custom-instruction-wrap">
+                    <input type="text" class="custom-instruction-input" id="aiDiffInstruction" placeholder="추가 요구사항 (예: 초보자도 쉽게 이해할 수 있는 비유 1개 넣어줘)">
+                    <button class="btn-run-polish" id="btnRunAiPolish">
+                      <span class="btn-glow-effect"></span>
+                      <span id="btnRunPolishText">🚀 AI 교정 실행</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. 수정 후 (출력창) -->
+              <div class="polish-card polish-output-card">
+                <div class="polish-card-header">
+                  <div class="polish-card-title">
+                    <span style="color: var(--primary);">📝 수정 후 (AI 교정 결과)</span>
+                  </div>
+                  <div class="polish-card-actions">
+                    <button class="card-mini-btn" id="btnCopyDiffOutput" title="교정 결과를 클립보드에 복사">
+                      📄 복사
+                    </button>
+                    <button class="card-mini-btn" id="btnClearDiffOutput" title="출력창 비우기">
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                <div class="polish-card-body">
+                  <textarea class="polish-textarea polish-textarea-output" id="aiDiffOutput" placeholder="AI 교정 및 첨삭 결과가 여기에 표시됩니다. 하단의 '본문에 즉시 적용' 버튼을 누르면 선택했던 본문 영역이 교체됩니다."></textarea>
+                </div>
+                <div class="polish-card-footer">
+                  <button class="btn btn-apply-diff" id="btnApplyAiDiff" title="수정 후 내용을 에디터의 선택 영역 또는 커서 위치에 바로 반영합니다">
+                    ✨ 본문에 즉시 적용하기
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -378,6 +512,38 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('modalExport')">닫기</button>
         <button class="btn btn-primary" onclick="window.print()">🖨️ PDF로 저장 / 인쇄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- === 모달 5: 본문 HTML 미리보기 팝업 (전자책 스타일) === -->
+  <div class="modal-overlay" id="modalHtmlPreview">
+    <div class="modal-box modal-box-preview" style="max-width: 900px; width: 90%;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.25rem;">📖</span>
+          <h2 id="htmlPreviewModalTitle">본문 HTML 미리보기</h2>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('modalHtmlPreview')">✕</button>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto; background: #0f1117; padding: 2rem;">
+        <div class="book-preview-paper" id="htmlPreviewPaper">
+          <div class="book-preview-header-meta" id="htmlPreviewMeta">
+            <span id="previewChapterTitle">제1장</span> · <span id="previewSectionTitle">소목차 제목</span>
+          </div>
+          <div class="book-preview-content markdown-body" id="htmlPreviewContent">
+            <!-- 렌더링된 본문 HTML -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <div style="font-size: 0.85rem; color: var(--text-dim);">
+          * 실제 전자책 리더기 및 웹 뷰어에서 렌더링되는 서식입니다.
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-secondary" onclick="closeModal('modalHtmlPreview')">닫기</button>
+          <button class="btn btn-primary" id="btnPrintHtmlPreview">🖨️ 인쇄 / PDF 저장</button>
+        </div>
       </div>
     </div>
   </div>

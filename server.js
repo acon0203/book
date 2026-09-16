@@ -422,7 +422,20 @@ app.post('/api/generate/polish', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`[Book Studio] 전자책 제작 스튜디오 서버가 포트 ${port}에서 실행 중입니다.`);
+const server = app.listen(port, () => {
+  console.log(`[연재서재] 연재서재 전자책 스튜디오 서버가 포트 ${port}에서 실행 중입니다.`);
   console.log(`브라우저에서 접속: http://localhost:${port}`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    const fallbackPort = Number(port) + 1;
+    console.warn(`[연재서재] 포트 ${port}이(가) 이미 사용 중이어서 포트 ${fallbackPort}(으)로 실행합니다.`);
+    app.listen(fallbackPort, () => {
+      console.log(`[연재서재] 연재서재 전자책 스튜디오 서버가 포트 ${fallbackPort}에서 실행 중입니다.`);
+      console.log(`브라우저에서 접속: http://localhost:${fallbackPort}`);
+    });
+  } else {
+    console.error('서버 실행 에러:', err);
+  }
 });
