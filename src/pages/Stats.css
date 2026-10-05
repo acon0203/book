@@ -1,0 +1,724 @@
+/* Stats.css - 집필 통계 & 성장 스타일 */
+
+.stats-page {
+  padding: 32px 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+  color: var(--text-main, #18191f);
+}
+
+.stats-header {
+  margin-bottom: 28px;
+}
+
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.stats-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-main, #18191f);
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.stats-version-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: #f1f3f5;
+  color: #495057;
+  border: 1px solid #e9ecef;
+}
+
+.stats-header p {
+  font-size: 14px;
+  color: var(--text-muted, #71717a);
+  margin: 0;
+}
+
+.stats-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 1. 작가 프로필 & 레벨 배너 */
+.level-hero-card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e4e4e7);
+  border-radius: 14px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.author-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.author-tier-icon {
+  font-size: 40px;
+  line-height: 1;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.author-tier-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.author-tier-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.author-level-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: #495057;
+}
+
+.author-title-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-main, #18191f);
+  margin: 0;
+}
+
+.xp-summary-box {
+  text-align: right;
+}
+
+.xp-summary-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted, #71717a);
+  margin-bottom: 4px;
+}
+
+.xp-summary-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-main, #18191f);
+  letter-spacing: -0.5px;
+}
+
+/* XP 프로그레스 바 */
+.hero-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #71717a);
+}
+
+.xp-remaining-text {
+  color: #2b8a3e;
+  font-weight: 700;
+}
+
+.progress-bar-container {
+  height: 10px;
+  background: #f1f3f5;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+
+.progress-sub-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted, #868e96);
+  margin-top: 2px;
+}
+
+.progress-pct {
+  font-weight: 700;
+  color: var(--text-main, #18191f);
+}
+
+/* 2. 핵심 4대 대시보드 카드 */
+.stats-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.stat-card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e4e4e7);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.stat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stat-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted, #71717a);
+}
+
+.stat-icon {
+  color: #adb5bd;
+}
+
+.icon-flame { color: #e17055; }
+.icon-pen { color: #0984e3; }
+.icon-book { color: #2ecc71; }
+.icon-clock { color: #fdcb6e; }
+
+.stat-card-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-main, #18191f);
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-unit {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted, #71717a);
+}
+
+.stat-card-sub {
+  font-size: 12px;
+  color: var(--text-muted, #868e96);
+}
+
+.text-urgent {
+  color: #e03131;
+}
+
+.text-normal {
+  color: #2b8a3e;
+  font-size: 18px;
+}
+
+/* 3. 주간 집필 스트릭 (단독 카드) */
+.weekly-streak-section {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e4e4e7);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+
+.routine-sub-info {
+  font-size: 12px;
+  color: var(--text-muted, #71717a);
+  font-weight: 500;
+}
+
+.days-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.day-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px;
+  border-radius: 10px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.day-pill.completed {
+  background: #ffffff;
+  border-color: #dee2e6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.day-pill.today {
+  border-color: #18191f;
+  border-width: 2px;
+  background: #ffffff;
+  font-weight: 700;
+}
+
+.day-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #495057);
+}
+
+.day-stamp {
+  font-size: 16px;
+}
+
+.day-status-txt {
+  font-size: 11px;
+  color: var(--text-muted, #868e96);
+}
+
+/* 4. 분야별 집필 전문성 */
+.expertise-section {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e4e4e7);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+
+.expertise-help-txt {
+  font-size: 12px;
+  color: var(--text-muted, #71717a);
+}
+
+.expertise-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.genre-rank-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.genre-rank-card:hover {
+  background: #ffffff;
+  border-color: #ced4da;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.genre-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.genre-emoji-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.genre-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.genre-name {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #868e96);
+  margin-bottom: 2px;
+}
+
+.genre-rank-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.genre-word-count {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.word-num {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-main, #18191f);
+}
+
+.word-unit {
+  font-size: 11px;
+  color: var(--text-muted, #71717a);
+  margin-left: 2px;
+}
+
+.genre-rank-gauge {
+  height: 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.genre-gauge-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.genre-next-hint {
+  font-size: 11px;
+  color: var(--text-muted, #868e96);
+  text-align: right;
+}
+
+/* 5. 활동 기록 타임라인 */
+.activity-timeline-section {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e4e4e7);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+
+.activity-count-badge {
+  font-size: 12px;
+  color: #495057;
+  background: #f1f3f5;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border: 1px solid #f1f3f5;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.timeline-item:hover {
+  background: #ffffff;
+  border-color: #e9ecef;
+}
+
+.timeline-icon-wrap {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.timeline-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.timeline-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main, #18191f);
+}
+
+.timeline-date {
+  font-size: 12px;
+  color: var(--text-muted, #868e96);
+  flex-shrink: 0;
+}
+
+.empty-activities-box {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted, #71717a);
+  font-size: 13px;
+}
+
+/* 4. 도서별 진행 현황 */
+.books-progress-section {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e4e4e7);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header-row h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.book-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.book-progress-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  gap: 20px;
+}
+
+.book-info-col {
+  flex: 2;
+  min-width: 0;
+}
+
+.book-title-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.book-genre-tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #e9ecef;
+  color: #495057;
+  font-weight: 600;
+}
+
+.book-title-heading {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.book-stat-detail {
+  font-size: 12px;
+  color: var(--text-muted, #71717a);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bullet {
+  color: #ced4da;
+}
+
+.book-gauge-col {
+  flex: 3;
+}
+
+.gauge-text-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #71717a);
+  margin-bottom: 4px;
+}
+
+.gauge-pct {
+  color: var(--text-main, #18191f);
+  font-weight: 700;
+}
+
+.gauge-track {
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  background: #18191f;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.book-action-col {
+  flex-shrink: 0;
+}
+
+.btn-studio-shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #ced4da;
+  color: #212529;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-studio-shortcut:hover {
+  background: #18191f;
+  color: #ffffff;
+  border-color: #18191f;
+}
+
+.empty-books-box {
+  padding: 30px;
+  text-align: center;
+  color: var(--text-muted, #71717a);
+}
+
+/* 5. 작가 업적 및 트로피 */
+.trophies-section {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e4e4e7);
+  border-radius: 12px;
+  padding: 22px 24px;
+}
+
+.trophy-count-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2b8a3e;
+  background: #e6fcf5;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.trophies-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.trophy-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid;
+  transition: all 0.2s ease;
+}
+
+.trophy-card.unlocked {
+  background: #ffffff;
+  border-color: #dee2e6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.trophy-card.locked {
+  background: #f8f9fa;
+  border-color: #f1f3f5;
+  opacity: 0.55;
+  filter: grayscale(80%);
+}
+
+.trophy-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.trophy-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.trophy-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main, #18191f);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 2px;
+}
+
+.trophy-check {
+  color: #2b8a3e;
+}
+
+.trophy-desc {
+  font-size: 11px;
+  color: var(--text-muted, #71717a);
+}
+
+/* 반응형 */
+@media (max-width: 860px) {
+  .stats-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .expertise-grid {
+    grid-template-columns: 1fr;
+  }
+  .trophies-grid {
+    grid-template-columns: 1fr;
+  }
+}

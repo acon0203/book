@@ -1,0 +1,1443 @@
+:root {
+  /* 다크 글래스모피즘 테마 */
+  --bg-deep: #0a0a0d;
+  --bg-surface: rgba(18, 18, 24, 0.7);
+  --bg-panel: rgba(255, 255, 255, 0.03);
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-active: rgba(0, 229, 255, 0.12);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-bright: rgba(255, 255, 255, 0.16);
+
+  --primary: #00e5ff;
+  --primary-glow: rgba(0, 229, 255, 0.25);
+  --secondary: #7b61ff;
+  --secondary-glow: rgba(123, 97, 255, 0.2);
+  
+  --text-main: #f4f4f7;
+  --text-muted: #9ba1b0;
+  --text-dim: #606470;
+
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  --font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
+  --blur: blur(24px);
+  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.light-mode {
+  --bg-deep: #f5f7fa;
+  --bg-surface: rgba(255, 255, 255, 0.85);
+  --bg-panel: #ffffff;
+  --bg-hover: #eef2f6;
+  --bg-active: rgba(0, 114, 245, 0.1);
+  --border-glass: rgba(0, 0, 0, 0.07);
+  --border-bright: rgba(0, 0, 0, 0.15);
+
+  --primary: #0072f5;
+  --primary-glow: rgba(0, 114, 245, 0.2);
+  --secondary: #7928ca;
+  --secondary-glow: rgba(121, 40, 202, 0.15);
+
+  --text-main: #18191f;
+  --text-muted: #4e5361;
+  --text-dim: #8b92a2;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+}
+
+/* === 1열: 글로벌 사이드바 === */
+.global-sidebar {
+  width: 220px;
+  background: var(--bg-surface);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-right: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 100;
+  user-select: none;
+}
+
+.brand-header {
+  padding: 1.5rem 1.25rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 15px var(--primary-glow);
+}
+
+.brand-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-menu {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.nav-item.active {
+  background: var(--bg-active);
+  color: var(--primary);
+  border-color: var(--primary-glow);
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 1.15rem;
+}
+
+.nav-divider {
+  height: 1px;
+  background: var(--border-glass);
+  margin: 0.6rem 0.5rem;
+}
+
+.sidebar-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.theme-toggle-btn {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: var(--transition);
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--primary);
+  color: var(--text-main);
+}
+
+/* === 메인 앱 뷰 컨테이너 === */
+.main-container {
+  flex: 1;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+}
+
+.app-view {
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.app-view.active {
+  display: flex;
+}
+
+/* === 공통 헤더 & 타이틀 === */
+.view-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-glass);
+  background: var(--bg-surface);
+  backdrop-filter: var(--blur);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.view-title-group h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.view-title-group p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin-top: 0.25rem;
+}
+
+.btn {
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  transition: var(--transition);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  box-shadow: 0 4px 15px var(--primary-glow);
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-bright);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+/* === 1. 내 서재 뷰 (Library) === */
+.library-content {
+  padding: 2rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.book-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.book-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary-glow);
+  box-shadow: 0 12px 35px var(--primary-glow);
+}
+
+.book-card-cover {
+  height: 120px;
+  background: linear-gradient(135deg, #131b2e, #23163a);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-glass);
+  position: relative;
+}
+
+.book-genre-badge {
+  align-self: flex-start;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.book-cover-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.book-card-body {
+  padding: 1.25rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.book-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.progress-container {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-glass);
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-bottom: 0.4rem;
+}
+
+.progress-bar-bg {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  transition: width 0.3s ease;
+}
+
+.book-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.book-card-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* === 2. 집필 스튜디오 뷰 (2열 목차 + 3열 에디터) === */
+#view-studio {
+  flex-direction: row;
+  overflow: hidden;
+}
+
+/* 2열: 목차 트리 패널 */
+.toc-panel {
+  width: 320px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 100vh;
+}
+
+.toc-header {
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.toc-nav-back {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.toc-nav-back:hover {
+  color: var(--primary);
+}
+
+.toc-book-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toc-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.toc-actions .btn {
+  flex: 1;
+  padding: 0.45rem 0.5rem;
+  font-size: 0.78rem;
+  justify-content: center;
+}
+
+.toc-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.toc-chapter-block {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.toc-chapter-header {
+  padding: 0.75rem 0.85rem;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.toc-chapter-header:hover {
+  background: var(--bg-hover);
+}
+
+.toc-section-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-glass);
+}
+
+.toc-section-item {
+  padding: 0.65rem 0.85rem 0.65rem 1.25rem;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: var(--transition);
+}
+
+.toc-section-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+
+.toc-section-item.active {
+  background: var(--bg-active);
+  color: var(--primary);
+  border-left-color: var(--primary);
+  font-weight: 600;
+}
+
+.status-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.status-badge.completed {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+}
+
+.status-badge.pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+}
+
+/* 3열: 메인 에디터 작업 영역 */
+.editor-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.editor-toolbar {
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.section-title-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-main);
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  flex: 1;
+}
+
+.section-title-input:focus {
+  outline: none;
+  background: var(--bg-panel);
+  border-color: var(--primary-glow);
+}
+
+.editor-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.word-count-badge {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  background: var(--bg-panel);
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-glass);
+}
+
+/* === 에디터 서브 탑바 (첫번째 사진 스타일) === */
+.editor-sub-topbar {
+  padding: 0.6rem 1.5rem;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.editor-sub-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: -0.2px;
+}
+
+.btn-html-preview-popup {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+  padding: 0.35rem 0.85rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-html-preview-popup:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+.preview-eye-icon {
+  font-size: 0.95rem;
+  color: #ff6b81;
+}
+
+/* === 에디터 스플릿 컨테이너 === */
+.editor-split-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: calc(100vh - 115px);
+  overflow: hidden;
+  background: var(--bg-deep);
+}
+
+/* === 좌측: 리치 텍스트 에디터 패널 === */
+.rich-editor-pane {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-glass);
+  height: 100%;
+  overflow: hidden;
+  padding: 1rem;
+  gap: 0.75rem;
+  background: rgba(10, 11, 16, 0.6);
+}
+
+/* 리치 툴바 (첫번째 사진 스타일) */
+.rich-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  background: #141721;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 0.35rem;
+}
+
+.toolbar-select {
+  background: #1c202d;
+  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition);
+}
+
+.toolbar-select:focus, .toolbar-select:hover {
+  border-color: var(--primary);
+}
+
+.tool-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #cbd5e1;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.tool-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.tool-btn.active {
+  background: var(--bg-active);
+  color: var(--primary);
+  border-color: var(--primary-glow);
+}
+
+.color-picker-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+.color-picker-wrap:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tool-btn-color-icon {
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.tool-btn-color-icon.bg-highlight {
+  background: rgba(255, 234, 121, 0.25);
+  padding: 1px 3px;
+  border-radius: 2px;
+}
+
+.color-bar-indicator {
+  width: 14px;
+  height: 3px;
+  border-radius: 1px;
+  margin-top: 1px;
+}
+
+.hidden-color-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* 리치 텍스트 뷰포트 & 본문 */
+.rich-editor-viewport {
+  flex: 1;
+  background: #10121a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.rich-editor-body {
+  flex: 1;
+  padding: 1.5rem 1.75rem;
+  outline: none;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #e2e8f0;
+  min-height: 100%;
+  word-break: break-word;
+}
+
+.rich-editor-body:empty:before {
+  content: "전자책에 수록할 본문 내용을 자유롭게 작성해 보세요. 상단 툴바를 활용하여 풍부한 서식 편집이 가능하며, 특정 문장을 드래그하여 우측 AI 교정기로 즉시 퇴고할 수 있습니다.";
+  color: #555b6e;
+  pointer-events: none;
+  display: block;
+}
+
+.rich-editor-body h1, .rich-editor-body h2, .rich-editor-body h3, .rich-editor-body h4 {
+  color: #ffffff;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.rich-editor-body h2 {
+  font-size: 1.35rem;
+  color: var(--primary);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  padding-bottom: 0.3rem;
+}
+
+.rich-editor-body h3 {
+  font-size: 1.15rem;
+  color: #f1f5f9;
+}
+
+.rich-editor-body p {
+  margin-bottom: 0.85rem;
+}
+
+.rich-editor-body blockquote {
+  border-left: 4px solid var(--primary);
+  background: rgba(0, 229, 255, 0.06);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-radius: 0 6px 6px 0;
+  color: #e0f2fe;
+}
+
+.rich-editor-body ul, .rich-editor-body ol {
+  margin-left: 1.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.rich-editor-body pre, .rich-editor-body code {
+  background: #1e2230;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.rich-editor-body code {
+  padding: 0.15rem 0.4rem;
+  color: #f472b6;
+}
+
+.rich-editor-body pre {
+  padding: 0.85rem 1.2rem;
+  overflow-x: auto;
+  margin-bottom: 0.85rem;
+}
+
+/* === 우측: AI 교정 / 첨삭 패널 (첫번째 사진 Co-work 카드 스타일 계승) === */
+.ai-polish-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  gap: 0.85rem;
+  background: rgba(14, 16, 22, 0.7);
+}
+
+.polish-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.polish-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #00e5ff;
+  letter-spacing: -0.2px;
+}
+
+.polish-badge-icon {
+  font-size: 1rem;
+}
+
+.polish-panel-sub {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.polish-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  flex: 1;
+}
+
+/* 공통 폴리시 카드 (첫번째 사진 스타일) */
+.polish-card {
+  background: #11141c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.polish-card-header {
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.polish-card-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.polish-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.card-mini-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.card-mini-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-main);
+  border-color: var(--primary);
+}
+
+.polish-card-body {
+  padding: 0.75rem 0.85rem;
+}
+
+.polish-textarea {
+  width: 100%;
+  height: 110px;
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+}
+
+.polish-textarea::placeholder {
+  color: #4b5266;
+}
+
+/* 교정 옵션 및 프리셋 칩 */
+.polish-options-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.polish-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.preset-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: var(--text-muted);
+  padding: 0.35rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.preset-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.preset-chip.active {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+
+.custom-instruction-wrap {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.custom-instruction-input {
+  flex: 1;
+  background: #0c0e14;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  outline: none;
+  transition: var(--transition);
+}
+
+.custom-instruction-input:focus {
+  border-color: var(--primary);
+}
+
+.btn-run-polish {
+  position: relative;
+  background: linear-gradient(135deg, #00e5ff, #7b61ff);
+  color: #0b0d13;
+  font-weight: 700;
+  font-size: 0.84rem;
+  border: none;
+  padding: 0.55rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: var(--transition);
+  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.3);
+}
+
+.btn-run-polish:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-run-polish:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 수정 후 카드 */
+.polish-output-card {
+  border-color: rgba(0, 229, 255, 0.25);
+  background: #111520;
+}
+
+.polish-textarea-output {
+  height: 125px;
+  color: #a7f3d0;
+}
+
+.polish-card-footer {
+  padding: 0.6rem 0.85rem;
+  background: rgba(0, 229, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-apply-diff {
+  width: 100%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  border: none;
+  padding: 0.55rem 1rem;
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+  transition: var(--transition);
+}
+
+.btn-apply-diff:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+}
+
+/* === 전자책 HTML 미리보기 모달 전용 스타일 === */
+.book-preview-paper {
+  background: #ffffff;
+  color: #1a202c;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 3.5rem;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  font-family: 'Noto Sans KR', sans-serif;
+  line-height: 1.85;
+}
+
+.book-preview-header-meta {
+  font-size: 0.85rem;
+  color: #718096;
+  padding-bottom: 0.85rem;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.book-preview-content {
+  color: #2d3748;
+}
+
+.book-preview-content h1, .book-preview-content h2, .book-preview-content h3 {
+  color: #1a202c;
+  margin-top: 1.75rem;
+  margin-bottom: 0.85rem;
+  font-weight: 700;
+}
+
+.book-preview-content h2 {
+  font-size: 1.45rem;
+  border-left: 4px solid #3182ce;
+  padding-left: 0.75rem;
+}
+
+.book-preview-content h3 {
+  font-size: 1.2rem;
+}
+
+.book-preview-content p {
+  margin-bottom: 1.15rem;
+  font-size: 1.02rem;
+  word-break: keep-all;
+}
+
+.book-preview-content blockquote {
+  background: #ebf8ff;
+  border-left: 4px solid #3182ce;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+  color: #2b6cb0;
+}
+
+.book-preview-content ul, .book-preview-content ol {
+  margin-left: 1.75rem;
+  margin-bottom: 1.2rem;
+}
+
+.book-preview-content li {
+  margin-bottom: 0.45rem;
+}
+
+/* === 3. 자료 금고 뷰 (Vault) === */
+.vault-content {
+  padding: 2rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tag-filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tag-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.tag-btn.active {
+  background: var(--primary-glow);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.vault-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.vault-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vault-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vault-card-body {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.vault-card-tags {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.vault-tag-chip {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+}
+
+/* === 4. 통계 뷰 (Stats) === */
+.stats-content {
+  padding: 2rem;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.stats-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+.stat-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat-box-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.stat-box-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* === 5. 환경 설정 뷰 (Settings) === */
+.settings-content {
+  padding: 2rem;
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.settings-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.settings-card h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border-glass);
+  padding-bottom: 0.75rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.form-control {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  outline: none;
+  transition: var(--transition);
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+/* === 모달 다이얼로그 (Modal) === */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-box {
+  background: var(--bg-deep);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.modal-footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* === 인쇄 및 PDF 조판 미디어 쿼리 (@media print) === */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .global-sidebar, .toc-panel, .editor-toolbar, .btn, .modal-overlay {
+    display: none !important;
+  }
+  .editor-workspace {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .editor-split-container {
+    display: block !important;
+    height: auto !important;
+  }
+  .editor-pane {
+    display: none !important;
+  }
+  .preview-pane {
+    padding: 0 !important;
+    background: white !important;
+  }
+  .markdown-body {
+    color: black !important;
+  }
+  .markdown-body h1, .markdown-body h2 {
+    page-break-before: always;
+  }
+}
