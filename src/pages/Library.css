@@ -37,12 +37,13 @@
 
 /* 상단 2줄 작가 성장 & 통합 통계 바 */
 .author-summary-band {
-  background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #e4e4e7);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   margin-bottom: 24px;
   overflow: hidden;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  backdrop-filter: var(--blur);
 }
 
 .band-row {
@@ -54,8 +55,8 @@
 /* 1행: 핵심 통계 */
 .band-stats-row {
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-color, #f1f3f5);
-  background: var(--bg-card, #ffffff);
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
   gap: 12px;
 }
 
@@ -71,16 +72,16 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background: var(--bg-card-sub);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: var(--transition);
 }
 
 .band-level-badge:hover {
-  background: #e9ecef;
-  border-color: #ced4da;
+  background: var(--bg-hover);
+  border-color: var(--border-bright);
 }
 
 .badge-tier-icon {
@@ -90,13 +91,13 @@
 .badge-level-txt {
   font-size: 12px;
   font-weight: 700;
-  color: var(--text-main, #18191f);
+  color: var(--text-main);
 }
 
 .band-divider {
   width: 1px;
   height: 14px;
-  background: #e9ecef;
+  background: var(--border-color);
 }
 
 .band-stat-item {
@@ -109,20 +110,20 @@
 .stat-label {
   font-size: 11px;
   font-weight: 600;
-  color: var(--text-muted, #868e96);
+  color: var(--text-muted);
 }
 
 .stat-val {
   font-weight: 700;
-  color: var(--text-main, #18191f);
+  color: var(--text-main);
 }
 
 .stat-val.highlight-flame {
-  color: #e17055;
+  color: #ff7675;
 }
 
 .stat-val.highlight-urgent {
-  color: #e03131;
+  color: #ff4757;
 }
 
 .band-detail-btn {
@@ -131,27 +132,27 @@
   gap: 4px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-muted, #495057);
+  color: var(--text-muted);
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.15s ease;
+  border-radius: 6px;
+  transition: var(--transition);
   flex-shrink: 0;
 }
 
 .band-detail-btn:hover {
-  color: var(--text-main, #18191f);
-  background: #f1f3f5;
+  color: var(--primary);
+  background: var(--bg-hover);
 }
 
 /* 2행: 오늘의 집필 영감 & 명언 */
 .band-quote-row {
-  background: #fafafa;
+  background: var(--bg-card-sub);
   gap: 8px;
   font-size: 12px;
-  color: #495057;
+  color: var(--text-muted);
   padding: 8px 18px;
 }
 
@@ -162,11 +163,12 @@
 
 .quote-text {
   font-style: italic;
-  color: #343a40;
+  color: var(--text-main);
+  opacity: 0.9;
 }
 
 .quote-author {
-  color: #868e96;
+  color: var(--text-muted);
   margin-left: auto;
   font-size: 11px;
   flex-shrink: 0;

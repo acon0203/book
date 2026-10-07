@@ -42,19 +42,21 @@
 }
 
 .settings-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-glass);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 1.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .settings-card h3 {
   font-size: 1.15rem;
   font-weight: 700;
-  border-bottom: 1px solid var(--border-glass);
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.75rem;
 }
 
@@ -63,7 +65,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  border-bottom: 1px solid var(--border-glass);
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.75rem;
 }
 
@@ -86,15 +88,16 @@
   gap: 6px;
   font-size: 12px;
   font-weight: 600;
-  color: #2b8a3e;
-  background: #e6fcf5;
+  color: var(--success);
+  background: var(--success-bg);
   padding: 4px 10px;
   border-radius: 6px;
+  border: 1px solid var(--success);
   white-space: nowrap;
 }
 
 .badge-icon-green {
-  color: #2b8a3e;
+  color: var(--success);
 }
 
 .cloud-action-row {
@@ -119,13 +122,159 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #f8f9fa;
+  background: var(--bg-card-sub);
   border-radius: 8px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
 }
 
 .cloud-login-prompt p {
   margin: 0;
   font-size: 13px;
-  color: #495057;
+  color: var(--text-muted);
 }
+
+/* 저장 모드 선택 그리드 */
+.save-mode-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .save-mode-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.save-mode-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.15rem;
+  background: var(--bg-card-sub);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.save-mode-card:hover {
+  border-color: var(--primary);
+  background: var(--bg-hover);
+}
+
+.save-mode-card.active {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.06);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+.save-mode-radio {
+  margin-top: 2px;
+}
+.save-mode-radio input {
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.save-mode-content {
+  flex: 1;
+}
+
+.save-mode-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.save-mode-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.save-mode-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+.save-mode-tag.local {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+.save-mode-tag.cloud {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.save-mode-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* API 키 보안 물음표 툴팁 스타일 */
+.security-tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.security-help-icon {
+  color: var(--text-muted);
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.security-tooltip-container:hover .security-help-icon {
+  color: var(--primary);
+  transform: scale(1.12);
+}
+
+.security-tooltip-bubble {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 130%;
+  right: 0;
+  width: 270px;
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.8rem 0.95rem;
+  font-size: 0.78rem;
+  color: var(--text-main);
+  line-height: 1.45;
+  z-index: 100;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.security-tooltip-bubble strong {
+  display: block;
+  color: var(--primary);
+  margin-bottom: 0.3rem;
+  font-size: 0.82rem;
+}
+
+.security-tooltip-bubble p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.security-tooltip-container:hover .security-tooltip-bubble {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(2px);
+}
+

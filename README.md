@@ -35,7 +35,13 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │   ├── Sidebar.jsx / .css   # 글로벌 사이드바 네비게이션
     │   └── Toast.jsx / .css     # 알림 토스트 컴포넌트
     │
+    ├── data/                    # [출판 레퍼런스 및 영감 정적 DB]
+    │   ├── bestseller-db.json   # 베스트셀러 25권 표본 분석 & 장르별 표준 규격(페이지수, 꼭지당 글자수, 표본 도서) DB
+    │   ├── ai-models-db.json    # 무료 텍스트/Gemma 모델 목록(0/0 제외) 및 스마트 자동 전환 우선순위 DB
+    │   └── quotes-db.json       # 작가 집필 영감 및 글쓰기 명언 정적 DB
+    │
     ├── utils/                   # 공통 순수 유틸리티
+    │   ├── paragraphParser.js   # 본문 HTML ↔ 문단 모듈 카드 블록 무손실 변환 유틸리티
     │   └── authorStats.js       # 작가 레벨 공식(Mission XP) 및 서재 통합 통계 계산
     │
     ├── config/                  # 글로벌 인프라 설정
@@ -45,7 +51,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │   ├── storageService.js    # 브라우저 로컬 저장소 (Zero-Latency, 100% 오프라인 지원)
     │   ├── authService.js       # Firebase Google 로그인/로그아웃 및 세션 구독 서비스
     │   ├── cloudSyncService.js  # Cloud Firestore 원고/서재 양방향 백업 및 복원 서비스
-    │   ├── aiService.js         # 브라우저 직접 AI 연동 모듈 (Gemini / OpenAI)
+    │   ├── aiService.js         # 실시간 429 감지 & 스마트 자동 전환(Cascade) 브라우저 직접 AI 엔진
     │   └── bookService.js       # 도서/원고/자료 일원화 서비스
     │
     └── store/                   # [전역 상태 관리]
@@ -58,18 +64,22 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 
 | 파일 경로 | 설명 |
 | :--- | :--- |
+| **`src/data/ai-models-db.json`** | 구글 AI 스튜디오 무료 텍스트/Gemma 10대 모델 한도 스펙 및 스마트 자동 전환(최신 3.8 Flash ➔ 3.5 Lite ➔ 3.1 Lite ➔ Gemma) 정적 DB |
+| **`src/data/bestseller-db.json`** | 분야별 베스트셀러 25권 실측 표본 기반 장르별 목차 표준 규격(총 페이지수, 꼭지당 평균 글자수, 표본 도서, AI 팁) 정적 DB |
+| **`src/data/quotes-db.json`** | 국내외 거장 작가들의 집필 자극 명언 및 글쓰기 영감 텍스트 정적 DB |
 | **`TODO.md`** | 완료된 작업 현황(`[x]`)과 향후 단계별 개발 로드맵(`[ ]`)을 실시간 추적하는 진행 관리표 |
 | **`src/styles/theme.css`** | 다크/라이트 글래스모피즘 테마 변수, 폰트(Inter/Noto Sans KR), 공통 버튼(`.btn`), 모달(`.modal-overlay`) 정의 |
 | **`src/config/firebase.js`** | Google Firebase 앱, Google Auth Provider, Cloud Firestore DB 초기화 설정 |
 | **`src/pages/Library.jsx`** | 2줄 슬림 성장/통계 바, 도서 카드 그리드, 진행률(%), D-Day 배지, 도서 삭제 및 새 책 만들기 모달 |
-| **`src/pages/Studio.jsx`** | 3열 집필 환경 + 주간 마감 D-Day 관리 + 챕터 연재 발행(Publish) + AI Copilot(키워드/명령어 기반 초고 집필 에이전트 & 문장 교정) + 3대 모달 내장 |
+| **`src/pages/Studio.jsx`** | 3열 집필 환경 + 듀얼 에디터(본문/문단) + 베스트셀러 DB 기반 AI 목차 자동 기획 모달 + 내보내기/자료금고 모달 |
 | **`src/pages/Vault.jsx`** | 아이디어 메모, 웹 스크랩 보관 및 태그 필터링, AI 집필 프롬프트 주입용 레퍼런스 관리 |
 | **`src/pages/Stats.jsx`** | `mission` 게이미피케이션 차용: 작가 레벨/티어/칭호, 분야별 집필 전문성(장르 랭크), 활동 기록 타임라인, 주간 루틴, 업적 배지(Trophies) |
-| **`src/pages/Settings.jsx`** | AI 제공자 선택 및 Cloud Firestore 즉시 백업/데이터 복원 관리 환경 설정 |
+| **`src/pages/Settings.jsx`** | AI 제공자 선택, 원고 저장 방식 선택(방안 A 로컬 전용 vs 방안 B 자동 클라우드 백업) 및 Cloud Firestore 즉시 백업/데이터 복원 환경 설정 |
+| **`src/utils/paragraphParser.js`** | DOMParser 기반 HTML ↔ 문단(Paragraph) 블록 배열 무손실 양방향 변환 및 블록 ID 생성 유틸리티 |
 | **`src/utils/authorStats.js`** | 레벨 공식(Math.sqrt), 티어(브론즈~다이아몬드), 분야별 칭호/전문성, 활동 기록, 다권 완주율 및 마감 D-Day 계산 순수 함수 |
 | **`src/services/storageService.js`** | 브라우저 로컬 저장소 기반 0초 즉시 저장 및 100% 오프라인 지원 모듈 |
 | **`src/services/authService.js`** | Google 계정 1초 팝업 로그인, 로그아웃, 인증 상태 실시간 리스너 |
-| **`src/services/cloudSyncService.js`** | Firestore `users/{uid}/studio_data/current` 원고 및 서재 데이터 백업/복원 엔진 |
+| **`src/services/cloudSyncService.js`** | Firestore `users/{email}` 이메일 기반 멀티 컬렉션(`books`, `vault`, `stats`, `config`) 직관적 동기화/복원 엔진 |
 | **`src/services/aiService.js`** | 브라우저 직접 AI 연동 (Google AI Studio Gemini, OpenAI) |
 | **`src/services/bookService.js`** | 도서/원고/자료 CRUD 및 AI 기능을 일원화한 프론트엔드 단일 서비스 |
 | **`src/store/index.js`** | 도서 목록, 활성 도서/섹션, Google 로그인 상태, 클라우드 동기화 상태, 디바운스 본문 동기화를 관리하는 단일 상태 저장소 |
@@ -85,76 +95,32 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 2. **백그라운드 동기화**: Google 로그인 사용자인 경우, 로컬 저장이 완료된 직후 비동기로 Firestore 클라우드에 백업 스냅샷을 갱신합니다.
 3. **기기 간 복원**: 새 컴퓨터나 다른 브라우저에서 로그인 후 `[클라우드에서 데이터 복원]`을 실행하면 단 0.2초 만에 로컬 저장소로 무손실 동기화됩니다.
 
-### 2. Firestore 저장 경로 및 JSON 스냅샷 구조
-* **도큐먼트 경로**: `users/{uid}/studio_data/current`
-* **저장 방식**: 로컬 저장소의 4대 핵심 데이터를 **단일 통합 문서(Single Document Snapshot)**로 1:1 보존합니다.
+### 2. Firestore 저장 경로 및 컬렉션 분리 구조
+* **사용자 식별 경로**: `users/{email}` (Firebase 콘솔 목록에서 구글 로그인 메일 주소가 즉시 표시됨)
+* **컬렉션 분리 체계**:
+  * `users/{email}`: 사용자 프로필, 이메일, UID, 총 도서 수, 최종 동기화 시각 메타데이터
+  * `users/{email}/books/{bookId}`: 도서 프로젝트별 독립 문서 (목차, 챕터, 본문 트리 원형 보존)
+  * `users/{email}/vault/{vaultId}`: 자료 금고 아이템별 독립 문서 (제목, 내용, 태그 등)
+  * `users/{email}/stats/summary`: 집필 통계, 레벨, 스트릭, 경험치 단일 문서
+  * `users/{email}/config/current`: UI 및 AI 모델 설정 단일 문서 (※ 보안 원칙: 개인 API 키는 클라우드로 전송하지 않고 브라우저 로컬스토리지에만 100% 격리 보존)
 
-```json
-{
-  "updatedAt": "Firestore ServerTimestamp (서버 최종 동기화 시각)",
-  "clientTimestamp": "2026-10-05T15:15:00.000Z",
-  "appVersion": "1.0.0",
-
-  // [1] 도서 프로젝트 및 목차/본문 트리 (로컬 원형 그대로 보존)
-  "books": [
-    {
-      "id": "book_174112345_abc",
-      "title": "나의 사모펀드 생존기",
-      "subtitle": "글로벌 금융 시장에서 살아남은 10년의 기록",
-      "genre": "경제/경영",
-      "targetAudience": "금융권 취업 준비생 및 주니어 애널리스트",
-      "createdAt": "2026-10-01T...",
-      "updatedAt": "2026-10-05T...",
-      "chapters": [
-        {
-          "id": "chap_1",
-          "title": "프롤로그: 금융 정글에 들어서며",
-          "status": "published",
-          "deadline": "2026-10-10",
-          "publishedAt": "2026-10-05T...",
-          "sections": [
-            {
-              "id": "sec_1",
-              "title": "첫 출근의 공기",
-              "content": "<p>Tiptap 리치 에디터로 작성된 HTML 본문...</p>",
-              "wordCount": 1450,
-              "status": "completed"
-            }
-          ]
-        }
-      ]
-    }
-  ],
-
-  // [2] 자료 금고 (아이디어 메모, 스크랩, 태그)
-  "vault": [
-    {
-      "id": "vault_1",
-      "title": "PEF 밸류에이션 모델 참고자료",
-      "content": "DCF 및 LBO 모델 핵심 요약...",
-      "tags": ["사모펀드", "재무"]
-    }
-  ],
-
-  // [3] AI 환경 설정 (API 키 및 선택 모델)
-  "config": {
-    "selectedProvider": "gemini",
-    "geminiApiKey": "AIzaSy..."
-  },
-
-  // [4] 누적 집필 통계
-  "stats": {
-    "totalWordsGenerated": 28400,
-    "totalChaptersCompleted": 7,
-    "aiGenerationsCount": 12
-  }
-}
+```
+users (컬렉션)
+  └── user@gmail.com (문서: 사용자 프로필 메타데이터)
+        ├── books (하위 컬렉션)
+        │     └── book_174112345_abc (문서: 목차, 챕터, 본문)
+        ├── vault (하위 컬렉션)
+        │     └── vault_1 (문서: 아이디어 메모, 스크랩)
+        ├── stats (하위 컬렉션)
+        │     └── summary (문서: 레벨, 스트릭, 통계)
+        └── config (하위 컬렉션)
+              └── current (문서: 모델 및 UI 설정 - API 키 제외)
 ```
 
-### 3. 단일 스냅샷 구조 채택의 3대 이점
-* 🚀 **Zero-Lag & 네트워크 트래픽 최소화**: 챕터별로 수십 번의 네트워크 API를 호출하지 않고, 1회 통신으로 서재 전체를 안전하게 원자적(Atomic)으로 백업합니다.
-* 💰 **Firestore 무료 쿼터 극대화 (비용 0원)**: Firestore 과금 기준인 '문서 쓰기 횟수'를 회당 1회로 한정하여, 하루 20,000회 무료 쓰기 쿼터 내에서 영구 무료로 안전하게 운영됩니다.
-* 🛡️ **무손실 단일 트랜잭션 복원**: 기기 변경 시 한 번의 읽기로 서재 전체가 완전하게 복구되므로 데이터 파편화나 챕터 유실 위험이 없습니다.
+### 3. 분리 컬렉션 아키텍처의 핵심 이점
+* 📂 **직관적인 콘솔 데이터 관리**: Firebase 콘솔에서 `users` ➔ `내 구글 메일주소`를 선택하면, `books`, `vault`, `stats`, `config`가 폴더처럼 깔끔하게 분리되어 개별 도서와 자료를 쉽게 열람하고 관리할 수 있습니다.
+* ⚡ **원자적 일괄 동기화 (Firestore WriteBatch)**: 여러 컬렉션으로 분리되어 있어도 `writeBatch` 기술을 적용하여 한 번의 배치 트랜잭션으로 원자적(Atomic) 동기화가 안전하게 완료됩니다.
+* 🛡️ **이중 폴백 복원 보장**: 신규 기기 복원 시 이메일 기반 컬렉션을 우선 조회하며, 레거시 단일 스냅샷 경로 데이터도 자동 fallback 탐색하여 데이터 유실을 100% 방지합니다.
 
 ---
 

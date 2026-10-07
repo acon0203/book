@@ -234,7 +234,7 @@ export default function Stats() {
           {stats.bookProgressList.length === 0 ? (
             <div className="empty-books-box">
               <p>서재에 등록된 도서가 없습니다. 새 책을 시작해보세요!</p>
-              <button className="btn btn-outline" onClick={() => setView('library')}>
+              <button className="btn btn-primary" onClick={() => setView('library')}>
                 내 서재로 이동
               </button>
             </div>

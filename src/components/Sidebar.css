@@ -120,25 +120,25 @@
   justify-content: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #ffffff;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  color: #212529;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: var(--transition);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .btn-google-login:hover {
-  background: #f8f9fa;
-  border-color: #adb5bd;
+  background: var(--bg-hover);
+  border-color: var(--border-bright);
 }
 
 .logged-in-box {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 10px;
   display: flex;
@@ -164,7 +164,7 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #18191f;
+  background: var(--primary);
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
@@ -184,7 +184,7 @@
 .user-name {
   font-size: 12px;
   font-weight: 700;
-  color: #212529;
+  color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -192,7 +192,7 @@
 
 .user-email {
   font-size: 10px;
-  color: #868e96;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -201,19 +201,19 @@
 .btn-logout {
   background: transparent;
   border: none;
-  color: #adb5bd;
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: var(--transition);
 }
 
 .btn-logout:hover {
-  color: #e03131;
-  background: #ffe3e3;
+  color: #ff4757;
+  background: rgba(255, 71, 87, 0.12);
 }
 
 .btn-sync-trigger {
@@ -223,20 +223,20 @@
   justify-content: center;
   gap: 6px;
   padding: 5px 8px;
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
-  border: 1px solid #dee2e6;
-  background: #ffffff;
-  color: #495057;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card-sub);
+  color: var(--text-main);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: var(--transition);
 }
 
 .btn-sync-trigger:hover:not(:disabled) {
-  background: #f1f3f5;
-  border-color: #ced4da;
-  color: #212529;
+  background: var(--bg-hover);
+  border-color: var(--border-bright);
+  color: var(--text-main);
 }
 
 .btn-sync-trigger.synced {

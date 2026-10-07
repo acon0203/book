@@ -100,10 +100,55 @@
   cursor: pointer;
   padding: 2px;
   border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
 }
 .btn-add-section:hover {
   color: var(--primary);
   background: var(--bg-hover);
+}
+
+.chapter-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.chapter-header:hover .chapter-header-actions {
+  opacity: 1;
+}
+
+.btn-delete-chapter {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+.btn-delete-chapter:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.chapter-inline-edit-input {
+  background: var(--bg-deep);
+  border: 1px solid var(--primary);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  outline: none;
+  width: 100%;
 }
 
 .section-list {
@@ -124,6 +169,7 @@
   cursor: pointer;
   border-left: 2px solid transparent;
   transition: var(--transition);
+  position: relative;
 }
 .section-item:hover {
   background: var(--bg-hover);
@@ -141,13 +187,43 @@
   text-overflow: ellipsis;
   flex: 1;
 }
+
+.section-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.btn-delete-section {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 1px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.15s ease;
+}
+.section-item:hover .btn-delete-section {
+  opacity: 1;
+  pointer-events: auto;
+}
+.btn-delete-section:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.12);
+}
+
 .status-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: var(--text-dim);
   flex-shrink: 0;
-  margin-left: 0.5rem;
 }
 .status-dot.completed {
   background: var(--success);
@@ -224,6 +300,41 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.chapter-title-header-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.chapter-num-prefix {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.chapter-title-header-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-main);
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: var(--transition);
+  min-width: 140px;
+}
+.chapter-title-header-input:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-glass);
+}
+.chapter-title-header-input:focus {
+  background: var(--bg-panel);
+  border-color: var(--primary);
+  box-shadow: 0 0 8px var(--primary-glow);
 }
 
 .dday-badge {
@@ -310,18 +421,24 @@
 
 .chapter-badge-mini {
   font-size: 0.68rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
-  font-weight: 600;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 700;
   margin-left: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+  letter-spacing: -0.2px;
 }
 .chapter-badge-mini.published {
-  background: rgba(16, 185, 129, 0.2);
-  color: var(--success);
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 .chapter-badge-mini.draft {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-dim);
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 /* 2열 에디터 서브 탑바 (리치 텍스트 타이틀 & HTML 미리보기 팝업 버튼) */
@@ -340,6 +457,42 @@
   font-weight: 600;
   color: var(--text-main);
   letter-spacing: -0.2px;
+}
+
+/* 에디터 뷰 모드 토글 (본문 모드 vs 문단 모듈 모드) */
+.editor-mode-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-deep);
+  padding: 3px;
+  border-radius: 20px;
+  border: 1px solid var(--border-glass);
+  gap: 2px;
+}
+
+.btn-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-mode-toggle:hover {
+  color: var(--text-main);
+}
+
+.btn-mode-toggle.active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px var(--primary-glow);
 }
 
 .btn-html-preview-popup {
@@ -569,6 +722,368 @@
 .rich-editor-body ul, .rich-editor-body ol {
   padding-left: 1.5rem;
   margin: 0.75rem 0;
+}
+
+/* === 문단 모듈 워크스페이스 (방안 1: 스마트 활성화 카드 시스템) === */
+.paragraph-workspace {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent;
+  gap: 0.5rem;
+}
+
+.paragraph-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.85rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.paragraph-workspace-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.paragraph-workspace-guide {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.paragraph-cards-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0.25rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* 개별 문단 카드 */
+.paragraph-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.paragraph-card:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.paragraph-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 12px var(--primary-glow);
+}
+
+.paragraph-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.85rem;
+  background: rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.paragraph-meta-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  overflow: hidden;
+}
+
+.paragraph-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.12);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.paragraph-label-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: var(--transition);
+  max-width: 260px;
+  width: 100%;
+}
+.paragraph-label-input::placeholder {
+  color: var(--text-dim);
+  font-weight: 500;
+  opacity: 0.7;
+}
+.paragraph-label-input:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-glass);
+}
+.paragraph-label-input:focus {
+  background: var(--bg-panel);
+  border-color: var(--primary);
+  box-shadow: 0 0 6px var(--primary-glow);
+}
+
+.paragraph-char-count {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.paragraph-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.btn-block-action {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-block-action:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: var(--border-glass);
+}
+
+.btn-block-action:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.btn-block-action.btn-polish-block {
+  width: auto;
+  padding: 0 0.55rem;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+.btn-block-action.btn-polish-block:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.btn-block-action.btn-delete-block:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.paragraph-card-body {
+  padding: 0.65rem 0.85rem;
+}
+
+.paragraph-textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.96rem;
+  line-height: 1.8;
+  resize: vertical;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  display: block;
+  box-sizing: border-box;
+}
+
+.paragraph-textarea::placeholder {
+  color: var(--text-dim);
+}
+
+/* 문단 사이 삽입 구분선 */
+.paragraph-inserter-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  position: relative;
+  margin: -2px 0;
+}
+
+.paragraph-inserter-row::before {
+  content: '';
+  position: absolute;
+  left: 2rem;
+  right: 2rem;
+  height: 1px;
+  background: var(--border-glass);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.btn-insert-between {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 12px;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-glass);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.paragraph-inserter-row:hover .btn-insert-between {
+  opacity: 1;
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--bg-panel);
+}
+
+.btn-insert-between:hover {
+  transform: scale(1.05);
+}
+
+/* 최하단 새 문단 추가 버튼 */
+.btn-bottom-add-paragraph {
+  margin-top: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-glass);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-bottom-add-paragraph:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+/* 빈 상태 */
+.empty-paragraphs-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  background: var(--bg-panel);
+  border: 1px dashed var(--border-glass);
+  border-radius: var(--radius-md);
+  text-align: center;
+  gap: 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.btn-add-first-paragraph {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.25rem;
+  border-radius: 20px;
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-add-first-paragraph:hover {
+  box-shadow: 0 2px 10px var(--primary-glow);
+}
+
+/* 라이트 모드 대응 */
+body.light-mode .paragraph-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0;
+}
+body.light-mode .paragraph-card.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+}
+body.light-mode .paragraph-card-header {
+  background: #f8fafc;
+}
+body.light-mode .paragraph-label-input:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+body.light-mode .paragraph-label-input:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+}
+body.light-mode .paragraph-textarea {
+  color: #1e293b;
+}
+body.light-mode .paragraph-workspace-header {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+body.light-mode .btn-bottom-add-paragraph {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+body.light-mode .chapter-title-header-input:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+body.light-mode .chapter-title-header-input:focus {
+  background: #ffffff;
+  border-color: var(--primary);
+}
+body.light-mode .chapter-inline-edit-input {
+  background: #ffffff;
+  border-color: var(--primary);
+  color: #1e293b;
+}
+body.light-mode .chapter-badge-mini.draft {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
 }
 
 /* === 전자책 HTML 미리보기 모달 전용 스타일 === */

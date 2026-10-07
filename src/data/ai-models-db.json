@@ -1,0 +1,135 @@
+{
+  "defaultMode": "smart_cascade",
+  "models": [
+    {
+      "id": "gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "category": "텍스트 출력 모델",
+      "priority": 1,
+      "badge": "🚀 최신 플래그십",
+      "limits": {
+        "rpm": 5,
+        "tpm": "250K",
+        "rpd": 20
+      },
+      "description": "구글의 현존 최신 최고 성능 플래그십 모델"
+    },
+    {
+      "id": "gemini-3.7-flash",
+      "name": "Gemini 3.7 Flash",
+      "category": "텍스트 출력 모델",
+      "priority": 2,
+      "badge": "🚀 고성능 플래그십",
+      "limits": {
+        "rpm": 5,
+        "tpm": "250K",
+        "rpd": 20
+      },
+      "description": "고성능 플래그십 2순위 백업 모델"
+    },
+    {
+      "id": "gemini-3.6-flash",
+      "name": "Gemini 3.6 Flash",
+      "category": "텍스트 출력 모델",
+      "priority": 3,
+      "badge": "🚀 고성능 플래그십",
+      "limits": {
+        "rpm": 5,
+        "tpm": "250K",
+        "rpd": 20
+      },
+      "description": "고성능 플래그십 3순위 백업 모델"
+    },
+    {
+      "id": "gemini-3.5-flash",
+      "name": "Gemini 3.5 Flash",
+      "category": "텍스트 출력 모델",
+      "priority": 4,
+      "badge": "🚀 고성능 플래그십",
+      "limits": {
+        "rpm": 5,
+        "tpm": "250K",
+        "rpd": 20
+      },
+      "description": "안정적인 고성능 4순위 백업 모델"
+    },
+    {
+      "id": "gemini-3.5-flash-lite",
+      "name": "Gemini 3.5 Flash Lite",
+      "category": "텍스트 출력 모델",
+      "priority": 5,
+      "badge": "⭐ 대용량 챔피언",
+      "limits": {
+        "rpm": 15,
+        "tpm": "250K",
+        "rpd": 500
+      },
+      "description": "하루 500회 넉넉한 한도와 빠른 응답 속도의 대용량 주력 모델"
+    },
+    {
+      "id": "gemini-3.1-flash-lite",
+      "name": "Gemini 3.1 Flash Lite",
+      "category": "텍스트 출력 모델",
+      "priority": 6,
+      "badge": "⭐ 대용량 보조",
+      "limits": {
+        "rpm": 15,
+        "tpm": "250K",
+        "rpd": 500
+      },
+      "description": "하루 500회 넉넉한 한도의 대용량 보조 모델"
+    },
+    {
+      "id": "gemini-2.5-flash-lite",
+      "name": "Gemini 2.5 Flash Lite",
+      "category": "텍스트 출력 모델",
+      "priority": 7,
+      "badge": "⚡ 안정화 모델",
+      "limits": {
+        "rpm": 10,
+        "tpm": "250K",
+        "rpd": 20
+      },
+      "description": "검증된 안정화 경량 모델"
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "category": "텍스트 출력 모델",
+      "priority": 8,
+      "badge": "⚡ 표준 모델",
+      "limits": {
+        "rpm": 5,
+        "tpm": "250K",
+        "rpd": 20
+      },
+      "description": "구글 표준 Flash 모델"
+    },
+    {
+      "id": "gemma-4-31b-it",
+      "name": "Gemma 4 31B",
+      "category": "Gemma 모델",
+      "priority": 9,
+      "badge": "🛡️ 무제한급 안전망",
+      "limits": {
+        "rpm": 30,
+        "tpm": "16K",
+        "rpd": 14400
+      },
+      "description": "하루 14,400회 무제한급 초거대 안전망 백업 모델"
+    },
+    {
+      "id": "gemma-4-26b-a4b-it",
+      "name": "Gemma 4 26B",
+      "category": "Gemma 모델",
+      "priority": 10,
+      "badge": "🛡️ 무제한급 최종 안전망",
+      "limits": {
+        "rpm": 30,
+        "tpm": "16K",
+        "rpd": 14400
+      },
+      "description": "하루 14,400회 지원 최종 무제한 백업 모델"
+    }
+  ]
+}

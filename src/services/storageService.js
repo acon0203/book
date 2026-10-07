@@ -9,13 +9,15 @@ const STORAGE_KEYS = {
 const DEFAULT_CONFIG = {
   selectedProvider: 'gemini',
   selectedModel: 'gemini-1.5-flash',
+  geminiModel: 'smart_cascade',
   geminiApiKey: '',
   openaiApiKey: '',
   anthropicApiKey: '',
   ollamaUrl: 'http://localhost:11434',
   ollamaModel: 'gemma2:9b',
   defaultTone: 'professional',
-  defaultLength: 'detailed'
+  defaultLength: 'detailed',
+  autoCloudSyncOnSave: false // 디폴트 방안 A: 로컬 전용 저장 (클라우드는 수동)
 };
 
 const DEFAULT_STATS = {
@@ -111,6 +113,14 @@ export const storageService = {
       ]
     };
     book.chapters.push(newChap);
+    return storageService.updateBook(bookId, book);
+  },
+
+  updateChapter: (bookId, chapterId, data) => {
+    const book = storageService.getBook(bookId);
+    const chap = book.chapters?.find(c => c.id === chapterId);
+    if (!chap) throw new Error('챕터를 찾을 수 없습니다.');
+    Object.assign(chap, data);
     return storageService.updateBook(bookId, book);
   },
 
@@ -216,7 +226,12 @@ export const storageService = {
   getConfig: () => {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.CONFIG);
-      return data ? { ...DEFAULT_CONFIG, ...JSON.parse(data) } : DEFAULT_CONFIG;
+      if (!data) return DEFAULT_CONFIG;
+      const parsed = JSON.parse(data);
+      // 구버전 Gemma 모델 ID 하위 호환 자동 마이그레이션
+      if (parsed.geminiModel === 'gemma-4-31b') parsed.geminiModel = 'gemma-4-31b-it';
+      if (parsed.geminiModel === 'gemma-4-26b') parsed.geminiModel = 'gemma-4-26b-a4b-it';
+      return { ...DEFAULT_CONFIG, ...parsed };
     } catch {
       return DEFAULT_CONFIG;
     }

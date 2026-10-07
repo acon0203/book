@@ -1,0 +1,146 @@
+{
+  "genres": {
+    "essay": {
+      "id": "essay",
+      "name": "감성·힐링 에세이",
+      "icon": "🌿",
+      "standards": {
+        "chapters": 4,
+        "sectionsPerChapter": 10,
+        "totalSections": 40,
+        "avgWordsPerSection": 1800,
+        "estTotalWords": 72000,
+        "estTotalPages": 210,
+        "estA4Pages": 40
+      },
+      "characteristics": "3~5분 만에 완독하는 콤팩트한 호흡, 일상의 공감과 위로 중심",
+      "sampleBooks": [
+        { "title": "기분을 관리하면 인생이 관리된다", "author": "김다슬", "pages": 248, "structure": "4부 48꼭지" },
+        { "title": "모든 삶은 흐른다", "author": "로랑스 드빌레르", "pages": 256, "structure": "4부 28꼭지" },
+        { "title": "보이지 않는 곳에서 애쓰고 있는 당신에게", "author": "김상현", "pages": 268, "structure": "4부 44꼭지" },
+        { "title": "나를 사랑하는 연습", "author": "정영욱", "pages": 240, "structure": "4부 40꼭지" },
+        { "title": "완벽하지 않은 것들에 대한 사랑", "author": "혜민", "pages": 300, "structure": "6장 48꼭지" }
+      ],
+      "writingAdvice": "소제목은 일상적이고 서정적인 구어체를 활용하고, 1꼭지당 분량은 1,800자 안팎의 가벼운 호흡을 유지하세요.",
+      "promptTip": "감성 에세이 형식으로, 일상적인 경험과 따뜻한 위로, 사색을 담아낼 수 있는 부드럽고 서정적인 소제목으로 기획해줘."
+    },
+    "self_improvement": {
+      "id": "self_improvement",
+      "name": "단계별 자기계발",
+      "icon": "🚀",
+      "standards": {
+        "chapters": 6,
+        "sectionsPerChapter": 7,
+        "totalSections": 42,
+        "avgWordsPerSection": 2500,
+        "estTotalWords": 105000,
+        "estTotalPages": 230,
+        "estA4Pages": 58
+      },
+      "characteristics": "문제 자각부터 체계적인 행동 솔루션까지 이어지는 성장 로드맵",
+      "sampleBooks": [
+        { "title": "역행자", "author": "자청", "pages": 316, "structure": "8장 48꼭지" },
+        { "title": "아주 작은 습관의 힘", "author": "제임스 클리어", "pages": 344, "structure": "6부 20장" },
+        { "title": "데일 카네기 인간관계론", "author": "데일 카네기", "pages": 352, "structure": "4부 30꼭지" },
+        { "title": "그릿 (GRIT)", "author": "앤절라 더크워스", "pages": 416, "structure": "3부 39꼭지" },
+        { "title": "원씽 (The ONE Thing)", "author": "게리 켈러", "pages": 280, "structure": "3부 18장" }
+      ],
+      "writingAdvice": "각 꼭지마다 독자가 즉시 실천할 수 있는 1개의 명확한 행동 지침(Action Plan)을 제시하세요.",
+      "promptTip": "자기계발서 구성으로, 단계별 로드맵(원인 분석 -> 사고 전환 -> 구체적 실천법)이 논리적으로 이어지는 직관적인 소제목으로 기획해줘."
+    },
+    "business": {
+      "id": "business",
+      "name": "재테크·경제경영",
+      "icon": "💼",
+      "standards": {
+        "chapters": 5,
+        "sectionsPerChapter": 8,
+        "totalSections": 40,
+        "avgWordsPerSection": 2700,
+        "estTotalWords": 108000,
+        "estTotalPages": 225,
+        "estA4Pages": 60
+      },
+      "characteristics": "시장 인사이트, 마인드셋, 구체적 실전 전략의 결합",
+      "sampleBooks": [
+        { "title": "월급쟁이 부자로 은퇴하라", "author": "너나위", "pages": 384, "structure": "6장 36꼭지" },
+        { "title": "부자 아빠 가난한 아빠", "author": "로버트 기요사키", "pages": 448, "structure": "3부 9장" },
+        { "title": "트렌드 코리아", "author": "김난도 외", "pages": 450, "structure": "2부 10장" },
+        { "title": "생각의 비밀", "author": "김승호", "pages": 380, "structure": "7장 70꼭지" },
+        { "title": "머니 트렌드", "author": "정우철 외", "pages": 360, "structure": "4부 32꼭지" }
+      ],
+      "writingAdvice": "구체적인 수치, 실제 사례, 도표/체크리스트를 곁들여 설득력을 높이세요.",
+      "promptTip": "경제경영/재테크 도서 규격으로, 독자의 의사결정을 돕는 구체적인 전략과 현실적인 케이스 스터디가 돋보이는 제목으로 기획해줘."
+    },
+    "humanities": {
+      "id": "humanities",
+      "name": "인문·철학 교양",
+      "icon": "📖",
+      "standards": {
+        "chapters": 5,
+        "sectionsPerChapter": 6,
+        "totalSections": 30,
+        "avgWordsPerSection": 3500,
+        "estTotalWords": 105000,
+        "estTotalPages": 260,
+        "estA4Pages": 58
+      },
+      "characteristics": "깊은 사유와 주제별 통찰, 인용구와 배경지식 중심의 진중한 호흡",
+      "sampleBooks": [
+        { "title": "마흔에 읽는 쇼펜하우어", "author": "강용수", "pages": 304, "structure": "5장 30꼭지" },
+        { "title": "지적 대화를 위한 넓고 얕은 지식 1", "author": "채사장", "pages": 376, "structure": "5장 30꼭지" },
+        { "title": "어떻게 살 것인가", "author": "유시민", "pages": 392, "structure": "4장 28꼭지" },
+        { "title": "사피엔스", "author": "유발 하라리", "pages": 636, "structure": "4부 20장" },
+        { "title": "이어령의 마지막 수업", "author": "김지수", "pages": 320, "structure": "16장 32꼭지" }
+      ],
+      "writingAdvice": "한 꼭지에서 하나의 철학적 질문이나 사회적 화두를 충분히 음미하고 사유를 확장하세요.",
+      "promptTip": "인문교양 도서 스타일로, 본질적인 질문과 지적 호기심을 자극하고 사유를 깊게 만드는 품격 있는 소제목으로 기획해줘."
+    },
+    "practical": {
+      "id": "practical",
+      "name": "실무·일잘러 가이드",
+      "icon": "💡",
+      "standards": {
+        "chapters": 5,
+        "sectionsPerChapter": 7,
+        "totalSections": 35,
+        "avgWordsPerSection": 2400,
+        "estTotalWords": 84000,
+        "estTotalPages": 200,
+        "estA4Pages": 46
+      },
+      "characteristics": "현업에서 바로 적용하는 프로세스, 템플릿, 문제 해결 팁",
+      "sampleBooks": [
+        { "title": "일 잘하는 사람은 단순하게 합니다", "author": "박소연", "pages": 264, "structure": "5장 35꼭지" },
+        { "title": "기획의 정석", "author": "박신영", "pages": 256, "structure": "10장 35꼭지" },
+        { "title": "생각정리스킬", "author": "복주환", "pages": 288, "structure": "5장 30꼭지" },
+        { "title": "완벽한 공부법", "author": "고영성, 신영준", "pages": 512, "structure": "14장 42꼭지" },
+        { "title": "일류의 조건", "author": "사이토 다카시", "pages": 260, "structure": "3장 30꼭지" }
+      ],
+      "writingAdvice": "실제 상황별 Before & After, 구체적인 작성 공식이나 노하우를 명확히 제시하세요.",
+      "promptTip": "실무 가이드 형식으로, 바로 따라 할 수 있는 명확한 방법론과 효율적인 업무 팁이 드러나는 실전적인 소제목으로 기획해줘."
+    },
+    "column": {
+      "id": "column",
+      "name": "숏폼 칼럼 나열형",
+      "icon": "⚡",
+      "standards": {
+        "chapters": 5,
+        "sectionsPerChapter": 12,
+        "totalSections": 60,
+        "avgWordsPerSection": 1500,
+        "estTotalWords": 90000,
+        "estTotalPages": 235,
+        "estA4Pages": 50
+      },
+      "characteristics": "군더더기 없이 단도직입적으로 핵심 메시지를 던지는 짧고 강렬한 칼럼",
+      "sampleBooks": [
+        { "title": "돈의 속성", "author": "김승호", "pages": 432, "structure": "단일 75꼭지" },
+        { "title": "1일 1로그 100일 완성 IT 지식", "author": "브라이언 W. 커니핸", "pages": 480, "structure": "5장 100꼭지" },
+        { "title": "하버드 첫 강의 시간관리법", "author": "쉬센장", "pages": 280, "structure": "8장 64꼭지" }
+      ],
+      "writingAdvice": "각 꼭지의 첫 3줄 안에 핵심 결론을 제시하고, 1,500자 내외로 명쾌하게 마무리하세요.",
+      "promptTip": "숏폼 칼럼 형식으로, 핵심 메시지가 명확하고 한눈에 들어오는 강렬하고 흡인력 있는 소제목으로 기획해줘."
+    }
+  }
+}

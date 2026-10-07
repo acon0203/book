@@ -12,6 +12,7 @@ export const bookService = {
 
   // 2. 챕터 & 소목차
   addChapter: async (bookId, title) => storageService.addChapter(bookId, title),
+  updateChapter: async (bookId, chapterId, data) => storageService.updateChapter(bookId, chapterId, data),
   deleteChapter: async (bookId, chapterId) => storageService.deleteChapter(bookId, chapterId),
   setChapterDeadline: async (bookId, chapterId, deadline) => storageService.setChapterDeadline(bookId, chapterId, deadline),
   toggleChapterPublish: async (bookId, chapterId) => storageService.toggleChapterPublish(bookId, chapterId),

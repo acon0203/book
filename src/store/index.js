@@ -4,11 +4,11 @@ import { authService } from '../services/authService';
 import { cloudSyncService } from '../services/cloudSyncService';
 
 export const useStore = create((set, get) => {
-  const initialTheme = localStorage.getItem('book_theme') || 'dark';
-  if (initialTheme === 'light') {
-    document.body.classList.add('light-mode');
-  } else {
+  const initialTheme = localStorage.getItem('book_theme') || 'light';
+  if (initialTheme === 'dark') {
     document.body.classList.remove('light-mode');
+  } else {
+    document.body.classList.add('light-mode');
   }
 
   return {
@@ -65,7 +65,7 @@ export const useStore = create((set, get) => {
 
       try {
         set({ syncStatus: 'syncing' });
-        const result = await cloudSyncService.backupToCloud(user.uid);
+        const result = await cloudSyncService.backupToCloud(user.uid, user.email, user.displayName);
         set({ syncStatus: 'synced', lastSyncedAt: result.syncedAt });
         if (showNotification) {
           get().showToast('클라우드에 안전하게 동기화되었습니다! ☁️', 'success');
@@ -91,7 +91,7 @@ export const useStore = create((set, get) => {
       }
       try {
         set({ syncStatus: 'syncing' });
-        const result = await cloudSyncService.restoreFromCloud(user.uid);
+        const result = await cloudSyncService.restoreFromCloud(user.uid, user.email);
         if (!result.exists) {
           set({ syncStatus: 'idle' });
           get().showToast(result.message, 'info');
@@ -128,13 +128,13 @@ export const useStore = create((set, get) => {
     isNewBookModalOpen: false,
     setNewBookModalOpen: (isOpen) => set({ isNewBookModalOpen: isOpen }),
 
-    showToast: (message, type = 'info') => {
+    showToast: (message, type = 'info', duration = 3000) => {
       set({ toast: { message, type } });
       setTimeout(() => {
         if (get().toast?.message === message && !get().toast?.isAction) {
           set({ toast: null });
         }
-      }, 3000);
+      }, duration);
     },
 
     showActionToast: (message, onYes, onNo, options = {}) => {
@@ -279,9 +279,14 @@ export const useStore = create((set, get) => {
         });
         set({ activeBook: updatedBook });
         get().loadBooks();
-        // 로그인 상태인 경우 백그라운드 클라우드 동기화 (무지연)
-        if (get().user) {
+        
+        // 설정에 따라 자동 클라우드 백업 여부 결정 (디폴트: false 로컬 전용)
+        const cfg = await bookService.getConfig();
+        if (get().user && cfg?.autoCloudSyncOnSave) {
           get().syncToCloud(false);
+          get().showToast('로컬에 저장되었습니다. (클라우드 백업 완료)', 'success');
+        } else {
+          get().showToast('로컬에 안전하게 저장되었습니다.', 'success');
         }
         return true;
       } catch (err) {
@@ -299,6 +304,37 @@ export const useStore = create((set, get) => {
         get().loadBooks();
       } catch (err) {
         get().showToast(`챕터 추가 실패: ${err.message}`, 'error');
+      }
+    },
+
+    updateChapterTitle: async (chapterId, newTitle) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.updateChapter(activeBook.id, chapterId, { title: newTitle });
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+      } catch (err) {
+        get().showToast(`챕터명 수정 실패: ${err.message}`, 'error');
+      }
+    },
+
+    deleteChapter: async (chapterId) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.deleteChapter(activeBook.id, chapterId);
+        const remainingChapters = updatedBook.chapters || [];
+        const nextChap = remainingChapters[0];
+        set({
+          activeBook: updatedBook,
+          activeChapterId: nextChap?.id || null,
+          activeSectionId: nextChap?.sections?.[0]?.id || null
+        });
+        get().loadBooks();
+        get().showToast('챕터가 삭제되었습니다.', 'info');
+      } catch (err) {
+        get().showToast(`챕터 삭제 실패: ${err.message}`, 'error');
       }
     },
 
@@ -348,6 +384,24 @@ export const useStore = create((set, get) => {
         get().loadBooks();
       } catch (err) {
         get().showToast(`소목차 추가 실패: ${err.message}`, 'error');
+      }
+    },
+
+    deleteSection: async (chapterId, sectionId) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.deleteSection(activeBook.id, chapterId, sectionId);
+        const chap = updatedBook.chapters?.find(c => c.id === chapterId);
+        const remainingSections = chap?.sections || [];
+        set({
+          activeBook: updatedBook,
+          activeSectionId: remainingSections[0]?.id || null
+        });
+        get().loadBooks();
+        get().showToast('소목차가 삭제되었습니다.', 'info');
+      } catch (err) {
+        get().showToast(`소목차 삭제 실패: ${err.message}`, 'error');
       }
     },
 
