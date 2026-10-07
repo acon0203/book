@@ -445,17 +445,17 @@ export default function Settings() {
               <option value="smart_cascade">
                 ⭐ [스마트 자동 전환] 최신 3.8 Flash 우선 ➔ 한도 소진 시 3.5 Lite(500회) ➔ 3.1 Lite ➔ Gemma 순차 전환 (강력 추천)
               </option>
-              <optgroup label="개별 단일 모델 고정">
+              <optgroup label="개별 단일 모델 고정 (실패 시 자동 전환 없음)">
+                <option value="gemini-3.5-flash-lite">⚡ Gemini 3.5 Flash Lite (초고속 & 무결점 안정 작동 · 일 500회 추천)</option>
                 <option value="gemini-3.8-flash">Gemini 3.8 Flash (최신 플래그십 · 일 20회)</option>
-                <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (대용량 주력 · 일 500회)</option>
                 <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (대용량 보조 · 일 500회)</option>
                 <option value="gemini-2.5-flash">Gemini 2.5 Flash (표준 안정화 · 일 20회)</option>
-                <option value="gemma-4-31b-it">Gemma 4 31B (초대형 안전망 · 일 14,400회)</option>
-                <option value="gemma-4-26b-a4b-it">Gemma 4 26B (초대형 최종 안전망 · 일 14,400회)</option>
+                <option value="gemma-4-31b-it">Gemma 4 31B (⚠️ 구글 서버 500 에러 발생 가능 · 실험용)</option>
+                <option value="gemma-4-26b-a4b-it">Gemma 4 26B (⚠️ 구글 서버 500 에러 발생 가능 · 실험용)</option>
               </optgroup>
             </select>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '0.4rem' }}>
-              ※ '스마트 자동 전환'을 선택하면 최신 모델의 한도가 소진되었을 때 시스템이 1~2초 안내 토스트와 함께 다음 모델로 자동 스위칭하여 작업이 끊기지 않습니다.
+              ※ 단일 모델을 고정 선택하시면 다른 모델로 임의 전환되지 않습니다. 구글 서버 오류나 한도 초과 시 모달과 화면에 즉시 모델 전환 버튼이 표시됩니다.
             </p>
           </div>
         </div>
