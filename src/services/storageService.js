@@ -189,6 +189,69 @@ export const storageService = {
     return storageService.updateBook(bookId, book);
   },
 
+  moveChapter: (bookId, chapterId, direction) => {
+    const book = storageService.getBook(bookId);
+    if (!book || !book.chapters) return book;
+    const index = book.chapters.findIndex((c) => c.id === chapterId);
+    if (index === -1) return book;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= book.chapters.length) return book;
+    const temp = book.chapters[index];
+    book.chapters[index] = book.chapters[targetIndex];
+    book.chapters[targetIndex] = temp;
+    return storageService.updateBook(bookId, book);
+  },
+
+  moveSection: (bookId, chapterId, sectionId, direction) => {
+    const book = storageService.getBook(bookId);
+    if (!book || !book.chapters) return book;
+    const chap = book.chapters.find((c) => c.id === chapterId);
+    if (!chap || !chap.sections) return book;
+    const index = chap.sections.findIndex((s) => s.id === sectionId);
+    if (index === -1) return book;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= chap.sections.length) return book;
+    const temp = chap.sections[index];
+    chap.sections[index] = chap.sections[targetIndex];
+    chap.sections[targetIndex] = temp;
+    return storageService.updateBook(bookId, book);
+  },
+
+  reorderChapters: (bookId, sourceIndex, targetIndex) => {
+    const book = storageService.getBook(bookId);
+    if (!book || !book.chapters) return book;
+    if (
+      sourceIndex === targetIndex ||
+      sourceIndex < 0 ||
+      targetIndex < 0 ||
+      sourceIndex >= book.chapters.length ||
+      targetIndex >= book.chapters.length
+    ) {
+      return book;
+    }
+    const [moved] = book.chapters.splice(sourceIndex, 1);
+    book.chapters.splice(targetIndex, 0, moved);
+    return storageService.updateBook(bookId, book);
+  },
+
+  reorderSections: (bookId, sourceChapterId, targetChapterId, sourceIndex, targetIndex) => {
+    const book = storageService.getBook(bookId);
+    if (!book || !book.chapters) return book;
+    const srcChap = book.chapters.find((c) => c.id === sourceChapterId);
+    const tgtChap = book.chapters.find((c) => c.id === targetChapterId);
+    if (!srcChap || !tgtChap || !srcChap.sections || !tgtChap.sections) return book;
+
+    if (sourceChapterId === targetChapterId) {
+      if (sourceIndex === targetIndex) return book;
+      const [moved] = srcChap.sections.splice(sourceIndex, 1);
+      srcChap.sections.splice(targetIndex, 0, moved);
+    } else {
+      const [moved] = srcChap.sections.splice(sourceIndex, 1);
+      tgtChap.sections.splice(targetIndex, 0, moved);
+    }
+    return storageService.updateBook(bookId, book);
+  },
+
   // --- 2. 자료 금고 (Vault) ---
   getVault: () => {
     try {

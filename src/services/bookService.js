@@ -21,6 +21,14 @@ export const bookService = {
     storageService.updateSection(bookId, chapterId, sectionId, data),
   deleteSection: async (bookId, chapterId, sectionId) =>
     storageService.deleteSection(bookId, chapterId, sectionId),
+  moveChapter: async (bookId, chapterId, direction) =>
+    storageService.moveChapter(bookId, chapterId, direction),
+  moveSection: async (bookId, chapterId, sectionId, direction) =>
+    storageService.moveSection(bookId, chapterId, sectionId, direction),
+  reorderChapters: async (bookId, sourceIndex, targetIndex) =>
+    storageService.reorderChapters(bookId, sourceIndex, targetIndex),
+  reorderSections: async (bookId, sourceChapterId, targetChapterId, sourceIndex, targetIndex) =>
+    storageService.reorderSections(bookId, sourceChapterId, targetChapterId, sourceIndex, targetIndex),
 
   // 3. 자료 금고 (Vault)
   getVault: async () => storageService.getVault(),
@@ -40,10 +48,10 @@ export const bookService = {
       const book = storageService.getBook(promptData.bookId);
       book.chapters = chapters.map((c, cIdx) => ({
         id: `chap_${Date.now()}_${cIdx}`,
-        title: c.title,
+        title: aiService.cleanOutlineTitle(c.title),
         sections: c.sections.map((s, sIdx) => ({
           id: `sec_${Date.now()}_${cIdx}_${sIdx}`,
-          title: s.title,
+          title: aiService.cleanOutlineTitle(s.title),
           content: '',
           status: 'draft',
           wordCount: 0
@@ -52,6 +60,48 @@ export const bookService = {
       storageService.updateBook(promptData.bookId, book);
     }
     return chapters;
+  },
+
+  // 6. AI 총괄 편집장 상담 & 목차 재구성
+  consultEditorChief: async (data) => aiService.consultEditorChief(data),
+
+  applyRestructuredOutline: async (bookId, newChapters) => {
+    const book = storageService.getBook(bookId);
+    if (!book) throw new Error('도서를 찾을 수 없습니다.');
+
+    // 기존에 작성된 본문 콘텐츠 풀(Pool) 수집 (제목이나 내용 보존 매핑용)
+    const existingContentMap = new Map();
+    (book.chapters || []).forEach(ch => {
+      (ch.sections || []).forEach(sec => {
+        if (sec.content && sec.content.trim()) {
+          const cleanKey = aiService.cleanOutlineTitle(sec.title).toLowerCase();
+          existingContentMap.set(cleanKey, sec.content);
+        }
+      });
+    });
+
+    // 새 목차 트리 구조 적용
+    const now = Date.now();
+    book.chapters = newChapters.map((c, cIdx) => ({
+      id: `chap_${now}_${cIdx}`,
+      title: aiService.cleanOutlineTitle(c.title),
+      sections: (c.sections || []).map((s, sIdx) => {
+        const cleanTitle = aiService.cleanOutlineTitle(s.title);
+        const cleanKey = cleanTitle.toLowerCase();
+        // 기존 작성 본문이 있으면 유지, 없으면 빈 상태
+        const preservedContent = existingContentMap.get(cleanKey) || '';
+        return {
+          id: `sec_${now}_${cIdx}_${sIdx}`,
+          title: cleanTitle,
+          content: preservedContent,
+          status: preservedContent ? 'draft' : 'draft',
+          wordCount: preservedContent ? preservedContent.replace(/<[^>]*>/g, '').trim().length : 0
+        };
+      })
+    }));
+
+    storageService.updateBook(bookId, book);
+    return book;
   },
 
   generateSection: async (promptData) => aiService.generateSectionContent(promptData),

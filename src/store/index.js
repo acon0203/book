@@ -405,6 +405,60 @@ export const useStore = create((set, get) => {
       }
     },
 
+    moveChapter: async (chapterId, direction) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.moveChapter(activeBook.id, chapterId, direction);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+      } catch (err) {
+        get().showToast(`챕터 순서 이동 실패: ${err.message}`, 'error');
+      }
+    },
+
+    moveSection: async (chapterId, sectionId, direction) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.moveSection(activeBook.id, chapterId, sectionId, direction);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+      } catch (err) {
+        get().showToast(`소목차 순서 이동 실패: ${err.message}`, 'error');
+      }
+    },
+
+    reorderChapters: async (sourceIndex, targetIndex) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.reorderChapters(activeBook.id, sourceIndex, targetIndex);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+      } catch (err) {
+        get().showToast(`챕터 순서 변경 실패: ${err.message}`, 'error');
+      }
+    },
+
+    reorderSections: async (sourceChapterId, targetChapterId, sourceIndex, targetIndex) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.reorderSections(
+          activeBook.id,
+          sourceChapterId,
+          targetChapterId,
+          sourceIndex,
+          targetIndex
+        );
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+      } catch (err) {
+        get().showToast(`소목차 순서 변경 실패: ${err.message}`, 'error');
+      }
+    },
+
     deleteBook: async (bookId) => {
       try {
         await bookService.deleteBook(bookId);

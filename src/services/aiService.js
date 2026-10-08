@@ -1,5 +1,6 @@
 import { storageService } from './storageService';
 import aiModelsDb from '../data/ai-models-db.json';
+import bestsellerDb from '../data/bestseller-db.json';
 import { useStore } from '../store';
 
 // Google AI Studio에서 지원하는 실제 활성 모델 목록 조회
@@ -21,34 +22,39 @@ async function fetchGoogleActiveModels(apiKey) {
   }
 }
 
-// 단일 Gemini / Gemma 모델 호출 (15초 타임아웃 지원)
+// 단일 Gemini / Gemma 모델 호출
 async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
   const cleanKey = (apiKey || '').trim().replace(/^["']|["']$/g, '');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(cleanKey)}`;
-  
   const isGemma = modelId.toLowerCase().startsWith('gemma');
 
-  // Gemma 모델은 system_instruction 필드를 지원하지 않아 500 에러를 유발하므로 본문 프롬프트에 병합
+  // Blog 프로젝트에서 검증된 정식 안정화 엔드포인트(v1) 사용 (Gemma 모델은 v1 정식 엔드포인트로 호출)
+  const apiVersion = isGemma ? 'v1' : 'v1beta';
+  const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelId}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+
+  // Gemma 모델은 system_instruction 필드를 지원하지 않으므로 본문 프롬프트에 자연스럽게 병합
   let userText = prompt;
   if (isGemma && systemPrompt) {
     userText = `[역할 및 집필 지침]:\n${systemPrompt}\n\n[요청 내용]:\n${prompt}`;
   }
 
-  const body = {
-    contents: [{ role: 'user', parts: [{ text: userText }] }],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 8192
-    }
-  };
-
-  // Gemma는 system_instruction 필드를 지원하지 않으므로 Gemini 모델에만 추가
-  if (systemPrompt && !isGemma) {
-    body.system_instruction = { parts: [{ text: systemPrompt }] };
-  }
+  // Gemma는 Blog 프로젝트처럼 구글 API 공식 필수 최소 규격(contents: [{ parts: [{ text }] }])으로 순수 전송
+  const body = isGemma
+    ? {
+        contents: [{ parts: [{ text: userText }] }]
+      }
+    : {
+        contents: [{ role: 'user', parts: [{ text: userText }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8192
+        },
+        ...(systemPrompt ? { system_instruction: { parts: [{ text: systemPrompt }] } } : {})
+      };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000); // 20초 타임아웃
+  // Gemma 31B 등 거대 모델의 장문 초고 생성을 위해 충분한 60초 타임아웃 보장
+  const timeoutMs = isGemma ? 60000 : 30000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, {
@@ -65,10 +71,10 @@ async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
     let finalResponse = response;
     let data = await finalResponse.json();
 
-    // 503 Service Unavailable (High Demand) 시 1초 대기 후 1회 즉시 재시도
-    if (finalResponse.status === 503) {
-      console.warn(`[AI Engine] ⚡ 503 순간 혼잡 감지 ➔ 1.2초 후 1회 재시도 중...`);
-      await new Promise(r => setTimeout(r, 1200));
+    // 500 (Internal Error) 및 503 (High Demand) 시 1.5초 대기 후 1회 지수 백오프 즉시 재시도
+    if (finalResponse.status === 500 || finalResponse.status === 503) {
+      console.warn(`[AI Engine] ⚡ ${finalResponse.status} 일시 서버 혼잡/오류 감지 [${modelId}] ➔ 1.5초 후 1회 자동 재시도 중...`);
+      await new Promise(r => setTimeout(r, 1500));
       try {
         const retryRes = await fetch(url, {
           method: 'POST',
@@ -78,8 +84,13 @@ async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
           },
           body: JSON.stringify(body)
         });
+        const retryData = await retryRes.json();
         if (retryRes.ok) {
-          data = await retryRes.json();
+          console.log(`[AI Engine] ✨ [${modelId}] 재시도 성공!`);
+          data = retryData;
+          finalResponse = retryRes;
+        } else {
+          data = retryData;
           finalResponse = retryRes;
         }
       } catch (e) {
@@ -88,6 +99,7 @@ async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
     }
 
     if (!finalResponse.ok) {
+      console.error(`[AI Engine] ❌ Google API 상세 응답 오류 [${modelId} HTTP ${finalResponse.status}]:`, data.error || data);
       const errorMsg = data.error?.message || 'Gemini API 호출에 실패했습니다.';
       const isOverloadedOrQuota = (
         finalResponse.status === 404 ||
@@ -129,7 +141,7 @@ async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
   } catch (err) {
     clearTimeout(timeoutId);
     if (err.name === 'AbortError') {
-      const timeoutErr = new Error('응답 지연(20초 타임아웃)');
+      const timeoutErr = new Error(`응답 지연(${timeoutMs / 1000}초 타임아웃)`);
       timeoutErr.isFallbackable = true;
       timeoutErr.reason = 'timeout';
       timeoutErr.modelId = modelId;
@@ -151,7 +163,6 @@ async function callGeminiWithCascade(apiKey, prompt, systemPrompt = '') {
   fetchGoogleActiveModels(apiKey).catch(() => {});
 
   // [원칙 1]: 사용자가 특정 단일 모델을 지정한 경우 (스마트 자동 전환이 아닌 경우)
-  // 다른 모델로 멋대로 넘어가지 않고 오직 해당 모델만 실행!
   if (selectedModelId !== 'smart_cascade') {
     const targetModel = availableModels.find(m => m.id === selectedModelId) || { id: selectedModelId, name: selectedModelId };
     console.log(`[AI Engine] 🎯 단일 고정 모델 단독 호출: ${targetModel.name} (${targetModel.id})`);
@@ -159,6 +170,19 @@ async function callGeminiWithCascade(apiKey, prompt, systemPrompt = '') {
       return await callGeminiSingle(apiKey, targetModel.id, prompt, systemPrompt);
     } catch (err) {
       console.error(`[AI Engine] ❌ 고정 모델 [${targetModel.name}] 호출 실패:`, err);
+
+      // 만약 고정 모델이 Gemma 4 31B인데 구글 서버 500/503 오류가 지속된 경우:
+      // 동일 Gemma 제품군의 고속/안정화 모델인 Gemma 4 26B로 즉시 자동 안전망 연결!
+      if (targetModel.id === 'gemma-4-31b-it' && (err.status === 500 || err.status === 503 || err.reason === 'timeout')) {
+        console.warn(`[AI Engine] 🛡️ Gemma 4 31B 서버 일시 오류 감지 ➔ 동일 패밀리 [Gemma 4 26B (gemma-4-26b-a4b-it)]로 자동 백업 시도...`);
+        try {
+          useStore.getState().showToast('⚡ Gemma 4 31B 구글 서버 오류 ➔ Gemma 4 26B로 자동 연결 중...', 'info', 2500);
+          return await callGeminiSingle(apiKey, 'gemma-4-26b-a4b-it', prompt, systemPrompt);
+        } catch (backupErr) {
+          console.error('[AI Engine] Gemma 4 26B 백업 호출도 실패:', backupErr);
+        }
+      }
+
       err.fixedModelName = targetModel.name;
       err.isFixedModelFailure = true;
       throw err;
@@ -257,9 +281,23 @@ export const aiService = {
     return callGeminiWithCascade(config.geminiApiKey, prompt, systemPrompt);
   },
 
+  // 0. 목차 번호 접두사 자동 정제 (1장, 제1장, 1.1 등 중복 방지)
+  cleanOutlineTitle: (text) => {
+    if (!text || typeof text !== 'string') return '';
+    let cleaned = text.trim();
+    // 반복 적용하여 1장. 1장. 또는 1.1 1.1 처럼 여러 번 붙은 경우도 모두 제거
+    for (let i = 0; i < 3; i++) {
+      cleaned = cleaned
+        .replace(/^(제\s*\d+\s*장[\.\:\s-]*|\d+\s*장[\.\:\s-]*|Chapter\s*\d+[\.\:\s-]*|Ch\s*\d+[\.\:\s-]*)/i, '')
+        .replace(/^(\d+[\.\-_]\d+[\.\:\s-]*|\d+[\.\:\s-]+)/, '')
+        .trim();
+    }
+    return cleaned || text.trim();
+  },
+
   // 1. AI 목차 기획
   generateOutline: async ({ title, subtitle, targetAudience, genre, chapterCount = 5, sectionsPerChapter = 3, extraPrompt = '' }) => {
-    const systemPrompt = `당신은 출판 기획 전문가입니다. 전자책 주제에 맞추어 독자의 몰입을 이끄는 체계적인 목차 트리를 JSON으로만 답변하세요. 마크다운 기호 없이 순수 JSON만 반환해야 합니다.`;
+    const systemPrompt = `당신은 대한민국 최고의 베스트셀러 출판 기획자입니다. 전자책 주제에 맞추어 독자의 몰입을 이끄는 체계적인 목차 트리를 JSON으로만 답변하세요. 마크다운 기호 없이 순수 JSON만 반환해야 합니다.`;
     const prompt = `도서 제목: ${title}
 부제/의도: ${subtitle}
 독자층: ${targetAudience}
@@ -268,20 +306,139 @@ export const aiService = {
 챕터당 소목차 수: ${sectionsPerChapter}개
 추가 요구: ${extraPrompt}
 
+[중요 지침]:
+- 각 title에는 "1장", "제1장", "1.1", "1-1" 같은 번호 접두사를 '절대로' 붙이지 마세요!
+- 순수한 텍스트 제목(예: "바이브 코딩의 패러다임 전환", "비전공자가 마주한 기회")만 입력하세요.
+
 아래 형식의 JSON 배열로만 응답하세요:
 [
   {
-    "title": "1장 제목",
+    "title": "챕터 핵심 제목 (번호 없이 순수 제목만)",
     "sections": [
-      { "title": "1.1 소목차 제목" },
-      { "title": "1.2 소목차 제목" }
+      { "title": "소목차 핵심 제목 (번호 없이 순수 제목만)" },
+      { "title": "소목차 핵심 제목 (번호 없이 순수 제목만)" }
     ]
   }
 ]`;
 
     const raw = await aiService.generateText(prompt, systemPrompt);
     const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+
+    return parsed.map(c => ({
+      title: aiService.cleanOutlineTitle(c.title),
+      sections: (c.sections || []).map(s => ({
+        title: aiService.cleanOutlineTitle(s.title)
+      }))
+    }));
+  },
+
+  // 1-1. AI 총괄 편집장 (Book Editor-in-Chief) 전역 대화형 에이전트
+  consultEditorChief: async ({ book, message, history = [], vaultNotes = [] }) => {
+    const cleanFn = aiService.cleanOutlineTitle;
+    const outlineSummary = (book.chapters || []).map((c, i) => {
+      const secList = (c.sections || []).map((s, j) => `    ${i + 1}.${j + 1} ${cleanFn(s.title)}`).join('\n');
+      return `[제 ${i + 1}장: ${cleanFn(c.title)}]\n${secList || '    (소목차 없음)'}`;
+    }).join('\n\n');
+
+    const vaultSummary = vaultNotes.length > 0
+      ? vaultNotes.map((v, i) => `[자료 ${i + 1}] 제목: ${v.title}\n내용: ${v.content || ''}\n태그: ${(v.tags || []).join(', ')}`).join('\n---\n')
+      : '(자료 금고에 등록된 메모 없음)';
+
+    // 장르에 해당하는 베스트셀러 규격 데이터 매칭
+    const matchedGenreKey = Object.keys(bestsellerDb.genres || {}).find(k => {
+      const g = bestsellerDb.genres[k];
+      return g.name === book.genre || book.genre?.includes(g.name) || k === book.genre;
+    }) || 'essay';
+    const bestsellerInfo = bestsellerDb.genres?.[matchedGenreKey] || null;
+    const bestsellerGuide = bestsellerInfo
+      ? `\n[출판사 베스트셀러 25권 표본 및 핵심 성공 요건 DB (${bestsellerInfo.name})]
+- 분야 대표 베스트셀러: ${bestsellerInfo.sampleBooks?.map(b => `《${b.title}》`).join(', ') || ''}
+- 베스트셀러가 반드시 갖추는 핵심 성공 요건:
+  1. 명확한 결핍과 문제 정의: 타깃 독자가 시간과 비용을 지불하고서라도 해결하고 싶은 절박한 문제인가?
+  2. 초반 3초 후킹과 호기심 유발: 프롤로그와 1장에서 독자를 사로잡는 강력한 오프닝이 있는가?
+  3. 독점적이고 차별화된 해결책: 남들과 똑같은 뻔한 이야기가 아닌 저자만의 독창적 관점이나 실전 프레임워크가 있는가?
+  4. 단계적 실행력과 적용성: 읽고 나서 독자가 '지금 당장 무엇을 해야 할지' 명확한 행동 지침을 얻는가?
+  5. 매력적인 카피라이팅과 제목: 호기심과 구매욕을 즉각 자극하는 소제목 구조인가?
+- 출판 노하우 팁: ${bestsellerInfo.promptTip || ''}\n`
+      : '';
+
+    const systemPrompt = `당신은 출판계에서 20년 경력을 가진 밀리언셀러 총괄 책임 편집장(Editor-in-Chief)입니다.
+작가의 책을 처음부터 끝까지 총괄하며, 책의 기획 의도와 타깃 독자를 지키고, 목차 구조와 챕터의 유기적 흐름을 완벽하게 다듬어주는 든든한 파트너입니다.
+존중과 프로페셔널함을 담은 다정하고 명확한 어조로 작가와 대화하세요.
+
+[현재 작업 중인 도서 정보]
+- 도서명: ${book.title}
+- 부제: ${book.subtitle || '없음'}
+- 타깃 독자: ${book.targetAudience || '일반 독자'}
+- 장르/분야: ${book.genre || '실용'}
+
+[현재 전체 목차 트리]
+${outlineSummary}
+
+[자료 금고 메모]
+${vaultSummary}
+${bestsellerGuide}
+[★ 베스트셀러와 비교 요청 시 안내 지침 ★]:
+단순한 분량이나 챕터 개수 같은 형식적 규격 비교가 아니라, 해당 분야의 베스트셀러들이 반드시 갖추는 '핵심 성공 요건(독자 결핍 공략, 초반 후킹, 차별화된 솔루션, 실전 적용성, 카피라이팅 매력도)'을 우리 책의 목차와 기획이 실질적으로 충족하고 있는지 날카롭고 깊이 있게 비교·진단하고, 베스트셀러 반열에 오르기 위한 구체적인 보완 포인트를 조언해 주세요.
+
+[★ 목차 수정/병합/추가/재구성 요청 처리 규칙 ★]:
+작가가 "1장과 2장을 합쳐줘", "소제목 바꿔줘", "새 챕터 추가해줘", "목차 재구성해줘" 등 목차 변경을 지시하거나 요청하는 경우:
+1. 답변 본문에 편집장의 생각과 변경 이유를 친절하게 설명하세요.
+2. 그리고 답변 맨 마지막에 반드시 아래 형식의 특수 코드 블록(JSON)을 정확히 첨부하세요:
+\`\`\`restructure_json
+{
+  "explanation": "편집장의 변경 사유 요약 (1~2줄)",
+  "chapters": [
+    {
+      "title": "챕터 제목 (1장, 제1장 같은 번호 없이 순수 제목만)",
+      "sections": [
+        { "title": "소목차 제목 (1.1 같은 번호 없이 순수 제목만)" }
+      ]
+    }
+  ]
+}
+\`\`\`
+이렇게 작성하면 시스템이 자동으로 [원클릭 목차 반영] 버튼을 생성하여 작가의 책에 즉시 적용할 수 있게 돕습니다.
+목차 변경이 아닌 일반 질문이나 조언, 진단, 서문 요청인 경우에는 일반 마크다운 텍스트로 자연스럽게 답변하세요.`;
+
+    // 최근 대화 맥락 구성 (최대 6개 턴)
+    let historyContext = '';
+    if (history && history.length > 0) {
+      historyContext = history.slice(-6).map(m => `${m.role === 'user' ? '작가' : '편집장'}: ${m.content}`).join('\n\n') + '\n\n';
+    }
+
+    const fullPrompt = `${historyContext}작가: ${message}\n\n편집장:`;
+
+    const raw = await aiService.generateText(fullPrompt, systemPrompt);
+
+    // restructure_json 특수 블록 추출
+    let restructureData = null;
+    const jsonMatch = raw.match(/```restructure_json([\s\S]*?)```/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1].trim());
+        restructureData = {
+          explanation: parsed.explanation || '목차가 개편되었습니다.',
+          chapters: (parsed.chapters || []).map(c => ({
+            title: cleanFn(c.title),
+            sections: (c.sections || []).map(s => ({
+              title: cleanFn(s.title)
+            }))
+          }))
+        };
+      } catch (e) {
+        console.warn('restructure_json parsing error:', e);
+      }
+    }
+
+    // 화면 표출용 텍스트에서 restructure_json 코드 블록은 깔끔하게 제거
+    const displayContent = raw.replace(/```restructure_json[\s\S]*?```/, '').trim();
+
+    return {
+      content: displayContent,
+      restructureData
+    };
   },
 
   // 2. AI 소목차 본문 집필 (초고 생성 에이전트)

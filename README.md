@@ -71,7 +71,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 | **`src/styles/theme.css`** | 다크/라이트 글래스모피즘 테마 변수, 폰트(Inter/Noto Sans KR), 공통 버튼(`.btn`), 모달(`.modal-overlay`) 정의 |
 | **`src/config/firebase.js`** | Google Firebase 앱, Google Auth Provider, Cloud Firestore DB 초기화 설정 |
 | **`src/pages/Library.jsx`** | 2줄 슬림 성장/통계 바, 도서 카드 그리드, 진행률(%), D-Day 배지, 도서 삭제 및 새 책 만들기 모달 |
-| **`src/pages/Studio.jsx`** | 3열 집필 환경 + 듀얼 에디터(본문/문단) + 베스트셀러 DB 기반 AI 목차 자동 기획 모달 + 내보내기/자료금고 모달 |
+| **`src/pages/Studio.jsx`** | 3열 집필 환경 + 듀얼 에디터(본문/문단) + **AI 총괄 편집장(Editor-in-Chief)** 우측 패널 덮어쓰기(본문 수정 병행 가능, 베스트셀러 성공 요건 비교 등 6대 핵심 추천 액션) + 목차 기획/내보내기 모달 |
 | **`src/pages/Vault.jsx`** | 아이디어 메모, 웹 스크랩 보관 및 태그 필터링, AI 집필 프롬프트 주입용 레퍼런스 관리 |
 | **`src/pages/Stats.jsx`** | `mission` 게이미피케이션 차용: 작가 레벨/티어/칭호, 분야별 집필 전문성(장르 랭크), 활동 기록 타임라인, 주간 루틴, 업적 배지(Trophies) |
 | **`src/pages/Settings.jsx`** | AI 제공자 선택, 원고 저장 방식 선택(방안 A 로컬 전용 vs 방안 B 자동 클라우드 백업) 및 Cloud Firestore 즉시 백업/데이터 복원 환경 설정 |
@@ -80,8 +80,8 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 | **`src/services/storageService.js`** | 브라우저 로컬 저장소 기반 0초 즉시 저장 및 100% 오프라인 지원 모듈 |
 | **`src/services/authService.js`** | Google 계정 1초 팝업 로그인, 로그아웃, 인증 상태 실시간 리스너 |
 | **`src/services/cloudSyncService.js`** | Firestore `users/{email}` 이메일 기반 멀티 컬렉션(`books`, `vault`, `stats`, `config`) 직관적 동기화/복원 엔진 |
-| **`src/services/aiService.js`** | 브라우저 직접 AI 연동 (Google AI Studio Gemini, OpenAI) |
-| **`src/services/bookService.js`** | 도서/원고/자료 CRUD 및 AI 기능을 일원화한 프론트엔드 단일 서비스 |
+| **`src/services/aiService.js`** | 브라우저 직접 AI 연동 (스마트 캐스케이드, 목차 번호 정제 `cleanOutlineTitle`, AI 총괄 편집장 `consultEditorChief`) |
+| **`src/services/bookService.js`** | 도서/원고/자료 CRUD, 목차 재구성 반영(`applyRestructuredOutline`) 및 AI 기능을 일원화한 프론트엔드 단일 서비스 |
 | **`src/store/index.js`** | 도서 목록, 활성 도서/섹션, Google 로그인 상태, 클라우드 동기화 상태, 디바운스 본문 동기화를 관리하는 단일 상태 저장소 |
 
 ---

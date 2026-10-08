@@ -9,23 +9,184 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { htmlToParagraphs, paragraphsToHtml, generateBlockId } from '../utils/paragraphParser';
 import bestsellerDb from '../data/bestseller-db.json';
 import { storageService } from '../services/storageService';
+import { aiService } from '../services/aiService';
 import {
   ArrowLeft, Plus, Sparkles, Download, Save, Lightbulb, Copy, Check, Wand2, X, FileText, Calendar, Send,
-  PenTool, Bot, Zap, RotateCcw, FilePlus, Layers, MoveUp, MoveDown, Trash2, LayoutList, AlertTriangle
+  PenTool, Bot, Zap, RotateCcw, FilePlus, Layers, MoveUp, MoveDown, Trash2, LayoutList, AlertTriangle,
+  History, MessageSquare, ChevronUp, ChevronDown, ChevronRight
 } from 'lucide-react';
 
 marked.setOptions({ breaks: true, gfm: true });
+
+// 목차 번호 중복 방지 헬퍼 (1장, 제1장, 1.1 등 접두사 정제)
+const cleanTitle = (t) => aiService.cleanOutlineTitle(t);
+
+// AI 총괄 편집장 초기 웰컴 메시지 생성 헬퍼
+const getDefaultWelcomeMessage = (bookTitle) => ({
+  id: 'welcome',
+  role: 'assistant',
+  content: `반갑습니다, 작가님! 《${bookTitle || '원고'}》의 총괄 책임 편집장입니다. 🏛️\n\n도서의 타깃 독자와 기획 의도를 지키면서, **도서 제목 추천, 목차 진단, 베스트셀러 요건 비교, 전체 서사/논리 점검, 톤앤매너 감수, 프롤로그/에필로그 기획** 등 집필 전반을 든든하게 총괄해 드립니다.\n\n좌측의 본문을 실시간으로 집필하시면서, 대화창 하단의 **추천 액션**을 누르시거나 원하시는 피드백을 자유롭게 말씀해 주세요!`,
+  timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+});
+
+// AI 총괄 편집장 핵심 6대 추천 액션
+const CHIEF_RECOMMENDED_ACTIONS = [
+  {
+    id: 'title',
+    label: '🎯 도서 제목 추천',
+    prompt: '현재 목차와 기획 콘셉트를 바탕으로 대형 서점 매대에서 눈길을 사로잡을 출판용 메인 제목과 킬러 부제 5세트를 제안해줘.'
+  },
+  {
+    id: 'diagnosis',
+    label: '📋 목차 진단',
+    prompt: '현재 목차 구조의 완결성, 중복 구간, 보강이 필요한 사각지대를 출판 기획 기준에서 꼼꼼히 진단해줘.'
+  },
+  {
+    id: 'bestseller',
+    label: '🏆 베스트셀러와 비교',
+    prompt: '이 분야 베스트셀러들이 반드시 갖추는 핵심 성공 요건(독자 후킹, 문제 정의, 차별화된 해결책, 단계적 실행력 등)을 우리 책이 제대로 갖추었는지 비교·평가해줘.'
+  },
+  {
+    id: 'narrative',
+    label: '🔍 전체 서사/논리 점검',
+    prompt: '현재 목차의 기승전결 서사 구조와 장(Chapter) 간의 논리적 흐름 및 인과관계를 전체적으로 점검해줘.'
+  },
+  {
+    id: 'tone',
+    label: '🎭 톤앤매너 감수',
+    prompt: '우리 타깃 독자의 눈높이에서 볼 때 전체 챕터와 소제목들의 문체 톤앤매너와 난이도가 적절한지 감수해줘.'
+  },
+  {
+    id: 'prologue',
+    label: '✍️ 프롤로그/에필로그 기획',
+    prompt: '책의 전체 주제와 기획 의도를 관통하는 프롤로그(여는 글)와 에필로그(닫는 글)의 핵심 구성 초안을 기획해줘.'
+  }
+];
 
 export default function Studio() {
   const {
     activeBook, activeChapterId, activeSectionId,
     setActiveChapterId, setActiveSectionId,
     updateActiveSectionContent, updateActiveSectionTitle, saveActiveSection,
-    addChapter, updateChapterTitle, deleteChapter, addSection, deleteSection, openBook, loadBooks,
+    addChapter, updateChapterTitle, deleteChapter, addSection, deleteSection,
+    moveChapter, moveSection, reorderChapters, reorderSections, openBook, loadBooks,
     setChapterDeadline, toggleChapterPublish,
     vault, loadVault, selectedVaultIds, toggleSelectVaultId, clearSelectedVaultIds,
     setView, showToast, showActionToast
   } = useStore();
+
+  // 챕터별 소목차 접기/펼치기 상태 (Set<chapterId>)
+  const [collapsedChapterIds, setCollapsedChapterIds] = useState(new Set());
+
+  const toggleChapterCollapse = (chapId, e) => {
+    if (e) e.stopPropagation();
+    setCollapsedChapterIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(chapId)) {
+        next.delete(chapId);
+      } else {
+        next.add(chapId);
+      }
+      return next;
+    });
+  };
+
+  // 노션 스타일 드래그 앤 드롭 상태
+  const [draggedItem, setDraggedItem] = useState(null); // { type: 'chapter' | 'section', chapterId, sectionId, cIdx, sIdx }
+  const [dragOverTarget, setDragOverTarget] = useState(null); // { type, id, position: 'top' | 'bottom' }
+
+  const handleChapterDragStart = (e, chapId, cIdx) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', chapId);
+    setDraggedItem({ type: 'chapter', chapterId: chapId, cIdx });
+  };
+
+  const handleChapterDragOver = (e, chapId, cIdx) => {
+    e.preventDefault();
+    if (!draggedItem) return;
+    if (draggedItem.type === 'chapter') {
+      if (draggedItem.cIdx === cIdx) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const position = e.clientY < midY ? 'top' : 'bottom';
+      setDragOverTarget({ type: 'chapter', id: chapId, position });
+    } else if (draggedItem.type === 'section') {
+      // 소목차를 다른 챕터 헤더로 끌어올 경우 (해당 챕터로 이동)
+      setDragOverTarget({ type: 'chapter-drop-target', id: chapId, position: 'inside' });
+    }
+  };
+
+  const handleChapterDrop = (e, chapId, targetCIdx) => {
+    e.preventDefault();
+    if (!draggedItem) return;
+    if (draggedItem.type === 'chapter') {
+      const srcIdx = draggedItem.cIdx;
+      let tgtIdx = targetCIdx;
+      if (dragOverTarget?.position === 'bottom' && srcIdx < targetCIdx) {
+        // keep
+      } else if (dragOverTarget?.position === 'bottom' && srcIdx > targetCIdx) {
+        tgtIdx = targetCIdx + 1;
+      } else if (dragOverTarget?.position === 'top' && srcIdx < targetCIdx) {
+        tgtIdx = Math.max(0, targetCIdx - 1);
+      }
+      if (srcIdx !== tgtIdx) {
+        reorderChapters(srcIdx, tgtIdx);
+      }
+    } else if (draggedItem.type === 'section') {
+      // 소목차를 해당 챕터의 첫 번째 꼭지로 이동
+      reorderSections(draggedItem.chapterId, chapId, draggedItem.sIdx, 0);
+    }
+    setDraggedItem(null);
+    setDragOverTarget(null);
+  };
+
+  const handleSectionDragStart = (e, chapId, secId, cIdx, sIdx) => {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', secId);
+    setDraggedItem({ type: 'section', chapterId: chapId, sectionId: secId, cIdx, sIdx });
+  };
+
+  const handleSectionDragOver = (e, secId, cIdx, sIdx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedItem || draggedItem.type !== 'section') return;
+    if (draggedItem.sectionId === secId) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const position = e.clientY < midY ? 'top' : 'bottom';
+    setDragOverTarget({ type: 'section', id: secId, position, targetCIdx: cIdx, targetSIdx: sIdx });
+  };
+
+  const handleSectionDrop = (e, targetChapId, targetSIdx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedItem || draggedItem.type !== 'section') return;
+    const srcChapId = draggedItem.chapterId;
+    const srcSIdx = draggedItem.sIdx;
+    let tgtSIdx = targetSIdx;
+    if (srcChapId === targetChapId) {
+      if (dragOverTarget?.position === 'bottom' && srcSIdx < targetSIdx) {
+        // keep
+      } else if (dragOverTarget?.position === 'bottom' && srcSIdx > targetSIdx) {
+        tgtSIdx = targetSIdx + 1;
+      } else if (dragOverTarget?.position === 'top' && srcSIdx < targetSIdx) {
+        tgtSIdx = Math.max(0, targetSIdx - 1);
+      }
+    } else {
+      if (dragOverTarget?.position === 'bottom') {
+        tgtSIdx = targetSIdx + 1;
+      }
+    }
+    reorderSections(srcChapId, targetChapId, srcSIdx, tgtSIdx);
+    setDraggedItem(null);
+    setDragOverTarget(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverTarget(null);
+  };
 
   // D-Day 계산 헬퍼
   const calculateDDay = (deadline) => {
@@ -123,6 +284,17 @@ export default function Studio() {
   const [outlineError, setOutlineError] = useState(null);
   const [exportFormat, setExportFormat] = useState('md');
 
+  // AI 총괄 편집장(Editor-in-Chief) 대화형 에이전트 상태
+  const [isChiefModalOpen, setIsChiefModalOpen] = useState(false);
+  const [chiefMessages, setChiefMessages] = useState([]);
+  const [chiefInput, setChiefInput] = useState('');
+  const [isChiefReplying, setIsChiefReplying] = useState(false);
+  const [isApplyingRestructure, setIsApplyingRestructure] = useState(false);
+  const [isChiefHistoryOpen, setIsChiefHistoryOpen] = useState(false);
+  const [chiefChatHistory, setChiefChatHistory] = useState([]);
+  const [activeChiefSessionId, setActiveChiefSessionId] = useState(null);
+  const chiefChatEndRef = useRef(null);
+
   // 활성 섹션 변경 시 Tiptap 본문 및 문단 블록 동기화
   useEffect(() => {
     if (currentSection) {
@@ -163,15 +335,105 @@ export default function Studio() {
     }
   };
 
-  // 문단 내용 수정
+  // 문단 서식 태그 변경 (H1, H2, H3, P, Blockquote)
+  const handleSetParagraphTag = (id, newTag) => {
+    setParagraphs((prev) => {
+      const updated = prev.map((p) => {
+        if (p.id === id) {
+          const tag = newTag || 'p';
+          return {
+            ...p,
+            tag,
+            html: `<${tag}>${p.text || ''}</${tag}>`
+          };
+        }
+        return p;
+      });
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        const html = paragraphsToHtml(updated);
+        setLocalContent(html);
+        if (editor) editor.commands.setContent(html);
+        updateActiveSectionContent(html);
+      }, 300);
+      return updated;
+    });
+  };
+
+  // 문단 모드 인라인 서식 적용 헬퍼 (굵게, 기울임, 밑줄, 취소선, 리스트, 코드 등)
+  const applyInlineFormatToParagraph = (prefix, suffix = '', isLinePrefix = false) => {
+    const targetId = activeParagraphId || paragraphs[0]?.id;
+    if (!targetId) return;
+
+    const textarea = document.querySelector(`.paragraph-textarea[data-id="${targetId}"]`);
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const val = textarea.value;
+    const selected = val.substring(start, end);
+
+    let replacement = '';
+    let newCursorStart = start;
+    let newCursorEnd = end;
+
+    if (isLinePrefix) {
+      replacement = `${prefix}${selected || '목록 항목'}`;
+      newCursorStart = start + prefix.length;
+      newCursorEnd = newCursorStart + (selected ? selected.length : 5);
+    } else {
+      const innerText = selected || '내용';
+      replacement = `${prefix}${innerText}${suffix}`;
+      newCursorStart = start + prefix.length;
+      newCursorEnd = newCursorStart + innerText.length;
+    }
+
+    const nextVal = val.substring(0, start) + replacement + val.substring(end);
+    handleParagraphChange(targetId, nextVal);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newCursorStart, newCursorEnd);
+    }, 10);
+  };
+
+  // 문단 모드 서식 지우기
+  const clearInlineFormatInParagraph = () => {
+    const targetId = activeParagraphId || paragraphs[0]?.id;
+    if (!targetId) return;
+    const textarea = document.querySelector(`.paragraph-textarea[data-id="${targetId}"]`);
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const val = textarea.value;
+    const selected = val.substring(start, end);
+
+    if (selected) {
+      const cleaned = selected
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/<u>(.*?)<\/u>/g, '$1')
+        .replace(/~~(.*?)~~/g, '$1')
+        .replace(/`(.*?)`/g, '$1')
+        .replace(/^[•\->1-9\.]+\s+/gm, '');
+      const nextVal = val.substring(0, start) + cleaned + val.substring(end);
+      handleParagraphChange(targetId, nextVal);
+    } else {
+      handleSetParagraphTag(targetId, 'p');
+    }
+  };
+
+  // 문단 내용 수정 (태그 무손실 유지)
   const handleParagraphChange = (id, newText) => {
     setParagraphs((prev) => {
       const updated = prev.map((p) => {
         if (p.id === id) {
+          const tag = p.tag || 'p';
           return {
             ...p,
             text: newText,
-            html: `<p>${newText}</p>`
+            html: `<${tag}>${newText}</${tag}>`
           };
         }
         return p;
@@ -507,24 +769,232 @@ export default function Studio() {
     }
   };
 
-  // 내보내기 텍스트 생성
+  // AI 총괄 편집장 대화 및 히스토리 로컬 스토리지 동기화
+  useEffect(() => {
+    if (!activeBook?.id) return;
+    try {
+      const savedActive = localStorage.getItem(`chief_chat_active_${activeBook.id}`);
+      const savedActiveId = localStorage.getItem(`chief_chat_active_id_${activeBook.id}`);
+      if (savedActive) {
+        setChiefMessages(JSON.parse(savedActive));
+        setActiveChiefSessionId(savedActiveId || null);
+      } else {
+        setChiefMessages([getDefaultWelcomeMessage(activeBook.title)]);
+        setActiveChiefSessionId(null);
+      }
+      const savedHistory = localStorage.getItem(`chief_chat_history_${activeBook.id}`);
+      if (savedHistory) {
+        setChiefChatHistory(JSON.parse(savedHistory));
+      } else {
+        setChiefChatHistory([]);
+      }
+    } catch (e) {
+      console.error('Failed to load chief chat storage:', e);
+      setChiefMessages([getDefaultWelcomeMessage(activeBook.title)]);
+      setActiveChiefSessionId(null);
+    }
+  }, [activeBook?.id]);
+
+  // 대화 변경 시 실시간 자동 보존 (Zero-Latency)
+  useEffect(() => {
+    if (!activeBook?.id || chiefMessages.length === 0) return;
+    try {
+      localStorage.setItem(`chief_chat_active_${activeBook.id}`, JSON.stringify(chiefMessages));
+      if (activeChiefSessionId) {
+        localStorage.setItem(`chief_chat_active_id_${activeBook.id}`, activeChiefSessionId);
+      } else {
+        localStorage.removeItem(`chief_chat_active_id_${activeBook.id}`);
+      }
+    } catch (e) {
+      console.error('Failed to persist chief messages:', e);
+    }
+  }, [chiefMessages, activeChiefSessionId, activeBook?.id]);
+
+  // 대화 초기화 및 이전 대화 히스토리 자동 보관 핸들러 (중복 방지: 기존 세션 덮어쓰기 지원)
+  const handleResetChiefChat = () => {
+    const userMessages = chiefMessages.filter((m) => m.role === 'user');
+    if (userMessages.length > 0) {
+      const firstUserText = userMessages[0]?.content || '편집장 상담 세션';
+      const sessionTitle = firstUserText.length > 26 ? `${firstUserText.slice(0, 26)}...` : firstUserText;
+      const nowStr = new Date().toLocaleString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+      // 기존에 불러와서 이어 쓰던 세션인지 확인
+      const existingIdx = activeChiefSessionId
+        ? chiefChatHistory.findIndex((s) => s.id === activeChiefSessionId)
+        : -1;
+
+      let updatedHistory;
+      if (existingIdx >= 0) {
+        // ★ 기존 세션 덮어쓰기 업데이트 (중복 생성 방지!)
+        const targetSession = chiefChatHistory[existingIdx];
+        const updatedSession = {
+          ...targetSession,
+          title: sessionTitle,
+          updatedAt: nowStr,
+          messageCount: chiefMessages.length,
+          messages: chiefMessages
+        };
+        updatedHistory = [...chiefChatHistory];
+        updatedHistory[existingIdx] = updatedSession;
+        showToast('진행 중이던 대화 기록이 업데이트되고 새 대화가 시작되었습니다.', 'success');
+      } else {
+        // ★ 신규 대화 세션 생성
+        const newSession = {
+          id: `session_${Date.now()}`,
+          title: sessionTitle,
+          createdAt: nowStr,
+          messageCount: chiefMessages.length,
+          messages: chiefMessages
+        };
+        updatedHistory = [newSession, ...chiefChatHistory].slice(0, 30);
+        showToast('이전 대화가 새 기록으로 보관되고 새 대화가 시작되었습니다.', 'success');
+      }
+
+      setChiefChatHistory(updatedHistory);
+      try {
+        localStorage.setItem(`chief_chat_history_${activeBook?.id}`, JSON.stringify(updatedHistory));
+      } catch (e) {}
+    } else {
+      showToast('새 대화가 준비되었습니다.', 'info');
+    }
+
+    // 신규 세션 상태로 리셋
+    setActiveChiefSessionId(null);
+    try {
+      localStorage.removeItem(`chief_chat_active_id_${activeBook?.id}`);
+    } catch (e) {}
+    setChiefMessages([getDefaultWelcomeMessage(activeBook?.title)]);
+    setIsChiefHistoryOpen(false);
+  };
+
+  // 과거 히스토리 세션 불러오기 (세션 ID 추적 등록)
+  const handleLoadHistorySession = (session) => {
+    setActiveChiefSessionId(session.id);
+    setChiefMessages(session.messages || []);
+    setIsChiefHistoryOpen(false);
+    showToast(`'${session.title}' 대화 기록을 불러왔습니다.`, 'success');
+  };
+
+  // 과거 히스토리 세션 삭제
+  const handleDeleteHistorySession = (sessionId, e) => {
+    e.stopPropagation();
+    if (window.confirm('이 대화 기록을 삭제하시겠습니까?')) {
+      const filtered = chiefChatHistory.filter((s) => s.id !== sessionId);
+      setChiefChatHistory(filtered);
+      if (activeChiefSessionId === sessionId) {
+        setActiveChiefSessionId(null);
+        try {
+          localStorage.removeItem(`chief_chat_active_id_${activeBook?.id}`);
+        } catch (e) {}
+      }
+      try {
+        localStorage.setItem(`chief_chat_history_${activeBook?.id}`, JSON.stringify(filtered));
+      } catch (e) {}
+      showToast('기록이 삭제되었습니다.', 'info');
+    }
+  };
+
+  // 편집장 채팅 스크롤 자동 이동
+  useEffect(() => {
+    if (isChiefModalOpen && chiefChatEndRef.current) {
+      chiefChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chiefMessages, isChiefReplying, isChiefModalOpen]);
+
+  // 편집장 메시지 전송 핸들러
+  const handleSendChiefMessage = async (customPrompt) => {
+    const text = (typeof customPrompt === 'string' ? customPrompt : chiefInput).trim();
+    if (!text || isChiefReplying) return;
+
+    const cfg = storageService.getConfig();
+    if (!cfg.geminiApiKey || !cfg.geminiApiKey.trim()) {
+      showActionToast(
+        'AI 총괄 편집장 상담을 위해 Google 무료 API 키가 필요합니다. 설정으로 이동하시겠습니까?',
+        () => {
+          setIsChiefModalOpen(false);
+          setView('settings');
+        },
+        () => {},
+        { yesText: '설정으로 이동', noText: '취소' }
+      );
+      return;
+    }
+
+    const userMsg = {
+      id: `user_${Date.now()}`,
+      role: 'user',
+      content: text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setChiefMessages(prev => [...prev, userMsg]);
+    setChiefInput('');
+    setIsChiefReplying(true);
+
+    try {
+      const response = await bookService.consultEditorChief({
+        book: activeBook,
+        message: text,
+        history: chiefMessages,
+        vaultNotes: vault || []
+      });
+
+      const assistantMsg = {
+        id: `asst_${Date.now()}`,
+        role: 'assistant',
+        content: response.content,
+        restructureData: response.restructureData || null,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setChiefMessages(prev => [...prev, assistantMsg]);
+    } catch (err) {
+      const errorMsg = {
+        id: `err_${Date.now()}`,
+        role: 'assistant',
+        content: `⚠️ 편집장 응답 중 오류가 발생했습니다: ${err.message}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setChiefMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsChiefReplying(false);
+    }
+  };
+
+  // 편집장 제안 목차 즉시 도서 반영
+  const handleApplyRestructureFromMsg = async (restructureData) => {
+    if (!restructureData?.chapters) return;
+    try {
+      setIsApplyingRestructure(true);
+      await bookService.applyRestructuredOutline(activeBook.id, restructureData.chapters);
+      await openBook(activeBook.id);
+      await loadBooks();
+      showToast('🎉 새 목차가 도서에 성공적으로 반영되었습니다!', 'success');
+    } catch (err) {
+      showToast(`목차 반영 실패: ${err.message}`, 'error');
+    } finally {
+      setIsApplyingRestructure(false);
+    }
+  };
+
+  // 내보내기 텍스트 생성 (번호 중복 없는 깔끔한 포맷)
   const getExportText = () => {
     if (exportFormat === 'md') {
       let md = `# ${activeBook.title}\n\n`;
       if (activeBook.subtitle) md += `> ${activeBook.subtitle}\n\n`;
       activeBook.chapters?.forEach((c, cI) => {
-        md += `## 제 ${cI + 1}장. ${c.title}\n\n`;
+        md += `## 제 ${cI + 1}장. ${cleanTitle(c.title)}\n\n`;
         c.sections?.forEach((s, sI) => {
-          md += `### ${cI + 1}.${sI + 1} ${s.title}\n\n${s.content || ''}\n\n`;
+          md += `### ${cI + 1}.${sI + 1} ${cleanTitle(s.title)}\n\n${s.content || ''}\n\n`;
         });
       });
       return md;
     }
     let txt = `[${activeBook.title}]\n\n`;
     activeBook.chapters?.forEach((c, cI) => {
-      txt += `[제 ${cI + 1}장. ${c.title}]\n\n`;
+      txt += `[제 ${cI + 1}장. ${cleanTitle(c.title)}]\n\n`;
       c.sections?.forEach((s, sI) => {
-        txt += `(${cI + 1}.${sI + 1} ${s.title})\n${s.content || ''}\n\n`;
+        txt += `(${cI + 1}.${sI + 1} ${cleanTitle(s.title)})\n${s.content || ''}\n\n`;
       });
     });
     return txt;
@@ -541,17 +1011,38 @@ export default function Studio() {
           </button>
           <div className="toc-book-title" title={activeBook.title}>{activeBook.title}</div>
           <div className="toc-actions">
-            <button className="btn btn-secondary" onClick={() => {
-              const t = window.prompt('추가할 챕터명:');
-              if (t?.trim()) addChapter(t.trim());
-            }}>
-              <Plus size={13} />
-              <span>챕터 추가</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', width: '100%' }}>
+              <button className="btn btn-secondary" onClick={() => {
+                const t = window.prompt('추가할 챕터명:');
+                if (t?.trim()) addChapter(cleanTitle(t.trim()));
+              }}>
+                <Plus size={13} />
+                <span>챕터 추가</span>
+              </button>
+              <button className="btn btn-secondary" onClick={() => setIsOutlineModalOpen(true)}>
+                <Sparkles size={13} />
+                <span>목차 기획</span>
+              </button>
+            </div>
+
+            {/* AI 총괄 편집장(Editor-in-Chief) 전역 에이전트 호출 배너 */}
+            <button
+              type="button"
+              className="btn-editor-chief-banner"
+              onClick={() => {
+                setIsChiefModalOpen(true);
+                setChiefResult(null);
+              }}
+              title="도서 총괄 코칭 및 목차 지능형 재구성/진단"
+            >
+              <div className="chief-banner-icon">🏛️</div>
+              <div className="chief-banner-text">
+                <strong>AI 총괄 편집장</strong>
+                <span>목차 진단 · 병합 · 코칭</span>
+              </div>
+              <span className="chief-badge-pill">Agent</span>
             </button>
-            <button className="btn btn-secondary" onClick={() => setIsOutlineModalOpen(true)}>
-              <Sparkles size={13} />
-              <span>목차 기획</span>
-            </button>
+
             <button className="btn btn-primary btn-full" onClick={() => setIsExportModalOpen(true)}>
               <Download size={13} />
               <span>전자책 내보내기</span>
@@ -559,117 +1050,175 @@ export default function Studio() {
           </div>
         </div>
 
-        <div className="toc-list">
-          {activeBook.chapters?.map((chap, cIdx) => (
-            <div key={chap.id || cIdx} className="chapter-group">
-              <div className="chapter-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', overflow: 'hidden', flex: 1 }}>
-                  {editingChapterId === chap.id ? (
-                    <input
-                      type="text"
-                      className="chapter-inline-edit-input"
-                      value={editingChapterTitle}
-                      autoFocus
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => setEditingChapterTitle(e.target.value)}
-                      onBlur={() => {
-                        if (editingChapterTitle.trim() && editingChapterTitle.trim() !== chap.title) {
-                          updateChapterTitle(chap.id, editingChapterTitle.trim());
-                        }
-                        setEditingChapterId(null);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          if (editingChapterTitle.trim() && editingChapterTitle.trim() !== chap.title) {
-                            updateChapterTitle(chap.id, editingChapterTitle.trim());
+        <div className="toc-list" onDragEnd={handleDragEnd}>
+          {activeBook.chapters?.map((chap, cIdx) => {
+            const isCollapsed = collapsedChapterIds.has(chap.id);
+            const isChapterDragging = draggedItem?.type === 'chapter' && draggedItem?.chapterId === chap.id;
+            const isChapterOver = dragOverTarget?.type === 'chapter' && dragOverTarget?.id === chap.id;
+
+            const isChapterDropTarget = dragOverTarget?.type === 'chapter-drop-target' && dragOverTarget?.id === chap.id;
+
+            return (
+              <div key={chap.id || cIdx} className="chapter-group">
+                <div
+                  className={`chapter-header ${isChapterDragging ? 'is-dragging' : ''} ${isChapterOver ? `drag-over-${dragOverTarget.position}` : ''} ${isChapterDropTarget ? 'drag-target-hover' : ''}`}
+                  draggable={editingChapterId !== chap.id}
+                  onDragStart={(e) => handleChapterDragStart(e, chap.id, cIdx)}
+                  onDragOver={(e) => handleChapterDragOver(e, chap.id, cIdx)}
+                  onDrop={(e) => handleChapterDrop(e, chap.id, cIdx)}
+                >
+                  {/* 접기/펼치기 토글 버튼 */}
+                  <button
+                    type="button"
+                    className="btn-collapse-toggle"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleChapterCollapse(chap.id, e);
+                    }}
+                    title={isCollapsed ? '소목차 펼치기' : '소목차 접기'}
+                  >
+                    <ChevronRight size={13} className={`collapse-chevron ${isCollapsed ? '' : 'open'}`} />
+                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', overflow: 'hidden', flex: 1 }}>
+                    {editingChapterId === chap.id ? (
+                      <input
+                        type="text"
+                        className="chapter-inline-edit-input"
+                        value={editingChapterTitle}
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => setEditingChapterTitle(e.target.value)}
+                        onBlur={() => {
+                          if (editingChapterTitle.trim() && editingChapterTitle.trim() !== cleanTitle(chap.title)) {
+                            updateChapterTitle(chap.id, cleanTitle(editingChapterTitle.trim()));
                           }
                           setEditingChapterId(null);
-                        } else if (e.key === 'Escape') {
-                          setEditingChapterId(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            if (editingChapterTitle.trim() && editingChapterTitle.trim() !== cleanTitle(chap.title)) {
+                              updateChapterTitle(chap.id, cleanTitle(editingChapterTitle.trim()));
+                            }
+                            setEditingChapterId(null);
+                          } else if (e.key === 'Escape') {
+                            setEditingChapterId(null);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span
+                        title="더블클릭하여 챕터명 수정"
+                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}
+                        onDoubleClick={() => {
+                          setEditingChapterId(chap.id);
+                          setEditingChapterTitle(cleanTitle(chap.title));
+                        }}
+                      >
+                        {cIdx + 1}장. {cleanTitle(chap.title)}
+                      </span>
+                    )}
+
+                    <span className={`chapter-badge-mini ${chap.status === 'published' ? 'published' : 'draft'}`}>
+                      {chap.status === 'published' ? '연재중' : '초고'}
+                    </span>
+                  </div>
+
+                  <div className="chapter-header-actions">
+                    <button
+                      type="button"
+                      className="btn-add-section"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const t = window.prompt('추가할 소목차명:');
+                        if (t?.trim()) addSection(chap.id, cleanTitle(t.trim()));
+                      }}
+                      title="소목차 추가"
+                    >
+                      <Plus size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-delete-chapter"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`'${cleanTitle(chap.title)}' 챕터를 삭제하시겠습니까?\n포함된 모든 소목차와 본문도 함께 삭제됩니다.`)) {
+                          deleteChapter(chap.id);
                         }
                       }}
-                    />
-                  ) : (
-                    <span
-                      title="더블클릭하여 챕터명 수정"
-                      style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}
-                      onDoubleClick={() => {
-                        setEditingChapterId(chap.id);
-                        setEditingChapterTitle(chap.title);
-                      }}
+                      title="챕터 삭제"
                     >
-                      {cIdx + 1}장. {chap.title}
-                    </span>
-                  )}
-                  <span className={`chapter-badge-mini ${chap.status === 'published' ? 'published' : 'draft'}`}>
-                    {chap.status === 'published' ? '연재중' : '초고'}
-                  </span>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
-                <div className="chapter-header-actions">
-                  <button
-                    className="btn-add-section"
-                    onClick={() => {
-                      const t = window.prompt('추가할 소목차명:');
-                      if (t?.trim()) addSection(chap.id, t.trim());
-                    }}
-                    title="소목차 추가"
-                  >
-                    <Plus size={14} />
-                  </button>
-                  <button
-                    className="btn-delete-chapter"
-                    onClick={() => {
-                      if (window.confirm(`'${chap.title}' 챕터를 삭제하시겠습니까?\n포함된 모든 소목차와 본문도 함께 삭제됩니다.`)) {
-                        deleteChapter(chap.id);
+
+                {/* 소목차 목록 (접혔을 때는 숨김) */}
+                {!isCollapsed && (
+                  <div
+                    className="section-list"
+                    onDragOver={(e) => {
+                      if (draggedItem?.type === 'section' && (!chap.sections || chap.sections.length === 0)) {
+                        e.preventDefault();
                       }
                     }}
-                    title="챕터 삭제"
+                    onDrop={(e) => {
+                      if (draggedItem?.type === 'section' && (!chap.sections || chap.sections.length === 0)) {
+                        e.preventDefault();
+                        reorderSections(draggedItem.chapterId, chap.id, draggedItem.sIdx, 0);
+                        setDraggedItem(null);
+                        setDragOverTarget(null);
+                      }
+                    }}
                   >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              </div>
+                    {chap.sections?.map((sec, sIdx) => {
+                      const isActive = chap.id === activeChapterId && sec.id === activeSectionId;
+                      const isSecDragging = draggedItem?.type === 'section' && draggedItem?.sectionId === sec.id;
+                      const isSecOver = dragOverTarget?.type === 'section' && dragOverTarget?.id === sec.id;
+                      const rawText = (sec.content || '').replace(/<[^>]*>/g, '').trim();
+                      const isDone = rawText.length > 0;
 
-              <div className="section-list">
-                {chap.sections?.map((sec, sIdx) => {
-                  const isActive = chap.id === activeChapterId && sec.id === activeSectionId;
-                  const rawText = (sec.content || '').replace(/<[^>]*>/g, '').trim();
-                  const isDone = rawText.length > 0;
-                  return (
-                    <div
-                      key={sec.id || sIdx}
-                      className={`section-item ${isActive ? 'active' : ''}`}
-                      onClick={() => {
-                        setActiveChapterId(chap.id);
-                        setActiveSectionId(sec.id);
-                      }}
-                    >
-                      <span className="section-item-title">{cIdx + 1}.{sIdx + 1} {sec.title}</span>
-                      <div className="section-item-meta">
+                      return (
                         <div
-                          className={`status-dot ${isDone ? 'completed' : ''}`}
-                          title={isDone ? `집필 완료 (${rawText.length.toLocaleString()}자)` : '미작성 (빈 원고)'}
-                        />
-                        <button
-                          type="button"
-                          className="btn-delete-section"
-                          title="소목차 삭제"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (window.confirm(`'${sec.title}' 소목차를 삭제하시겠습니까?\n작성된 원고 내용도 함께 삭제됩니다.`)) {
-                              deleteSection(chap.id, sec.id);
-                            }
+                          key={sec.id || sIdx}
+                          className={`section-item ${isActive ? 'active' : ''} ${isSecDragging ? 'is-dragging' : ''} ${isSecOver ? `drag-over-${dragOverTarget.position}` : ''}`}
+                          draggable={true}
+                          onDragStart={(e) => handleSectionDragStart(e, chap.id, sec.id, cIdx, sIdx)}
+                          onDragOver={(e) => handleSectionDragOver(e, sec.id, cIdx, sIdx)}
+                          onDrop={(e) => handleSectionDrop(e, chap.id, sIdx)}
+                          onClick={() => {
+                            setActiveChapterId(chap.id);
+                            setActiveSectionId(sec.id);
                           }}
                         >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                          <span className="section-item-title">{cIdx + 1}.{sIdx + 1} {cleanTitle(sec.title)}</span>
+                          <div className="section-item-meta">
+                            <div
+                              className={`status-dot ${isDone ? 'completed' : ''}`}
+                              title={isDone ? `집필 완료 (${rawText.length.toLocaleString()}자)` : '미작성 (빈 원고)'}
+                            />
+                            <button
+                              type="button"
+                              className="btn-delete-section"
+                              title="소목차 삭제"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`'${cleanTitle(sec.title)}' 소목차를 삭제하시겠습니까?\n작성된 원고 내용도 함께 삭제됩니다.`)) {
+                                  deleteSection(chap.id, sec.id);
+                                }
+                              }}
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </aside>
 
@@ -686,7 +1235,7 @@ export default function Studio() {
                 <input
                   type="text"
                   className="chapter-title-header-input"
-                  value={currentChapter.title}
+                  value={cleanTitle(currentChapter.title)}
                   placeholder="챕터명을 입력하세요"
                   title="클릭하여 챕터명 직접 수정"
                   onChange={(e) => updateChapterTitle(currentChapter.id, e.target.value)}
@@ -798,129 +1347,204 @@ export default function Studio() {
 
         <div className="editor-body-split">
           <div className="main-textarea-pane">
-            {editorMode === 'doc' ? (
-              <>
-                {/* Mission 스타일 Tiptap 리치 서식 툴바 */}
-                {editor && (
-                  <div className="rich-toolbar">
-                    <div className="toolbar-group">
-                      <select
-                        className="toolbar-select"
-                        value={
-                          editor.isActive('heading', { level: 1 }) ? 'h1' :
-                          editor.isActive('heading', { level: 2 }) ? 'h2' :
-                          editor.isActive('heading', { level: 3 }) ? 'h3' :
-                          editor.isActive('blockquote') ? 'blockquote' : 'p'
-                        }
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === 'h1') editor.chain().focus().toggleHeading({ level: 1 }).run();
-                          else if (val === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
-                          else if (val === 'h3') editor.chain().focus().toggleHeading({ level: 3 }).run();
-                          else if (val === 'blockquote') editor.chain().focus().toggleBlockquote().run();
-                          else editor.chain().focus().setParagraph().run();
-                        }}
-                        title="단락 서식"
-                      >
-                        <option value="p">Normal (본문)</option>
-                        <option value="h1">대제목 (H1)</option>
-                        <option value="h2">중제목 (H2)</option>
-                        <option value="h3">소제목 (H3)</option>
-                        <option value="blockquote">인용문 (Quote)</option>
-                      </select>
-                    </div>
+            {/* Mission 스타일 리치 서식 툴바 (본문 모드 & 문단 모드 공통 상시 유지) */}
+            <div className="rich-toolbar">
+              <div className="toolbar-group">
+                <select
+                  className="toolbar-select"
+                  value={
+                    editorMode === 'doc'
+                      ? (editor?.isActive('heading', { level: 1 }) ? 'h1' :
+                         editor?.isActive('heading', { level: 2 }) ? 'h2' :
+                         editor?.isActive('heading', { level: 3 }) ? 'h3' :
+                         editor?.isActive('blockquote') ? 'blockquote' : 'p')
+                      : ((paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0])?.tag || 'p')
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (editorMode === 'doc') {
+                      if (!editor) return;
+                      if (val === 'h1') editor.chain().focus().toggleHeading({ level: 1 }).run();
+                      else if (val === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
+                      else if (val === 'h3') editor.chain().focus().toggleHeading({ level: 3 }).run();
+                      else if (val === 'blockquote') editor.chain().focus().toggleBlockquote().run();
+                      else editor.chain().focus().setParagraph().run();
+                    } else {
+                      const cur = paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0];
+                      if (cur) handleSetParagraphTag(cur.id, val);
+                    }
+                  }}
+                  title="단락 서식 (본문 / 제목 / 인용구)"
+                >
+                  <option value="p">Normal (본문)</option>
+                  <option value="h1">대제목 (H1)</option>
+                  <option value="h2">중제목 (H2)</option>
+                  <option value="h3">소제목 (H3)</option>
+                  <option value="blockquote">인용문 (Quote)</option>
+                </select>
+              </div>
 
-                    <div className="toolbar-divider" />
+              <div className="toolbar-divider" />
 
-                    <div className="toolbar-group">
-                      <button
-                        type="button"
-                        className={`tool-btn ${editor.isActive('bold') ? 'active' : ''}`}
-                        onClick={() => editor.chain().focus().toggleBold().run()}
-                        title="굵게 (Ctrl+B)"
-                      >
-                        <b>B</b>
-                      </button>
-                      <button
-                        type="button"
-                        className={`tool-btn ${editor.isActive('italic') ? 'active' : ''}`}
-                        onClick={() => editor.chain().focus().toggleItalic().run()}
-                        title="기울임 (Ctrl+I)"
-                      >
-                        <i>I</i>
-                      </button>
-                      <button
-                        type="button"
-                        className={`tool-btn ${editor.isActive('underline') ? 'active' : ''}`}
-                        onClick={() => editor.chain().focus().toggleUnderline().run()}
-                        title="밑줄 (Ctrl+U)"
-                      >
-                        <u>U</u>
-                      </button>
-                      <button
-                        type="button"
-                        className={`tool-btn ${editor.isActive('strike') ? 'active' : ''}`}
-                        onClick={() => editor.chain().focus().toggleStrike().run()}
-                        title="취소선"
-                      >
-                        <s>S</s>
-                      </button>
-                    </div>
+              <div className="toolbar-group">
+                <button
+                  type="button"
+                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('bold') ? 'active' : '') : ''}`}
+                  onClick={() => {
+                    if (editorMode === 'doc') {
+                      editor?.chain().focus().toggleBold().run();
+                    } else {
+                      applyInlineFormatToParagraph('**', '**');
+                    }
+                  }}
+                  title="굵게 (Ctrl+B)"
+                >
+                  <b>B</b>
+                </button>
+                <button
+                  type="button"
+                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('italic') ? 'active' : '') : ''}`}
+                  onClick={() => {
+                    if (editorMode === 'doc') {
+                      editor?.chain().focus().toggleItalic().run();
+                    } else {
+                      applyInlineFormatToParagraph('*', '*');
+                    }
+                  }}
+                  title="기울임 (Ctrl+I)"
+                >
+                  <i>I</i>
+                </button>
+                <button
+                  type="button"
+                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('underline') ? 'active' : '') : ''}`}
+                  onClick={() => {
+                    if (editorMode === 'doc') {
+                      editor?.chain().focus().toggleUnderline().run();
+                    } else {
+                      applyInlineFormatToParagraph('<u>', '</u>');
+                    }
+                  }}
+                  title="밑줄 (Ctrl+U)"
+                >
+                  <u>U</u>
+                </button>
+                <button
+                  type="button"
+                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('strike') ? 'active' : '') : ''}`}
+                  onClick={() => {
+                    if (editorMode === 'doc') {
+                      editor?.chain().focus().toggleStrike().run();
+                    } else {
+                      applyInlineFormatToParagraph('~~', '~~');
+                    }
+                  }}
+                  title="취소선"
+                >
+                  <s>S</s>
+                </button>
+              </div>
 
-                    <div className="toolbar-divider" />
+              <div className="toolbar-divider" />
 
-                    <div className="toolbar-group">
-                      <button
-                        type="button"
-                        className={`tool-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
-                        onClick={() => editor.chain().focus().toggleBulletList().run()}
-                        title="글머리 기호 목록"
-                      >
-                        •≡
-                      </button>
-                      <button
-                        type="button"
-                        className={`tool-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
-                        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                        title="번호 매기기 목록"
-                      >
-                        1≡
-                      </button>
-                      <button
-                        type="button"
-                        className={`tool-btn ${editor.isActive('blockquote') ? 'active' : ''}`}
-                        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-                        title="인용 블록"
-                      >
-                        ❞
-                      </button>
-                      <button
-                        type="button"
-                        className={`tool-btn ${editor.isActive('codeBlock') ? 'active' : ''}`}
-                        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                        title="코드 블록"
-                      >
-                        &lt;/&gt;
-                      </button>
-                      <button
-                        type="button"
-                        className="tool-btn"
-                        onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
-                        title="서식 지우기"
-                      >
-                        T<sub>x</sub>
-                      </button>
-                    </div>
-                  </div>
-                )}
+              <div className="toolbar-group">
+                <button
+                  type="button"
+                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('bulletList') ? 'active' : '') : ''}`}
+                  onClick={() => {
+                    if (editorMode === 'doc') {
+                      editor?.chain().focus().toggleBulletList().run();
+                    } else {
+                      applyInlineFormatToParagraph('• ', '', true);
+                    }
+                  }}
+                  title="글머리 기호 목록"
+                >
+                  •≡
+                </button>
+                <button
+                  type="button"
+                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('orderedList') ? 'active' : '') : ''}`}
+                  onClick={() => {
+                    if (editorMode === 'doc') {
+                      editor?.chain().focus().toggleOrderedList().run();
+                    } else {
+                      applyInlineFormatToParagraph('1. ', '', true);
+                    }
+                  }}
+                  title="번호 매기기 목록"
+                >
+                  1≡
+                </button>
+                <button
+                  type="button"
+                  className={`tool-btn ${
+                    editorMode === 'doc'
+                      ? (editor?.isActive('blockquote') ? 'active' : '')
+                      : ((paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0])?.tag === 'blockquote' ? 'active' : '')
+                  }`}
+                  onClick={() => {
+                    if (editorMode === 'doc') {
+                      editor?.chain().focus().toggleBlockquote().run();
+                    } else {
+                      const cur = paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0];
+                      if (cur) handleSetParagraphTag(cur.id, cur.tag === 'blockquote' ? 'p' : 'blockquote');
+                    }
+                  }}
+                  title="인용 블록"
+                >
+                  ❞
+                </button>
+                <button
+                  type="button"
+                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('codeBlock') ? 'active' : '') : ''}`}
+                  onClick={() => {
+                    if (editorMode === 'doc') {
+                      editor?.chain().focus().toggleCodeBlock().run();
+                    } else {
+                      applyInlineFormatToParagraph('`', '`');
+                    }
+                  }}
+                  title="코드 블록"
+                >
+                  &lt;/&gt;
+                </button>
+                <button
+                  type="button"
+                  className="tool-btn"
+                  onClick={() => {
+                    if (editorMode === 'doc') {
+                      editor?.chain().focus().unsetAllMarks().clearNodes().run();
+                    } else {
+                      clearInlineFormatInParagraph();
+                    }
+                  }}
+                  title="서식 지우기"
+                >
+                  T<sub>x</sub>
+                </button>
+              </div>
 
-                {/* Mission 스타일 Tiptap 뷰포트 (하얗고 깔끔한 화이트 시트) */}
-                <div className="rich-editor-viewport">
-                  <div className="rich-editor-body">
-                    <EditorContent editor={editor} />
-                  </div>
+              {editorMode === 'block' && (
+                <div className="toolbar-group" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                    활성 블록: <strong style={{ color: 'var(--primary)' }}>#{paragraphs.findIndex(p => p.id === activeParagraphId) >= 0 ? paragraphs.findIndex(p => p.id === activeParagraphId) + 1 : 1}</strong>
+                    {(() => {
+                      const cur = paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0];
+                      return cur?.tag && cur.tag !== 'p' ? ` (${cur.tag.toUpperCase()})` : '';
+                    })()}
+                  </span>
                 </div>
-              </>
+              )}
+            </div>
+
+            {editorMode === 'doc' ? (
+              /* 본문 모드: Mission 스타일 Tiptap 뷰포트 (하얗고 깔끔한 화이트 시트) */
+              <div className="rich-editor-viewport">
+                <div className="rich-editor-body">
+                  <EditorContent editor={editor} />
+                </div>
+              </div>
             ) : (
               /* 문단 모듈 워크스페이스 */
               <div className="paragraph-workspace">
@@ -957,6 +1581,11 @@ export default function Studio() {
                           <div className="paragraph-card-header">
                             <div className="paragraph-meta-info">
                               <span className="paragraph-badge">#{idx + 1}</span>
+                              {p.tag && p.tag !== 'p' && (
+                                <span className="paragraph-tag-badge" title={`단락 서식: ${p.tag.toUpperCase()}`}>
+                                  {p.tag === 'h1' ? 'H1 대제목' : p.tag === 'h2' ? 'H2 중제목' : p.tag === 'h3' ? 'H3 소제목' : p.tag === 'blockquote' ? '인용구' : p.tag.toUpperCase()}
+                                </span>
+                              )}
                               <input
                                 type="text"
                                 className="paragraph-label-input"
@@ -1021,6 +1650,7 @@ export default function Studio() {
                           <div className="paragraph-card-body">
                             <textarea
                               className="paragraph-textarea"
+                              data-id={p.id}
                               value={p.text || ''}
                               placeholder="문단 내용을 입력하세요..."
                               onChange={(e) => handleParagraphChange(p.id, e.target.value)}
@@ -1092,7 +1722,7 @@ export default function Studio() {
                     <span>AI 초고 집필 에이전트</span>
                   </div>
                   <span className="polish-header-sub">
-                    {currentChapter ? `📍 ${currentChapter.title} > ${localTitle || currentSection?.title || '소목차'}` : '키워드와 지시어로 소목차 본문을 완성합니다.'}
+                    {currentChapter ? `📍 제 ${currentChapterIndex + 1}장. ${cleanTitle(currentChapter.title)} > ${cleanTitle(localTitle || currentSection?.title || '소목차')}` : '키워드와 지시어로 소목차 본문을 완성합니다.'}
                   </span>
                 </div>
 
@@ -1379,6 +2009,265 @@ export default function Studio() {
           </aside>
         </div>
       </main>
+
+      {/* 우측 덮어쓰기 패널: AI 총괄 편집장 (우측 패널과 1:1 동일 크기, 백드롭 없이 에디터 작업 병행 가능, X버튼으로만 닫힘) */}
+      {isChiefModalOpen && (
+        <aside className="chief-slide-drawer">
+          {/* 편집장 대화창 헤더 */}
+          <div className="chief-drawer-header">
+            <div className="chief-header-title-group">
+              <div className="chief-header-badge-icon">🏛️</div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <h2>AI 총괄 편집장</h2>
+                  <span className="chief-header-tag">Editor-in-Chief</span>
+                  <span className="chief-online-dot" title="실시간 에이전트 준비 완료" />
+                </div>
+                <p className="chief-header-desc">
+                  《{activeBook?.title}》 전담 총괄 파트너 · 목차 재구성 및 서사 밸런스 코칭
+                </p>
+              </div>
+            </div>
+            <div className="chief-header-actions">
+              <button
+                type="button"
+                className={`chief-header-btn ${isChiefHistoryOpen ? 'active' : ''}`}
+                title="대화 기록 (히스토리)"
+                onClick={() => setIsChiefHistoryOpen(!isChiefHistoryOpen)}
+              >
+                <History size={15} />
+                {chiefChatHistory.length > 0 && (
+                  <span className="chief-history-badge">{chiefChatHistory.length}</span>
+                )}
+              </button>
+              <button
+                type="button"
+                className="chief-header-btn"
+                title="새 대화 시작 (이전 대화 자동 보관)"
+                onClick={handleResetChiefChat}
+              >
+                <RotateCcw size={15} />
+              </button>
+              <button
+                type="button"
+                className="chief-header-btn close"
+                onClick={() => setIsChiefModalOpen(false)}
+                title="패널 닫기"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          {isChiefHistoryOpen ? (
+            /* --- 대화 히스토리 보관소 뷰 --- */
+            <div className="chief-history-view">
+              <div className="chief-history-header">
+                <div className="history-title-row">
+                  <span className="history-title">📚 대화 기록 보관소</span>
+                  <span className="history-count">총 {chiefChatHistory.length}개 세션</span>
+                </div>
+                <p className="history-subtitle">
+                  새 대화를 시작할 때마다 이전 상담 내역이 여기에 안전하게 보관됩니다.
+                </p>
+              </div>
+
+              <div className="chief-history-list">
+                {chiefChatHistory.length === 0 ? (
+                  <div className="chief-history-empty">
+                    <History size={32} />
+                    <p>보관된 이전 대화가 없습니다.</p>
+                    <span>헤더의 새로고침(새 대화) 버튼을 누르면 현재 대화가 여기에 자동 보관됩니다.</span>
+                  </div>
+                ) : (
+                  chiefChatHistory.map((session) => (
+                    <div
+                      key={session.id}
+                      className={`history-session-card ${session.id === activeChiefSessionId ? 'active' : ''}`}
+                      onClick={() => handleLoadHistorySession(session)}
+                    >
+                      <div className="session-card-main">
+                        <div className="session-card-title">
+                          <MessageSquare size={14} className="session-icon" />
+                          <span>{session.title}</span>
+                          {session.id === activeChiefSessionId && (
+                            <span className="current-session-badge">현재 대화방</span>
+                          )}
+                        </div>
+                        <div className="session-card-meta">
+                          <span>{session.updatedAt ? `${session.updatedAt} (수정)` : session.createdAt}</span>
+                          <span>·</span>
+                          <span>메시지 {session.messageCount || session.messages?.length || 0}개</span>
+                        </div>
+                      </div>
+                      <div className="session-card-actions">
+                        <button
+                          type="button"
+                          className="btn-history-delete"
+                          title="기록 삭제"
+                          onClick={(e) => handleDeleteHistorySession(session.id, e)}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="chief-history-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-full"
+                  onClick={() => setIsChiefHistoryOpen(false)}
+                >
+                  대화창으로 돌아가기
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* --- 실시간 채팅 메시지 영역 + 하단 추천 액션/입력창 --- */
+            <>
+              {/* 채팅 메시지 영역 */}
+              <div className="chief-chat-area">
+                <div className="chief-message-list">
+                  {chiefMessages.map((msg) => (
+                    <div key={msg.id} className={`chief-message-row ${msg.role}`}>
+                      {msg.role === 'assistant' && (
+                        <div className="chief-avatar">🏛️</div>
+                      )}
+                      <div className="chief-bubble-wrapper">
+                        <div className="chief-bubble">
+                          <div
+                            className="chief-bubble-content markdown-body"
+                            dangerouslySetInnerHTML={{ __html: marked.parse(msg.content || '') }}
+                          />
+
+                          {/* 메시지에 목차 개편안 데이터가 포함된 경우 원클릭 미리보기 & 반영 카드 */}
+                          {msg.restructureData && msg.restructureData.chapters && (
+                            <div className="chief-restructure-card">
+                              <div className="restructure-card-header">
+                                <span className="restructure-card-badge">✨ 편집장의 개편안 제안</span>
+                                <span className="restructure-card-count">
+                                  총 {msg.restructureData.chapters.length}개 챕터
+                                </span>
+                              </div>
+                              {msg.restructureData.explanation && (
+                                <p className="restructure-card-desc">{msg.restructureData.explanation}</p>
+                              )}
+                              <div className="restructure-card-tree">
+                                {msg.restructureData.chapters.map((ch, idx) => (
+                                  <div key={idx} className="restructure-ch-item">
+                                    <div className="restructure-ch-title">
+                                      <strong>제 {idx + 1}장.</strong> {cleanTitle(ch.title)}
+                                    </div>
+                                    <ul className="restructure-sec-list">
+                                      {ch.sections?.map((sec, sIdx) => (
+                                        <li key={sIdx}>
+                                          <span className="sec-tag">{idx + 1}.{sIdx + 1}</span> {cleanTitle(sec.title)}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="restructure-apply-bar">
+                                <span className="apply-notice">
+                                  ℹ️ 기존 작성 본문은 제목 매칭 풀을 통해 안전하게 보존됩니다.
+                                </span>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-apply-outline"
+                                  disabled={isApplyingRestructure}
+                                  onClick={() => handleApplyRestructureFromMsg(msg.restructureData)}
+                                >
+                                  <Check size={15} />
+                                  <span>{isApplyingRestructure ? '반영 중...' : '🚀 이 수정안을 현재 목차에 즉시 반영하기'}</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <span className="chief-timestamp">{msg.timestamp}</span>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* 편집장 생각 중 인디케이터 */}
+                  {isChiefReplying && (
+                    <div className="chief-message-row assistant">
+                      <div className="chief-avatar">🏛️</div>
+                      <div className="chief-bubble-wrapper">
+                        <div className="chief-bubble chief-typing-bubble">
+                          <span className="typing-dot" />
+                          <span className="typing-dot" />
+                          <span className="typing-dot" />
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginLeft: '0.4rem' }}>
+                            편집장이 답변과 기획안을 작성하고 있습니다...
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chiefChatEndRef} />
+                </div>
+              </div>
+
+              {/* 하단 입력 영역: 추천 기능 칩 + 대화 입력창 */}
+              <div className="chief-chat-input-container">
+                {/* 추천 기능 칩 바 (도서 제목 추천, 목차 진단, 베스트셀러와 비교, 전체 서사/논리 점검, 톤앤매너 감수, 프롤로그/에필로그 기획) */}
+                <div className="chief-suggestions-bar">
+                  <span className="suggestions-label">💡 추천 액션:</span>
+                  <div className="suggestions-scroll">
+                    {CHIEF_RECOMMENDED_ACTIONS.map((action) => (
+                      <button
+                        key={action.id}
+                        type="button"
+                        className="suggestion-chip"
+                        onClick={() => handleSendChiefMessage(action.prompt)}
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 대화 입력 폼 */}
+                <form
+                  className="chief-input-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendChiefMessage();
+                  }}
+                >
+                  <textarea
+                    className="chief-chat-textarea"
+                    placeholder="편집장에게 지시하거나 질문하세요 (예: 1장과 2장을 하나로 합쳐줘, 엔터로 전송)"
+                    value={chiefInput}
+                    onChange={(e) => setChiefInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendChiefMessage();
+                      }
+                    }}
+                    disabled={isChiefReplying}
+                    rows={2}
+                  />
+                  <button
+                    type="submit"
+                    className="btn-chief-send"
+                    disabled={isChiefReplying || !chiefInput.trim()}
+                    title="전송 (Enter)"
+                  >
+                    <Send size={16} />
+                  </button>
+                </form>
+              </div>
+            </>
+          )}
+        </aside>
+      )}
 
       {/* 모달 1: AI 목차 기획 */}
       {isOutlineModalOpen && (
