@@ -213,6 +213,276 @@ export const useStore = create((set, get) => {
       }
     },
 
+    openReader: async (bookId, chapterId = null) => {
+      try {
+        set({ isBooksLoading: true });
+        let book = get().books.find(b => b.id === bookId);
+        if (!book) {
+          book = await bookService.getBook(bookId);
+        }
+        const targetChapId = chapterId || book?.chapters?.[0]?.id || null;
+        const targetSecId = book?.chapters?.find(c => c.id === targetChapId)?.sections?.[0]?.id || null;
+
+        localStorage.setItem('last_active_book_id', bookId);
+
+        // 독서 이력(reader_history) 실시간 갱신
+        try {
+          const targetChap = book?.chapters?.find(c => c.id === targetChapId);
+          const historyRaw = localStorage.getItem('reader_history') || '[]';
+          const prevHistory = JSON.parse(historyRaw);
+          
+          // 작성자/필명 안전 매핑 (단순 '작가' 방지)
+          const cfgRaw = localStorage.getItem('bookstudio_config');
+          let cfgAuthor = '';
+          try { if (cfgRaw) cfgAuthor = JSON.parse(cfgRaw).defaultAuthor; } catch {}
+          const userAuthor = get().user?.displayName || cfgAuthor || '김연재';
+          const resolvedAuthor = book?.author && book.author !== '작가' ? book.author : userAuthor;
+
+          const newEntry = {
+            bookId: book.id,
+            bookTitle: book.title,
+            subtitle: book.subtitle || '',
+            author: resolvedAuthor,
+            genre: book.genre || '소설',
+            chapterId: targetChapId,
+            chapterTitle: targetChap?.title || '1화',
+            coverColor: book.coverColor || '#2563eb',
+            readAt: new Date().toISOString()
+          };
+          const updatedHistory = [newEntry, ...prevHistory.filter(h => h.bookId !== book.id)].slice(0, 30);
+          localStorage.setItem('reader_history', JSON.stringify(updatedHistory));
+        } catch (e) {
+          console.error('Failed to update reader_history:', e);
+        }
+
+        set({
+          activeBook: book,
+          activeChapterId: targetChapId,
+          activeSectionId: targetSecId,
+          currentView: 'reader',
+          isBooksLoading: false
+        });
+      } catch (err) {
+        get().showToast(`뷰어 열기 실패: ${err.message}`, 'error');
+        set({ isBooksLoading: false });
+      }
+    },
+
+    setReaderChapter: (chapterId) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      const targetChap = activeBook.chapters?.find(c => c.id === chapterId);
+      const targetSecId = targetChap?.sections?.[0]?.id || null;
+      set({
+        activeChapterId: chapterId,
+        activeSectionId: targetSecId
+      });
+    },
+
+    toggleChapterLike: async (chapterId) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      const updatedChapters = (activeBook.chapters || []).map((ch) => {
+        if (ch.id === chapterId) {
+          const currentLikes = ch.likes || 0;
+          const isLiked = ch.isUserLiked || false;
+          return {
+            ...ch,
+            likes: isLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1,
+            isUserLiked: !isLiked
+          };
+        }
+        return ch;
+      });
+      const updatedBook = { ...activeBook, chapters: updatedChapters };
+      await bookService.saveBook(updatedBook);
+      set({ activeBook: updatedBook });
+    },
+
+    addChapterComment: async (chapterId, text, author = '익명 독자') => {
+      if (!text || !text.trim()) return;
+      const { activeBook, user } = get();
+      if (!activeBook) return;
+      const authorName = user?.displayName || author || '익명 독자';
+      const newComment = {
+        id: 'cmt_' + Date.now(),
+        author: authorName,
+        text: text.trim(),
+        createdAt: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+      };
+      const updatedChapters = (activeBook.chapters || []).map((ch) => {
+        if (ch.id === chapterId) {
+          return {
+            ...ch,
+            comments: [newComment, ...(ch.comments || [])]
+          };
+        }
+        return ch;
+      });
+      const updatedBook = { ...activeBook, chapters: updatedChapters };
+      await bookService.saveBook(updatedBook);
+      set({ activeBook: updatedBook });
+      get().showToast('소중한 독자 댓글이 등록되었습니다! 💬', 'success');
+    },
+
+    editChapterComment: async (chapterId, commentId, newText) => {
+      if (!newText || !newText.trim()) return;
+      const { activeBook } = get();
+      if (!activeBook) return;
+      const updatedChapters = (activeBook.chapters || []).map((ch) => {
+        if (ch.id === chapterId) {
+          const updatedComments = (ch.comments || []).map((cmt) => {
+            if (cmt.id === commentId) {
+              return { ...cmt, text: newText.trim(), editedAt: ' (수정됨)' };
+            }
+            return cmt;
+          });
+          return { ...ch, comments: updatedComments };
+        }
+        return ch;
+      });
+      const updatedBook = { ...activeBook, chapters: updatedChapters };
+      await bookService.saveBook(updatedBook);
+      set({ activeBook: updatedBook });
+      get().showToast('댓글이 수정되었습니다.', 'success');
+    },
+
+    deleteChapterComment: async (chapterId, commentId) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      const updatedChapters = (activeBook.chapters || []).map((ch) => {
+        if (ch.id === chapterId) {
+          return {
+            ...ch,
+            comments: (ch.comments || []).filter((cmt) => cmt.id !== commentId)
+          };
+        }
+        return ch;
+      });
+      const updatedBook = { ...activeBook, chapters: updatedChapters };
+      await bookService.saveBook(updatedBook);
+      set({ activeBook: updatedBook });
+      get().showToast('댓글이 삭제되었습니다.', 'info');
+    },
+
+    incrementChapterViews: async (chapterId) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      const updatedChapters = (activeBook.chapters || []).map((ch) => {
+        if (ch.id === chapterId) {
+          return { ...ch, views: (ch.views || 0) + 1 };
+        }
+        return ch;
+      });
+      const updatedBook = { ...activeBook, chapters: updatedChapters };
+      await bookService.saveBook(updatedBook);
+      set({ activeBook: updatedBook });
+    },
+
+    updateChapterAuthorNote: async (chapterId, note) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      const updatedChapters = (activeBook.chapters || []).map((ch) => {
+        if (ch.id === chapterId) {
+          return { ...ch, authorNote: note };
+        }
+        return ch;
+      });
+      const updatedBook = { ...activeBook, chapters: updatedChapters };
+      await bookService.saveBook(updatedBook);
+      set({ activeBook: updatedBook });
+      get().showToast('작가의 말이 업데이트되었습니다.', 'success');
+    },
+
+    // --- 버전 관리 액션 ---
+    createBookVersion: async (versionName) => {
+      const { activeBook } = get();
+      if (!activeBook) return false;
+      try {
+        const updatedBook = await bookService.createBookVersion(activeBook.id, versionName);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+        get().showToast(`새 버전 '${versionName}'이(가) 안전하게 보관되었습니다.`, 'success');
+        return true;
+      } catch (err) {
+        get().showToast(`버전 저장 실패: ${err.message}`, 'error');
+        return false;
+      }
+    },
+
+    restoreBookVersion: async (versionId) => {
+      const { activeBook } = get();
+      if (!activeBook) return false;
+      try {
+        const updatedBook = await bookService.restoreBookVersion(activeBook.id, versionId);
+        const firstChapId = updatedBook.chapters?.[0]?.id || null;
+        const firstSecId = updatedBook.chapters?.[0]?.sections?.[0]?.id || null;
+        set({
+          activeBook: updatedBook,
+          activeChapterId: firstChapId,
+          activeSectionId: firstSecId
+        });
+        get().loadBooks();
+        get().showToast('선택한 버전으로 원고가 복원되었습니다!', 'success');
+        return true;
+      } catch (err) {
+        get().showToast(`버전 복원 실패: ${err.message}`, 'error');
+        return false;
+      }
+    },
+
+    deleteBookVersion: async (versionId) => {
+      const { activeBook } = get();
+      if (!activeBook) return false;
+      try {
+        const updatedBook = await bookService.deleteBookVersion(activeBook.id, versionId);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+        get().showToast('버전 기록이 삭제되었습니다.', 'info');
+        return true;
+      } catch (err) {
+        get().showToast(`버전 삭제 실패: ${err.message}`, 'error');
+        return false;
+      }
+    },
+
+    // --- 창작실 액션 (아이디어 노트, 기획서, 인물 & 플롯) ---
+    updateActiveBookPlanning: async (planningData) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.updateBookPlanning(activeBook.id, planningData);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+      } catch (err) {
+        get().showToast(`창작 기획 저장 실패: ${err.message}`, 'error');
+      }
+    },
+
+    updateActiveBookCharacters: async (characters) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.updateBookCharacters(activeBook.id, characters);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+      } catch (err) {
+        get().showToast(`인물 저장 실패: ${err.message}`, 'error');
+      }
+    },
+
+    updateActiveBookPlotStages: async (plotStages) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.updateBookPlotStages(activeBook.id, plotStages);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+      } catch (err) {
+        get().showToast(`플롯 저장 실패: ${err.message}`, 'error');
+      }
+    },
+
     setActiveChapterId: (chapterId) => {
       const book = get().activeBook;
       const chap = book?.chapters?.find(c => c.id === chapterId);

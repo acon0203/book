@@ -141,6 +141,52 @@
       ],
       "writingAdvice": "각 꼭지의 첫 3줄 안에 핵심 결론을 제시하고, 1,500자 내외로 명쾌하게 마무리하세요.",
       "promptTip": "숏폼 칼럼 형식으로, 핵심 메시지가 명확하고 한눈에 들어오는 강렬하고 흡인력 있는 소제목으로 기획해줘."
+    },
+    "fiction": {
+      "id": "fiction",
+      "name": "소설·웹소설",
+      "icon": "🎭",
+      "standards": {
+        "chapters": 5,
+        "sectionsPerChapter": 8,
+        "totalSections": 40,
+        "avgWordsPerSection": 3000,
+        "estTotalWords": 120000,
+        "estTotalPages": 280,
+        "estA4Pages": 65
+      },
+      "characteristics": "인물의 욕망과 결핍, 사건의 3막 5단계 갈등(발단-전개-위기-절정-결말) 중심 서사",
+      "sampleBooks": [
+        { "title": "불편한 편의점", "author": "김호연", "pages": 268, "structure": "8장 32꼭지" },
+        { "title": "달러구트 꿈 백화점", "author": "이미예", "pages": 300, "structure": "9장 36꼭지" },
+        { "title": "아버지의 해방일지", "author": "정지아", "pages": 268, "structure": "7장 28꼭지" },
+        { "title": "파친코 1, 2", "author": "이민진", "pages": 768, "structure": "3부 45장" }
+      ],
+      "writingAdvice": "인물의 명확한 욕망과 방해물(갈등)을 설정하고, 챕터 끝마다 다음 화를 클릭하게 만드는 훅(클리프행어)을 배치하세요.",
+      "promptTip": "소설/웹소설 전개 형식으로, 인물의 갈등과 사건의 기승전결이 극적으로 전개되는 흡인력 있는 소제목으로 기획해줘."
+    },
+    "memoir": {
+      "id": "memoir",
+      "name": "자서전·회고록·평전",
+      "icon": "📜",
+      "standards": {
+        "chapters": 5,
+        "sectionsPerChapter": 6,
+        "totalSections": 30,
+        "avgWordsPerSection": 3200,
+        "estTotalWords": 96000,
+        "estTotalPages": 250,
+        "estA4Pages": 55
+      },
+      "characteristics": "출생과 결핍, 인생 최대 위기 극복, 성공과 실패의 전환점, 후대에 남길 삶의 철학",
+      "sampleBooks": [
+        { "title": "슈독 (Shoe Dog)", "author": "필 나이트", "pages": 544, "structure": "2부 18장" },
+        { "title": "스티브 잡스", "author": "월터 아이작슨", "pages": 944, "structure": "42장 84꼭지" },
+        { "title": "비커밍 (Becoming)", "author": "미셸 오바마", "pages": 584, "structure": "3부 24장" },
+        { "title": "백년의 고독을 넘어서", "author": "김형석", "pages": 320, "structure": "5부 30꼭지" }
+      ],
+      "writingAdvice": "단순 연대기 나열을 넘어, 인생의 결정적 전환점과 실패의 순간에서 얻은 성찰을 진솔하게 담아내세요.",
+      "promptTip": "자서전/회고록 형식으로, 한 인간의 결핍과 도전, 위기 극복과 삶의 통찰이 드러나는 깊이 있는 소제목으로 기획해줘."
     }
   }
 }

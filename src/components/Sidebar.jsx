@@ -2,8 +2,9 @@ import React from 'react';
 import './Sidebar.css';
 import { useStore } from '../store';
 import { 
-  BookOpen, Edit3, Lightbulb, Award, Settings, Sun, Moon, 
-  Cloud, RefreshCw, LogIn, LogOut, CheckCircle 
+  BookOpen, Edit3, Award, Settings, Sun, Moon, 
+  Cloud, RefreshCw, LogIn, LogOut, CheckCircle,
+  Flame, BookCheck, Palette
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -18,10 +19,8 @@ export default function Sidebar() {
       if (activeBook) {
         setView('studio');
       } else if (books.length > 0) {
-        // 서재에 책이 있으면 가장 최근 작업 도서를 자동으로 열어서 스튜디오로 진입
         openBook(books[0].id);
       } else {
-        // 도서가 한 권도 없을 때만 새 책 만들기 확인 토스트 표시
         showActionToast(
           '작업 중인 도서가 없습니다. 새 책을 만드시겠습니까?',
           () => {
@@ -39,17 +38,44 @@ export default function Sidebar() {
     setView(id);
   };
 
-  const navItems = [
-    { id: 'library', label: '내 서재', icon: BookOpen },
+  // 황금 비율 3단 섹션 네비게이션 정의
+  const navSections = [
     {
-      id: 'studio',
-      label: '집필 스튜디오',
-      icon: Edit3,
-      sublabel: activeBook ? activeBook.title : (books.length > 0 ? '이어 쓰기' : null)
+      id: 'my-space',
+      label: null, // 최상단 나의 공간 (헤더 없이 깔끔하게 배치)
+      items: [
+        { id: 'library', label: '내 서재', icon: BookOpen },
+        { id: 'stats', label: '통합 통계', icon: Award }
+      ]
     },
-    { id: 'vault', label: '자료 금고', icon: Lightbulb },
-    { id: 'stats', label: '집필 통계', icon: Award },
-    { id: 'settings', label: '환경 설정', icon: Settings },
+    {
+      id: 'reader-space',
+      label: '독자 공간',
+      items: [
+        { id: 'serial-explore', label: '연재 작품', icon: Flame },
+        { id: 'complete-explore', label: '완성 작품', icon: BookCheck }
+      ]
+    },
+    {
+      id: 'creator-space',
+      label: '작가 공간',
+      items: [
+        { id: 'vault', label: '창작실', icon: Palette },
+        {
+          id: 'studio',
+          label: '집필 스튜디오',
+          icon: Edit3,
+          sublabel: activeBook ? activeBook.title : (books.length > 0 ? '이어 쓰기' : null)
+        }
+      ]
+    },
+    {
+      id: 'system-space',
+      label: null,
+      items: [
+        { id: 'settings', label: '서재 관리', icon: Settings }
+      ]
+    }
   ];
 
   return (
@@ -60,29 +86,39 @@ export default function Sidebar() {
       </div>
 
       <nav className="nav-menu">
-        {navItems.map((item, index) => {
-          const Icon = item.icon;
-          const isActive = currentView === item.id;
-          return (
-            <React.Fragment key={item.id}>
-              {index === 2 && <div className="nav-divider" />}
-              <button
-                className={`nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => handleNavClick(item.id)}
-              >
-                <Icon size={18} />
-                <div className="nav-item-content">
-                  <span>{item.label}</span>
-                  {item.sublabel && (
-                    <span className="nav-sublabel" title={item.sublabel}>
-                      {item.sublabel}
-                    </span>
-                  )}
-                </div>
-              </button>
-            </React.Fragment>
-          );
-        })}
+        {navSections.map((sec, secIdx) => (
+          <div key={sec.id} className="nav-section-group">
+            {secIdx > 0 && <div className="nav-divider" />}
+            {sec.label && (
+              <div className="nav-section-header">
+                <span className="nav-section-title">{sec.label}</span>
+              </div>
+            )}
+            <div className="nav-section-items">
+              {sec.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    className={`nav-item ${isActive ? 'active' : ''}`}
+                    onClick={() => handleNavClick(item.id)}
+                  >
+                    <Icon size={17} />
+                    <div className="nav-item-content">
+                      <span>{item.label}</span>
+                      {item.sublabel && (
+                        <span className="nav-sublabel" title={item.sublabel}>
+                          {item.sublabel}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <div className="sidebar-footer">

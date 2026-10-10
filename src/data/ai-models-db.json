@@ -32,32 +32,19 @@
       "name": "Gemini 3.6 Flash",
       "category": "텍스트 출력 모델",
       "priority": 3,
-      "badge": "🚀 고성능 플래그십",
+      "badge": "🚀 최신 플래그십 (3.5 후속)",
       "limits": {
         "rpm": 5,
         "tpm": "250K",
         "rpd": 20
       },
-      "description": "고성능 플래그십 3순위 백업 모델"
-    },
-    {
-      "id": "gemini-3.5-flash",
-      "name": "Gemini 3.5 Flash",
-      "category": "텍스트 출력 모델",
-      "priority": 4,
-      "badge": "🚀 고성능 플래그십",
-      "limits": {
-        "rpm": 5,
-        "tpm": "250K",
-        "rpd": 20
-      },
-      "description": "안정적인 고성능 4순위 백업 모델"
+      "description": "단종된 3.5 Flash를 대체하는 최신 고성능 표준 모델"
     },
     {
       "id": "gemini-3.5-flash-lite",
       "name": "Gemini 3.5 Flash Lite",
       "category": "텍스트 출력 모델",
-      "priority": 5,
+      "priority": 4,
       "badge": "⭐ 대용량 챔피언",
       "limits": {
         "rpm": 15,

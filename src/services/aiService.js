@@ -2,6 +2,7 @@ import { storageService } from './storageService';
 import aiModelsDb from '../data/ai-models-db.json';
 import bestsellerDb from '../data/bestseller-db.json';
 import { useStore } from '../store';
+import { recordModelUsage, markModelExhausted } from '../utils/quotaManager';
 
 // Google AI Studio에서 지원하는 실제 활성 모델 목록 조회
 async function fetchGoogleActiveModels(apiKey) {
@@ -124,6 +125,7 @@ async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
       } else if (finalResponse.status === 503 || errorMsg.includes('high demand') || errorMsg.includes('overloaded')) {
         userFriendlyMsg = `구글 서버 트래픽 일시 과부하(503): 사용자가 몰려 응답이 지연되고 있습니다.`;
       } else if (finalResponse.status === 429 || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('QUOTA')) {
+        markModelExhausted(modelId);
         userFriendlyMsg = `무료 일일 사용량 한도 도달: 넉넉한 일일 500회 모델(Gemini 3.5 Flash Lite)로 변경을 권장합니다.`;
       }
       const error = new Error(userFriendlyMsg);
@@ -136,6 +138,7 @@ async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
     }
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    recordModelUsage(modelId);
     storageService.incrementAiCount();
     return text;
   } catch (err) {

@@ -15,6 +15,8 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 ├── index.html                   # Vite 진입점 HTML
 ├── vite.config.js               # Vite 8 설정 (React 플러그인, 5173 단독)
 ├── package.json                 # 스크립트 및 의존성 패키지 관리
+├── TODO.md                      # 전체 로드맵 및 단계별 작업 추적표
+├── HISTORY.md                   # 일자별 개발 세션 핵심 작업 및 변경 히스토리 기록
 │
 └── src/                         # [프론트엔드 - React 19 + Vite]
     ├── main.jsx                 # React 마운트 진입점
@@ -26,23 +28,29 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │
     ├── pages/                   # 주요 화면 단위 (JSX + 1:1 일반 CSS 매칭)
     │   ├── Library.jsx / .css   # 내 서재 (2줄 슬림 작가 통계 & 명언 바 + 새 책 만들기 모달)
-    │   ├── Studio.jsx / .css    # 집필 스튜디오 (목차 트리 + 에디터 + AI 교정 + 3대 모달 내장)
-    │   ├── Vault.jsx / .css     # 자료 금고 (+ 새 자료 등록 모달 내장)
-    │   ├── Stats.jsx / .css     # 집필 통계 & 작가 성장 (Mission 스타일 레벨/티어/스트릭/업적)
-    │   └── Settings.jsx / .css  # AI 환경 설정 (API 키 및 제공자 관리)
+    │   ├── Studio.jsx / .css    # 집필 스튜디오 (목차 트리 + 에디터 + 버전 관리 모달 + AI 교정)
+    │   ├── Vault.jsx / .css     # 창작실 (좌측 작품 서가 바인더 + 상단 가로 5대 파이프라인: 아이디어 노트 ➔ 출간 기획서 ➔ 글감 취재 ➔ 인물/뼈대 ➔ 목차 조립대)
+    │   ├── Reader.jsx / .css    # [Step 3 신설] 표준 통합 웹 뷰어 (문피아 지표/화면폭 + 네이버웹소설 간명 헤더/보기설정/작가의말/댓글 + DOMPurify XSS 방어)
+    │   ├── ExploreSerial.jsx / .css # [Step 5 신설] 연재 작품 탐색 (교보문고 8대 장르 사이드바 + 실시간 TOP 5 랭킹 보드 + 요일/자유연재 탭 + 문피아식 연재작 카드)
+    │   ├── Stats.jsx / .css     # 통합 통계 (슬림 분류 탭: 집필 통계 ↔ 독서 통계, 레벨/루틴/전문성/타임라인/업적)
+    │   └── Settings.jsx / .css  # 서재 관리 (계정&프로필, 데이터 백업·동기화 센터, AI 집필 엔진, 서비스 안내 4대 영역)
     │
     ├── components/              # 재사용 공통 UI 컴포넌트
     │   ├── Sidebar.jsx / .css   # 글로벌 사이드바 네비게이션
-    │   └── Toast.jsx / .css     # 알림 토스트 컴포넌트
+    │   ├── Toast.jsx / .css     # 알림 토스트 컴포넌트
+    │   ├── TiptapEditor.jsx / .css # [독립 분리] 공통 리치 텍스트 에디터 엔진 (Zero-Lag 본문 작성 & 툴바)
+    │   └── ModelQuotasModal.jsx / .css # [신설] 안티그래비티 스타일 실시간 AI 모델 Quotas 잔여 현황 팝오버
     │
     ├── data/                    # [출판 레퍼런스 및 영감 정적 DB]
     │   ├── bestseller-db.json   # 베스트셀러 25권 표본 분석 & 장르별 표준 규격(페이지수, 꼭지당 글자수, 표본 도서) DB
     │   ├── ai-models-db.json    # 무료 텍스트/Gemma 모델 목록(0/0 제외) 및 스마트 자동 전환 우선순위 DB
-    │   └── quotes-db.json       # 작가 집필 영감 및 글쓰기 명언 정적 DB
+    │   ├── quotes-db.json       # 작가 집필 영감 및 글쓰기 명언 정적 DB
+    │   └── vaultConstants.js    # 8대 장르 출판 표준 플롯 규격 템플릿 & 창작 파이프라인 정적 상수
     │
     ├── utils/                   # 공통 순수 유틸리티
     │   ├── paragraphParser.js   # 본문 HTML ↔ 문단 모듈 카드 블록 무손실 변환 유틸리티
-    │   └── authorStats.js       # 작가 레벨 공식(Mission XP) 및 서재 통합 통계 계산
+    │   ├── authorStats.js       # 작가 레벨 공식(Mission XP) 및 서재 통합 통계 계산
+    │   └── quotaManager.js      # [신설] Gemini 및 AI 모델별 실시간 일일 쿼터 추적 & PST/KST 리셋 카운트다운
     │
     ├── config/                  # 글로벌 인프라 설정
     │   └── firebase.js          # Firebase 초기화 (Google Auth, Cloud Firestore)
@@ -67,16 +75,24 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 | **`src/data/ai-models-db.json`** | 구글 AI 스튜디오 무료 텍스트/Gemma 10대 모델 한도 스펙 및 스마트 자동 전환(최신 3.8 Flash ➔ 3.5 Lite ➔ 3.1 Lite ➔ Gemma) 정적 DB |
 | **`src/data/bestseller-db.json`** | 분야별 베스트셀러 25권 실측 표본 기반 장르별 목차 표준 규격(총 페이지수, 꼭지당 평균 글자수, 표본 도서, AI 팁) 정적 DB |
 | **`src/data/quotes-db.json`** | 국내외 거장 작가들의 집필 자극 명언 및 글쓰기 영감 텍스트 정적 DB |
+| **`src/data/vaultConstants.js`** | 8대 장르 출판 표준 플롯 규격 템플릿(`PLOT_TEMPLATES`), 5대 창작 파이프라인 단계 및 자료 카테고리 프리셋 상수 |
 | **`TODO.md`** | 완료된 작업 현황(`[x]`)과 향후 단계별 개발 로드맵(`[ ]`)을 실시간 추적하는 진행 관리표 |
+| **`HISTORY.md`** | 일자별 개발 세션의 구체적인 문제 해결 과정, 기능 변경 내역, 세부 스펙을 누적 기록하는 개발 일지 |
 | **`src/styles/theme.css`** | 다크/라이트 글래스모피즘 테마 변수, 폰트(Inter/Noto Sans KR), 공통 버튼(`.btn`), 모달(`.modal-overlay`) 정의 |
 | **`src/config/firebase.js`** | Google Firebase 앱, Google Auth Provider, Cloud Firestore DB 초기화 설정 |
-| **`src/pages/Library.jsx`** | 2줄 슬림 성장/통계 바, 도서 카드 그리드, 진행률(%), D-Day 배지, 도서 삭제 및 새 책 만들기 모달 |
-| **`src/pages/Studio.jsx`** | 3열 집필 환경 + 듀얼 에디터(본문/문단) + **AI 총괄 편집장(Editor-in-Chief)** 우측 패널 덮어쓰기(본문 수정 병행 가능, 베스트셀러 성공 요건 비교 등 6대 핵심 추천 액션) + 목차 기획/내보내기 모달 |
+| **`src/components/Sidebar.jsx`** | 황금 비율 3단 사이드바 (나의 공간: 서재·통계 / 독자 공간: 연재·완성본 / 작가 공간: 창작실·집필 스튜디오) 네비게이션 |
+| **`src/components/TiptapEditor.jsx`** | 범용 리치 텍스트 에디터 독립 컴포넌트: H1~H3 서식 툴바, 종이 시트 본문 뷰포트, 드래그 문장 AI 자동 전송 및 Zero-Lag 즉시 렌더링 |
+| **`src/components/ModelQuotasModal.jsx`** | [신설] 서비스 테마 동기화 AI 모델별 일일 잔여 한도(Quota) 및 리셋 카운트다운 모달 |
+| **`src/pages/Library.jsx`** | [내 서재 전면 개편] 1. 상단 ⚡ 지금 이어하기 Quick Band(최근 집필 ➔ 스튜디오 / 최근 독서 ➔ 뷰어 2분할 퀵 직통) + 2. 좌우 분류 시트 탭(✍️ 집필 서재 vs 📖 독서 서재) + 3. 시트 연동 스마트 2줄 요약 밴드 & 도서/독서 카드 그리드 |
+| **`src/pages/Studio.jsx`** | 3열 집필 환경 + 듀얼 에디터(본문/문단) + **도서 버전 관리(디스켓 저장 드롭다운 & 책 제목 옆 버전 관리 시계 모달)** + **AI 총괄 편집장(Editor-in-Chief)** 우측 패널(베스트셀러 성공 요건 비교 등 6대 추천 액션) + 목차 기획/내보내기 모달 |
 | **`src/pages/Vault.jsx`** | 아이디어 메모, 웹 스크랩 보관 및 태그 필터링, AI 집필 프롬프트 주입용 레퍼런스 관리 |
+| **`src/pages/Reader.jsx`** | [Step 3 신설] 표준 통합 웹 뷰어: 네이버웹소설 스타일 간명 슬림 바(목차 드롭다운·보기설정 팝오버) + 문피아식 챕터 메타 지표(조회수·관심·댓글) & 기본/펼침 화면폭 토글 + 하단 작가의 말 카드 & 독자 댓글 소통 공간 + DOMPurify 안전 렌더링 |
+| **`src/pages/ExploreSerial.jsx`** | [Step 5 신설] 연재 작품 탐색: 교보문고 8대 장르 좌측 사이드바 + 실시간 Best TOP 5 가로 랭킹 보드 + 요일(월~일) 및 자유연재 통합 탭 + 문피아식 연재작 카드(1화부터/최신화 읽기 ➔ 뷰어 직통 연결) |
 | **`src/pages/Stats.jsx`** | `mission` 게이미피케이션 차용: 작가 레벨/티어/칭호, 분야별 집필 전문성(장르 랭크), 활동 기록 타임라인, 주간 루틴, 업적 배지(Trophies) |
-| **`src/pages/Settings.jsx`** | AI 제공자 선택, 원고 저장 방식 선택(방안 A 로컬 전용 vs 방안 B 자동 클라우드 백업) 및 Cloud Firestore 즉시 백업/데이터 복원 환경 설정 |
+| **`src/pages/Settings.jsx`** | [서재 관리로 전면 개편] 1. 계정 & 작가 프로필(구글 로그인·기본 필명·에디터 자동저장 주기) + 2. 데이터 저장 & 동기화 센터(로컬 0ms vs 클라우드 자동백업, Firestore 동기화, 전체 서재 JSON 백업 다운로드/파일 복원) + 3. AI 집필 엔진 설정(Google AI 무료 키·스마트 전환, 고급 접힘 메뉴: OpenAI/Claude/Ollama) + 4. 서비스 안내(공지사항, 이용약관/데이터 안심 정책, 단축키 가이드, 고객센터 FAQ 인라인 화면 서브 뷰) |
 | **`src/utils/paragraphParser.js`** | DOMParser 기반 HTML ↔ 문단(Paragraph) 블록 배열 무손실 양방향 변환 및 블록 ID 생성 유틸리티 |
 | **`src/utils/authorStats.js`** | 레벨 공식(Math.sqrt), 티어(브론즈~다이아몬드), 분야별 칭호/전문성, 활동 기록, 다권 완주율 및 마감 D-Day 계산 순수 함수 |
+| **`src/utils/quotaManager.js`** | Gemini 및 AI 모델별 일일 한도(Quota) 추적, PST/KST 리셋 카운트다운 및 429 감지 유틸리티 |
 | **`src/services/storageService.js`** | 브라우저 로컬 저장소 기반 0초 즉시 저장 및 100% 오프라인 지원 모듈 |
 | **`src/services/authService.js`** | Google 계정 1초 팝업 로그인, 로그아웃, 인증 상태 실시간 리스너 |
 | **`src/services/cloudSyncService.js`** | Firestore `users/{email}` 이메일 기반 멀티 컬렉션(`books`, `vault`, `stats`, `config`) 직관적 동기화/복원 엔진 |
@@ -93,7 +109,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 ### 1. 동기화 흐름 (Local-First 전략)
 1. **집필 중 본문 저장**: 브라우저 로컬 저장소(`localStorage`)에 **0ms 지연 없이 즉각 기록**되어 네트워크 상태와 무관하게 버벅임이 전혀 없습니다.
 2. **백그라운드 동기화**: Google 로그인 사용자인 경우, 로컬 저장이 완료된 직후 비동기로 Firestore 클라우드에 백업 스냅샷을 갱신합니다.
-3. **기기 간 복원**: 새 컴퓨터나 다른 브라우저에서 로그인 후 `[클라우드에서 데이터 복원]`을 실행하면 단 0.2초 만에 로컬 저장소로 무손실 동기화됩니다.
+3. **기기 간 복원 (무손실 버전 보존)**: 새 컴퓨터나 다른 브라우저에서 `[클라우드에서 데이터 복원]`을 실행하면, 현재 로컬에 작성 중이던 원고가 `[클라우드 복원 전 로컬 백업]` 버전으로 자동 보관된 후 최신 클라우드 데이터가 반영되어 이전 원고가 절대 유실되지 않습니다. 언제든 버전 관리에서 되돌릴 수 있습니다.
 
 ### 2. Firestore 저장 경로 및 컬렉션 분리 구조
 * **사용자 식별 경로**: `users/{email}` (Firebase 콘솔 목록에서 구글 로그인 메일 주소가 즉시 표시됨)

@@ -197,8 +197,40 @@ export const cloudSyncService = {
       };
     }
 
-    // 로컬스토리지에 반영 (단, 기존 로컬에 저장된 API 키는 덮어쓰지 않고 온전히 보존)
-    if (books.length > 0) storageService.saveBooks(books);
+    // 로컬스토리지에 반영 (로컬 원고 유실 방지: 클라우드 복원 전 로컬 원고를 자동 백업 버전으로 보존)
+    if (books.length > 0) {
+      const localBooks = storageService.getBooks();
+      const preservedBooks = books.map((cloudBook) => {
+        const localBook = localBooks.find((lb) => lb.id === cloudBook.id);
+        if (localBook && Array.isArray(localBook.chapters) && localBook.chapters.length > 0) {
+          const existingVersions = Array.isArray(localBook.versions) ? [...localBook.versions] : [];
+          const totalWords = (localBook.chapters || []).reduce((acc, c) =>
+            acc + (c.sections || []).reduce((sAcc, s) => sAcc + (s.content ? s.content.replace(/<[^>]*>/g, '').trim().length : 0), 0), 0);
+
+          const autoBackupVersion = {
+            id: `ver_autobackup_${Date.now()}`,
+            name: `[클라우드 복원 전 로컬 백업]`,
+            createdAt: new Date().toISOString(),
+            chapterCount: localBook.chapters.length,
+            totalWords,
+            chapters: JSON.parse(JSON.stringify(localBook.chapters)),
+            isAutoBackup: true
+          };
+
+          const mergedVersions = [autoBackupVersion, ...existingVersions].slice(0, 15);
+          return {
+            ...cloudBook,
+            versions: mergedVersions
+          };
+        }
+        return cloudBook;
+      });
+
+      // 클라우드에 아직 없는 로컬 전용 도서도 삭제되지 않도록 보존
+      const cloudBookIds = new Set(books.map((b) => b.id));
+      const localOnlyBooks = localBooks.filter((lb) => !cloudBookIds.has(lb.id));
+      storageService.saveBooks([...preservedBooks, ...localOnlyBooks]);
+    }
     if (vault.length > 0) storageService.saveVault(vault);
     if (config) {
       const localConfig = storageService.getConfig();

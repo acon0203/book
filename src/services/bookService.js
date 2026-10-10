@@ -10,6 +10,16 @@ export const bookService = {
   updateBook: async (id, data) => storageService.updateBook(id, data),
   deleteBook: async (id) => storageService.deleteBook(id),
 
+  // 1-1. 도서 버전 관리 (스냅샷 및 히스토리)
+  createBookVersion: async (bookId, versionName) => storageService.createBookVersion(bookId, versionName),
+  restoreBookVersion: async (bookId, versionId) => storageService.restoreBookVersion(bookId, versionId),
+  deleteBookVersion: async (bookId, versionId) => storageService.deleteBookVersion(bookId, versionId),
+
+  // 1-2. 창작실 (아이디어 노트, 기획서, 인물 관계도, 스토리라인 뼈대)
+  updateBookPlanning: async (bookId, planningData) => storageService.updateBookPlanning(bookId, planningData),
+  updateBookCharacters: async (bookId, characters) => storageService.updateBookCharacters(bookId, characters),
+  updateBookPlotStages: async (bookId, plotStages) => storageService.updateBookPlotStages(bookId, plotStages),
+
   // 2. 챕터 & 소목차
   addChapter: async (bookId, title) => storageService.addChapter(bookId, title),
   updateChapter: async (bookId, chapterId, data) => storageService.updateChapter(bookId, chapterId, data),
@@ -39,6 +49,8 @@ export const bookService = {
   getConfig: async () => storageService.getConfig(),
   saveConfig: async (cfg) => storageService.saveConfig(cfg),
   getStats: async () => storageService.getStats(),
+  exportBackupData: async () => storageService.exportBackupData(),
+  importBackupData: async (data) => storageService.importBackupData(data),
 
   // 5. AI 자동화 (브라우저 직접 호출)
   generateOutline: async (promptData) => {

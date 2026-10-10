@@ -252,6 +252,64 @@ export const storageService = {
     return storageService.updateBook(bookId, book);
   },
 
+  // --- 1-1. 도서 버전 관리 (스냅샷 및 히스토리) ---
+  createBookVersion: (bookId, versionName) => {
+    const book = storageService.getBook(bookId);
+    if (!book) throw new Error('도서를 찾을 수 없습니다.');
+    const existingVersions = Array.isArray(book.versions) ? [...book.versions] : [];
+    
+    // 현재 도서 전체 글자 수 계산
+    const totalWords = (book.chapters || []).reduce((acc, c) =>
+      acc + (c.sections || []).reduce((sAcc, s) => sAcc + (s.content ? s.content.replace(/<[^>]*>/g, '').trim().length : 0), 0), 0);
+
+    const newVersion = {
+      id: `ver_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      name: versionName?.trim() || `v${existingVersions.length + 1}.0`,
+      createdAt: new Date().toISOString(),
+      chapterCount: book.chapters?.length || 0,
+      totalWords,
+      chapters: structuredClone(book.chapters || []),
+      isAutoBackup: false
+    };
+
+    // 최대 15개 버전 보존 (Zero-Lag 및 용량 최적화)
+    const updatedVersions = [newVersion, ...existingVersions].slice(0, 15);
+    return storageService.updateBook(bookId, { versions: updatedVersions });
+  },
+
+  restoreBookVersion: (bookId, versionId) => {
+    const book = storageService.getBook(bookId);
+    if (!book) throw new Error('도서를 찾을 수 없습니다.');
+    const versions = Array.isArray(book.versions) ? book.versions : [];
+    const targetVersion = versions.find(v => v.id === versionId);
+    if (!targetVersion) throw new Error('해당 버전을 찾을 수 없습니다.');
+
+    // 복원 실행: 현재 챕터 목록을 해당 버전의 스냅샷으로 교체
+    const restoredChapters = structuredClone(targetVersion.chapters || []);
+    return storageService.updateBook(bookId, { chapters: restoredChapters });
+  },
+
+  deleteBookVersion: (bookId, versionId) => {
+    const book = storageService.getBook(bookId);
+    if (!book) throw new Error('도서를 찾을 수 없습니다.');
+    const versions = Array.isArray(book.versions) ? book.versions : [];
+    const updatedVersions = versions.filter(v => v.id !== versionId);
+    return storageService.updateBook(bookId, { versions: updatedVersions });
+  },
+
+  // --- 1-2. 창작실 (아이디어 노트, 기획서, 인물 관계도, 스토리라인 뼈대) ---
+  updateBookPlanning: (bookId, planningData) => {
+    return storageService.updateBook(bookId, planningData);
+  },
+
+  updateBookCharacters: (bookId, characters) => {
+    return storageService.updateBook(bookId, { characters });
+  },
+
+  updateBookPlotStages: (bookId, plotStages) => {
+    return storageService.updateBook(bookId, { plotStages });
+  },
+
   // --- 2. 자료 금고 (Vault) ---
   getVault: () => {
     try {
@@ -342,5 +400,33 @@ export const storageService = {
     const stats = storageService.getStats();
     stats.aiGenerationsCount = (stats.aiGenerationsCount || 0) + 1;
     localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
+  },
+
+  // --- 5. 전체 로컬 백업 내보내기 & 복원 ---
+  exportBackupData: () => {
+    return {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      books: storageService.getBooks(),
+      vault: storageService.getVault(),
+      stats: storageService.getStats(),
+      config: storageService.getConfig()
+    };
+  },
+
+  importBackupData: (backupObj) => {
+    if (!backupObj || typeof backupObj !== 'object') {
+      throw new Error('유효하지 않은 백업 데이터 형식입니다.');
+    }
+    if (Array.isArray(backupObj.books)) {
+      storageService.saveBooks(backupObj.books);
+    }
+    if (Array.isArray(backupObj.vault)) {
+      storageService.saveVault(backupObj.vault);
+    }
+    if (backupObj.config) {
+      storageService.saveConfig(backupObj.config);
+    }
+    return true;
   }
 };

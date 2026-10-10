@@ -3,9 +3,7 @@ import './Studio.css';
 import { useStore } from '../store';
 import { bookService } from '../services/bookService';
 import { marked } from 'marked';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
+import TiptapEditor from '../components/TiptapEditor';
 import { htmlToParagraphs, paragraphsToHtml, generateBlockId } from '../utils/paragraphParser';
 import bestsellerDb from '../data/bestseller-db.json';
 import { storageService } from '../services/storageService';
@@ -13,8 +11,10 @@ import { aiService } from '../services/aiService';
 import {
   ArrowLeft, Plus, Sparkles, Download, Save, Lightbulb, Copy, Check, Wand2, X, FileText, Calendar, Send,
   PenTool, Bot, Zap, RotateCcw, FilePlus, Layers, MoveUp, MoveDown, Trash2, LayoutList, AlertTriangle,
-  History, MessageSquare, ChevronUp, ChevronDown, ChevronRight
+  History, MessageSquare, ChevronUp, ChevronDown, ChevronRight, BookOpen
 } from 'lucide-react';
+import ModelQuotasModal from '../components/ModelQuotasModal';
+import { getActiveModelQuota } from '../utils/quotaManager';
 
 marked.setOptions({ breaks: true, gfm: true });
 
@@ -72,7 +72,8 @@ export default function Studio() {
     moveChapter, moveSection, reorderChapters, reorderSections, openBook, loadBooks,
     setChapterDeadline, toggleChapterPublish,
     vault, loadVault, selectedVaultIds, toggleSelectVaultId, clearSelectedVaultIds,
-    setView, showToast, showActionToast
+    createBookVersion, restoreBookVersion, deleteBookVersion,
+    openReader, setView, showToast, showActionToast
   } = useStore();
 
   // 챕터별 소목차 접기/펼치기 상태 (Set<chapterId>)
@@ -225,29 +226,49 @@ export default function Studio() {
 
   // 전자책 미리보기 팝업 모달 상태
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  // AI 모델 쿼터 모달 상태
+  const [isQuotaModalOpen, setIsQuotaModalOpen] = useState(false);
+  const [activeQuota, setActiveQuota] = useState(() => getActiveModelQuota());
 
-  // Mission 스타일 Tiptap 에디터 인스턴스
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3]
-        }
-      }),
-      Placeholder.configure({
-        placeholder: '전자책에 수록할 본문 내용을 자유롭게 작성해 보세요. 상단 툴바를 활용하여 풍부한 서식 편집이 가능하며, 특정 문장을 드래그하여 우측 AI 교정기로 즉시 퇴고할 수 있습니다.'
+  useEffect(() => {
+    const handleQuotaUpdate = () => {
+      setActiveQuota(getActiveModelQuota());
+    };
+    window.addEventListener('ai_quota_updated', handleQuotaUpdate);
+    return () => window.removeEventListener('ai_quota_updated', handleQuotaUpdate);
+  }, []);
+
+  // 공통 Tiptap 에디터 ref 인스턴스
+  const editorRef = useRef(null);
+
+  // 하위 호환성을 위한 editor 안전 프록시 객체 (참조 안정성 보장)
+  const editor = React.useMemo(() => ({
+    getHTML: () => editorRef.current?.getHTML() || '',
+    getText: () => editorRef.current?.getText() || '',
+    get isEmpty() {
+      return editorRef.current ? editorRef.current.isEmpty() : true;
+    },
+    commands: {
+      setContent: (html) => editorRef.current?.setContent(html),
+      insertContent: (html) => editorRef.current?.insertContent(html),
+      focus: () => editorRef.current?.focus()
+    },
+    chain: () => ({
+      focus: () => ({
+        insertContent: (html) => ({
+          run: () => editorRef.current?.insertContent(html)
+        })
       })
-    ],
-    content: '',
-    onUpdate: ({ editor }) => {
-      const html = editor.getHTML();
-      setLocalContent(html);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        updateActiveSectionContent(html);
-      }, 300);
+    }),
+    state: {
+      get selection() {
+        return { from: 0, to: 0 };
+      },
+      doc: {
+        textBetween: () => editorRef.current?.getSelectedText() || ''
+      }
     }
-  });
+  }), []);
 
   // AI 패널 탭 상태 ('draft' | 'polish')
   const [activeAiTab, setActiveAiTab] = useState('draft');
@@ -272,6 +293,65 @@ export default function Studio() {
   const [isOutlineModalOpen, setIsOutlineModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
+  const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+  const [isCreateVersionModalOpen, setIsCreateVersionModalOpen] = useState(false);
+  const [newVersionName, setNewVersionName] = useState('');
+  const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
+  const saveMenuRef = useRef(null);
+
+  // 저장 드롭다운 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (saveMenuRef.current && !saveMenuRef.current.contains(e.target)) {
+        setIsSaveMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // 새 버전 저장 핸들러 (현재 작성 중인 글 자동 저장 후 버전 생성)
+  const handleCreateVersion = async (e) => {
+    e?.preventDefault();
+    if (!newVersionName.trim()) {
+      showToast('버전 이름을 입력해주세요.', 'info');
+      return;
+    }
+    // 현재 에디터 내용 먼저 저장
+    let html = '';
+    if (editorMode === 'block') {
+      html = paragraphsToHtml(paragraphs);
+      if (editor) editor.commands.setContent(html);
+    } else {
+      html = editor ? editor.getHTML() : localContent;
+    }
+    updateActiveSectionContent(html);
+    await saveActiveSection();
+
+    const ok = await createBookVersion(newVersionName.trim());
+    if (ok) {
+      setIsCreateVersionModalOpen(false);
+      setNewVersionName('');
+    }
+  };
+
+  // 버전 되돌리기(복원) 핸들러
+  const handleRestoreVersion = async (version) => {
+    const confirmMsg = `'${version.name}' 버전으로 되돌리시겠습니까?\n현재 작업 중인 본문이 해당 버전 시점으로 복원됩니다.`;
+    if (window.confirm(confirmMsg)) {
+      const ok = await restoreBookVersion(version.id);
+      if (ok) {
+        setIsVersionModalOpen(false);
+      }
+    }
+  };
+
+  // 버전 삭제 핸들러
+  const handleDeleteVersion = async (version) => {
+    if (window.confirm(`'${version.name}' 버전 기록을 삭제하시겠습니까?`)) {
+      await deleteBookVersion(version.id);
+    }
+  };
 
   // 모달 내부 상태
   const [selectedGenre, setSelectedGenre] = useState('essay');
@@ -301,19 +381,19 @@ export default function Studio() {
       setLocalTitle(currentSection.title || '');
       const content = currentSection.content || '';
       setLocalContent(content);
-      if (editor && editor.getHTML() !== content) {
-        editor.commands.setContent(content);
+      if (editorRef.current && editorRef.current.getHTML() !== content) {
+        editorRef.current.setContent(content);
       }
       setParagraphs(htmlToParagraphs(content));
     } else {
       setLocalTitle('');
       setLocalContent('');
-      if (editor) {
-        editor.commands.setContent('');
+      if (editorRef.current) {
+        editorRef.current.setContent('');
       }
       setParagraphs([]);
     }
-  }, [currentSection?.id, editor]);
+  }, [currentSection?.id]);
 
   // 에디터 모드 전환 ('doc' ↔ 'block')
   const switchEditorMode = (newMode) => {
@@ -1009,7 +1089,17 @@ export default function Studio() {
             <ArrowLeft size={14} />
             <span>내 서재로</span>
           </button>
-          <div className="toc-book-title" title={activeBook.title}>{activeBook.title}</div>
+          <div className="toc-book-title-row">
+            <div className="toc-book-title" title={activeBook.title}>{activeBook.title}</div>
+            <button
+              type="button"
+              className="btn-toc-version-history"
+              onClick={() => setIsVersionModalOpen(true)}
+              title="버전 관리"
+            >
+              <History size={15} />
+            </button>
+          </div>
           <div className="toc-actions">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', width: '100%' }}>
               <button className="btn btn-secondary" onClick={() => {
@@ -1306,10 +1396,46 @@ export default function Studio() {
               <Sparkles size={15} />
               <span>{isGenerating ? 'AI 집필 중...' : 'AI 소목차 집필'}</span>
             </button>
-            <button className="btn btn-secondary" onClick={handleSave} disabled={isSaving}>
-              <Save size={15} />
-              <span>{isSaving ? '저장 중...' : '저장'}</span>
-            </button>
+            {/* 디스켓 저장 드롭다운 (저장 / 새 버전으로 저장) */}
+            <div className="save-dropdown-wrapper" ref={saveMenuRef}>
+              <button
+                type="button"
+                className={`btn btn-secondary btn-save-icon-only ${isSaveMenuOpen ? 'active' : ''}`}
+                onClick={() => setIsSaveMenuOpen(prev => !prev)}
+                title="저장 메뉴 (저장 / 새 버전으로 저장)"
+                disabled={isSaving}
+              >
+                <Save size={16} />
+              </button>
+              {isSaveMenuOpen && (
+                <div className="save-dropdown-menu">
+                  <button
+                    type="button"
+                    className="save-dropdown-item"
+                    onClick={async () => {
+                      setIsSaveMenuOpen(false);
+                      await handleSave();
+                    }}
+                  >
+                    <Save size={14} />
+                    <span>저장</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="save-dropdown-item"
+                    onClick={() => {
+                      setIsSaveMenuOpen(false);
+                      const nextVer = `v${(activeBook.versions?.length || 0) + 1}.0`;
+                      setNewVersionName(nextVer);
+                      setIsCreateVersionModalOpen(true);
+                    }}
+                  >
+                    <History size={14} />
+                    <span>새 버전으로 저장</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -1336,218 +1462,177 @@ export default function Studio() {
             </button>
           </div>
 
-          <button
-            className="btn-html-preview-popup"
-            onClick={() => setIsPreviewModalOpen(true)}
-            title="작성 중인 원고의 완성된 전자책 스타일 뷰를 팝업으로 봅니다"
-          >
-            <span className="preview-eye-icon">👁</span> HTML 미리보기 팝업
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              className="btn-html-preview-popup"
+              onClick={() => {
+                if (activeBook) {
+                  openReader(activeBook.id, activeChapterId);
+                }
+              }}
+              title="문피아·네이버 스타일 표준 통합 웹 뷰어로 즉시 열람합니다"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--bg-card)',
+                color: 'var(--text-main)',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <BookOpen size={14} style={{ color: 'var(--primary)' }} />
+              <span>표준 뷰어로 읽기</span>
+            </button>
+            <button
+              className="btn-html-preview-popup"
+              onClick={() => setIsPreviewModalOpen(true)}
+              title="작성 중인 원고의 완성된 전자책 스타일 뷰를 팝업으로 봅니다"
+            >
+              <span className="preview-eye-icon">👁</span> HTML 미리보기 팝업
+            </button>
+          </div>
         </div>
 
         <div className="editor-body-split">
           <div className="main-textarea-pane">
-            {/* Mission 스타일 리치 서식 툴바 (본문 모드 & 문단 모드 공통 상시 유지) */}
-            <div className="rich-toolbar">
-              <div className="toolbar-group">
-                <select
-                  className="toolbar-select"
-                  value={
-                    editorMode === 'doc'
-                      ? (editor?.isActive('heading', { level: 1 }) ? 'h1' :
-                         editor?.isActive('heading', { level: 2 }) ? 'h2' :
-                         editor?.isActive('heading', { level: 3 }) ? 'h3' :
-                         editor?.isActive('blockquote') ? 'blockquote' : 'p')
-                      : ((paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0])?.tag || 'p')
-                  }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (editorMode === 'doc') {
-                      if (!editor) return;
-                      if (val === 'h1') editor.chain().focus().toggleHeading({ level: 1 }).run();
-                      else if (val === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
-                      else if (val === 'h3') editor.chain().focus().toggleHeading({ level: 3 }).run();
-                      else if (val === 'blockquote') editor.chain().focus().toggleBlockquote().run();
-                      else editor.chain().focus().setParagraph().run();
-                    } else {
-                      const cur = paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0];
-                      if (cur) handleSetParagraphTag(cur.id, val);
-                    }
-                  }}
-                  title="단락 서식 (본문 / 제목 / 인용구)"
-                >
-                  <option value="p">Normal (본문)</option>
-                  <option value="h1">대제목 (H1)</option>
-                  <option value="h2">중제목 (H2)</option>
-                  <option value="h3">소제목 (H3)</option>
-                  <option value="blockquote">인용문 (Quote)</option>
-                </select>
-              </div>
-
-              <div className="toolbar-divider" />
-
-              <div className="toolbar-group">
-                <button
-                  type="button"
-                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('bold') ? 'active' : '') : ''}`}
-                  onClick={() => {
-                    if (editorMode === 'doc') {
-                      editor?.chain().focus().toggleBold().run();
-                    } else {
-                      applyInlineFormatToParagraph('**', '**');
-                    }
-                  }}
-                  title="굵게 (Ctrl+B)"
-                >
-                  <b>B</b>
-                </button>
-                <button
-                  type="button"
-                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('italic') ? 'active' : '') : ''}`}
-                  onClick={() => {
-                    if (editorMode === 'doc') {
-                      editor?.chain().focus().toggleItalic().run();
-                    } else {
-                      applyInlineFormatToParagraph('*', '*');
-                    }
-                  }}
-                  title="기울임 (Ctrl+I)"
-                >
-                  <i>I</i>
-                </button>
-                <button
-                  type="button"
-                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('underline') ? 'active' : '') : ''}`}
-                  onClick={() => {
-                    if (editorMode === 'doc') {
-                      editor?.chain().focus().toggleUnderline().run();
-                    } else {
-                      applyInlineFormatToParagraph('<u>', '</u>');
-                    }
-                  }}
-                  title="밑줄 (Ctrl+U)"
-                >
-                  <u>U</u>
-                </button>
-                <button
-                  type="button"
-                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('strike') ? 'active' : '') : ''}`}
-                  onClick={() => {
-                    if (editorMode === 'doc') {
-                      editor?.chain().focus().toggleStrike().run();
-                    } else {
-                      applyInlineFormatToParagraph('~~', '~~');
-                    }
-                  }}
-                  title="취소선"
-                >
-                  <s>S</s>
-                </button>
-              </div>
-
-              <div className="toolbar-divider" />
-
-              <div className="toolbar-group">
-                <button
-                  type="button"
-                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('bulletList') ? 'active' : '') : ''}`}
-                  onClick={() => {
-                    if (editorMode === 'doc') {
-                      editor?.chain().focus().toggleBulletList().run();
-                    } else {
-                      applyInlineFormatToParagraph('• ', '', true);
-                    }
-                  }}
-                  title="글머리 기호 목록"
-                >
-                  •≡
-                </button>
-                <button
-                  type="button"
-                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('orderedList') ? 'active' : '') : ''}`}
-                  onClick={() => {
-                    if (editorMode === 'doc') {
-                      editor?.chain().focus().toggleOrderedList().run();
-                    } else {
-                      applyInlineFormatToParagraph('1. ', '', true);
-                    }
-                  }}
-                  title="번호 매기기 목록"
-                >
-                  1≡
-                </button>
-                <button
-                  type="button"
-                  className={`tool-btn ${
-                    editorMode === 'doc'
-                      ? (editor?.isActive('blockquote') ? 'active' : '')
-                      : ((paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0])?.tag === 'blockquote' ? 'active' : '')
-                  }`}
-                  onClick={() => {
-                    if (editorMode === 'doc') {
-                      editor?.chain().focus().toggleBlockquote().run();
-                    } else {
-                      const cur = paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0];
-                      if (cur) handleSetParagraphTag(cur.id, cur.tag === 'blockquote' ? 'p' : 'blockquote');
-                    }
-                  }}
-                  title="인용 블록"
-                >
-                  ❞
-                </button>
-                <button
-                  type="button"
-                  className={`tool-btn ${editorMode === 'doc' ? (editor?.isActive('codeBlock') ? 'active' : '') : ''}`}
-                  onClick={() => {
-                    if (editorMode === 'doc') {
-                      editor?.chain().focus().toggleCodeBlock().run();
-                    } else {
-                      applyInlineFormatToParagraph('`', '`');
-                    }
-                  }}
-                  title="코드 블록"
-                >
-                  &lt;/&gt;
-                </button>
-                <button
-                  type="button"
-                  className="tool-btn"
-                  onClick={() => {
-                    if (editorMode === 'doc') {
-                      editor?.chain().focus().unsetAllMarks().clearNodes().run();
-                    } else {
-                      clearInlineFormatInParagraph();
-                    }
-                  }}
-                  title="서식 지우기"
-                >
-                  T<sub>x</sub>
-                </button>
-              </div>
-
-              {editorMode === 'block' && (
-                <div className="toolbar-group" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
-                    활성 블록: <strong style={{ color: 'var(--primary)' }}>#{paragraphs.findIndex(p => p.id === activeParagraphId) >= 0 ? paragraphs.findIndex(p => p.id === activeParagraphId) + 1 : 1}</strong>
-                    {(() => {
-                      const cur = paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0];
-                      return cur?.tag && cur.tag !== 'p' ? ` (${cur.tag.toUpperCase()})` : '';
-                    })()}
-                  </span>
-                </div>
-              )}
-            </div>
-
             {editorMode === 'doc' ? (
-              /* 본문 모드: Mission 스타일 Tiptap 뷰포트 (하얗고 깔끔한 화이트 시트) */
-              <div className="rich-editor-viewport">
-                <div className="rich-editor-body">
-                  <EditorContent editor={editor} />
-                </div>
-              </div>
+              /* 본문 모드: 분리된 독립 고성능 TiptapEditor 엔진 */
+              <TiptapEditor
+                ref={editorRef}
+                content={localContent}
+                onChange={(html) => {
+                  setLocalContent(html);
+                  updateActiveSectionContent(html);
+                }}
+                onSelectText={(text) => {
+                  if (text) setPolishSourceText(text);
+                }}
+              />
             ) : (
-              /* 문단 모듈 워크스페이스 */
-              <div className="paragraph-workspace">
+              /* 문단 모듈 워크스페이스 (문단 블록 전용 툴바 및 카드 리스트) */
+              <>
+                <div className="rich-toolbar">
+                  <div className="toolbar-group">
+                    <select
+                      className="toolbar-select"
+                      value={(paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0])?.tag || 'p'}
+                      onChange={(e) => {
+                        const cur = paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0];
+                        if (cur) handleSetParagraphTag(cur.id, e.target.value);
+                      }}
+                      title="단락 서식 (본문 / 제목 / 인용구)"
+                    >
+                      <option value="p">Normal (본문)</option>
+                      <option value="h1">대제목 (H1)</option>
+                      <option value="h2">중제목 (H2)</option>
+                      <option value="h3">소제목 (H3)</option>
+                      <option value="blockquote">인용문 (Quote)</option>
+                    </select>
+                  </div>
+
+                  <div className="toolbar-divider" />
+
+                  <div className="toolbar-group">
+                    <button
+                      type="button"
+                      className="tool-btn"
+                      onClick={() => applyInlineFormatToParagraph('**', '**')}
+                      title="굵게 (Ctrl+B)"
+                    >
+                      <b>B</b>
+                    </button>
+                    <button
+                      type="button"
+                      className="tool-btn"
+                      onClick={() => applyInlineFormatToParagraph('*', '*')}
+                      title="기울임 (Ctrl+I)"
+                    >
+                      <i>I</i>
+                    </button>
+                    <button
+                      type="button"
+                      className="tool-btn"
+                      onClick={() => applyInlineFormatToParagraph('<u>', '</u>')}
+                      title="밑줄 (Ctrl+U)"
+                    >
+                      <u>U</u>
+                    </button>
+                    <button
+                      type="button"
+                      className="tool-btn"
+                      onClick={() => applyInlineFormatToParagraph('~~', '~~')}
+                      title="취소선"
+                    >
+                      <s>S</s>
+                    </button>
+                  </div>
+
+                  <div className="toolbar-divider" />
+
+                  <div className="toolbar-group">
+                    <button
+                      type="button"
+                      className="tool-btn"
+                      onClick={() => applyInlineFormatToParagraph('• ', '', true)}
+                      title="글머리 기호 목록"
+                    >
+                      •≡
+                    </button>
+                    <button
+                      type="button"
+                      className="tool-btn"
+                      onClick={() => applyInlineFormatToParagraph('1. ', '', true)}
+                      title="번호 매기기 목록"
+                    >
+                      1≡
+                    </button>
+                    <button
+                      type="button"
+                      className={`tool-btn ${(paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0])?.tag === 'blockquote' ? 'active' : ''}`}
+                      onClick={() => {
+                        const cur = paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0];
+                        if (cur) handleSetParagraphTag(cur.id, cur.tag === 'blockquote' ? 'p' : 'blockquote');
+                      }}
+                      title="인용 블록"
+                    >
+                      ❞
+                    </button>
+                    <button
+                      type="button"
+                      className="tool-btn"
+                      onClick={() => applyInlineFormatToParagraph('`', '`')}
+                      title="코드 블록"
+                    >
+                      &lt;/&gt;
+                    </button>
+                    <button
+                      type="button"
+                      className="tool-btn"
+                      onClick={() => clearInlineFormatInParagraph()}
+                      title="서식 지우기"
+                    >
+                      T<sub>x</sub>
+                    </button>
+                  </div>
+
+                  <div className="toolbar-group" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                      활성 블록: <strong style={{ color: 'var(--primary)' }}>#{paragraphs.findIndex(p => p.id === activeParagraphId) >= 0 ? paragraphs.findIndex(p => p.id === activeParagraphId) + 1 : 1}</strong>
+                      {(() => {
+                        const cur = paragraphs.find(p => p.id === activeParagraphId) || paragraphs[0];
+                        return cur?.tag && cur.tag !== 'p' ? ` (${cur.tag.toUpperCase()})` : '';
+                      })()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 문단 모듈 워크스페이스 */}
+                <div className="paragraph-workspace">
                 <div className="paragraph-workspace-header">
                   <div className="paragraph-workspace-title">
                     <Layers size={16} />
@@ -1688,8 +1773,9 @@ export default function Studio() {
                   )}
                 </div>
               </div>
-            )}
-          </div>
+            </>
+          )}
+        </div>
 
           {/* 3열: AI 코파일럿 패널 (AI 초고 집필 에이전트 & AI 문장 교정) */}
           <aside className="ai-polish-pane">
@@ -1713,7 +1799,9 @@ export default function Studio() {
               </button>
             </div>
 
-            {activeAiTab === 'draft' ? (
+            {/* 스크롤 가능한 AI 본문 영역 */}
+            <div className="ai-pane-scrollable-body">
+              {activeAiTab === 'draft' ? (
               /* --- 1. AI 초고 집필 에이전트 뷰 --- */
               <div className="draft-agent-view">
                 <div className="polish-header">
@@ -1842,18 +1930,18 @@ export default function Studio() {
                       <span>선택된 자료 금고 메모 ({selectedVaultIds.length}건) 참조</span>
                     </label>
                   )}
-
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleRunDraftAgent}
-                    disabled={isDrafting}
-                    style={{ width: '100%', marginTop: '0.4rem' }}
-                  >
-                    <Zap size={14} />
-                    <span>{isDrafting ? '초고 에이전트 집필 중...' : '⚡ AI 초고 작성 시작'}</span>
-                  </button>
                 </div>
+
+                {/* AI 초고 작성 시작 독립 실행 버튼 (설정 박스 바깥) */}
+                <button
+                  type="button"
+                  className="btn btn-primary btn-draft-run-btn"
+                  onClick={handleRunDraftAgent}
+                  disabled={isDrafting}
+                >
+                  <Zap size={15} />
+                  <span>{isDrafting ? '초고 에이전트 집필 중...' : '⚡ AI 초고 작성 시작'}</span>
+                </button>
 
                 {/* 4. 생성된 초고 결과 */}
                 {draftOutput && (
@@ -2006,6 +2094,27 @@ export default function Studio() {
                 </div>
               </div>
             )}
+            </div>
+
+            {/* 패널 최하단: 스크롤 범위에 포함되지 않는 고정 푸터 (선택된 모델의 실시간 잔여량 버튼) */}
+            <div className="ai-quota-pane-footer">
+              <button
+                type="button"
+                className="btn-quota-status-pill"
+                onClick={() => setIsQuotaModalOpen(true)}
+                title="클릭하여 AI 모델별 일일 잔여 한도 상세 확인"
+              >
+                <div className="quota-pill-left">
+                  <Zap size={13} className="quota-pill-icon" />
+                  <span className="quota-pill-name">{activeQuota?.name || 'Gemini'}</span>
+                </div>
+                <div className="quota-pill-right">
+                  <span className={`quota-pill-pct ${Number(activeQuota?.remainingPct) <= 20 ? 'urgent' : ''}`}>
+                    {activeQuota?.isExhausted ? '0%' : `${Math.round(Number(activeQuota?.remainingPct || 100))}%`}
+                  </span>
+                </div>
+              </button>
+            </div>
           </aside>
         </div>
       </main>
@@ -2667,6 +2776,152 @@ export default function Studio() {
           </div>
         </div>
       )}
+
+      {/* 모달 5: 새 버전으로 저장 */}
+      {isCreateVersionModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsCreateVersionModalOpen(false)}>
+          <div className="modal-box modal-box-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <History size={18} className="text-primary" />
+                <h2>새 버전으로 저장</h2>
+              </div>
+              <button className="modal-close-btn" onClick={() => setIsCreateVersionModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateVersion}>
+              <div className="modal-body">
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-dim)', marginBottom: '1rem', lineHeight: '1.5' }}>
+                  현재 《{activeBook.title}》의 모든 챕터와 원고 상태를 별도의 버전 이력으로 안전하게 보관합니다.
+                </p>
+                <div className="form-group">
+                  <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '0.4rem' }}>
+                    버전 이름 / 식별 태그
+                  </label>
+                  <input
+                    type="text"
+                    className="modal-input"
+                    placeholder="예: v1.0 초고 탈고본, 2차 퇴고본 등"
+                    value={newVersionName}
+                    autoFocus
+                    onChange={(e) => setNewVersionName(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsCreateVersionModalOpen(false)}>
+                  취소
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  <Save size={15} />
+                  <span>버전 저장하기</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 모달 6: 버전 관리 (과거 기록 확인 및 되돌리기) */}
+      {isVersionModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsVersionModalOpen(false)}>
+          <div className="modal-box modal-box-version" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <History size={20} className="text-primary" />
+                <h2>버전 관리</h2>
+                <span className="version-book-title-badge">《{activeBook.title}》</span>
+              </div>
+              <button className="modal-close-btn" onClick={() => setIsVersionModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
+              <div className="version-list-intro">
+                <p>보관된 버전 기록을 확인하고 원하는 시점의 원고로 언제든 되돌릴 수 있습니다.</p>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    const nextVer = `v${(activeBook.versions?.length || 0) + 1}.0`;
+                    setNewVersionName(nextVer);
+                    setIsCreateVersionModalOpen(true);
+                  }}
+                >
+                  <Plus size={13} />
+                  <span>현재 원고 새 버전으로 저장</span>
+                </button>
+              </div>
+
+              {(!activeBook.versions || activeBook.versions.length === 0) ? (
+                <div className="version-empty-state">
+                  <History size={36} style={{ opacity: 0.3, marginBottom: '0.75rem' }} />
+                  <p>아직 보관된 버전 기록이 없습니다.</p>
+                  <span>우측 상단 디스켓 버튼의 [새 버전으로 저장]을 누르면 이 시점의 원고가 보관됩니다.</span>
+                </div>
+              ) : (
+                <div className="version-card-list">
+                  {activeBook.versions.map((ver, idx) => (
+                    <div key={ver.id || idx} className={`version-card ${ver.isAutoBackup ? 'is-autobackup' : ''}`}>
+                      <div className="version-card-main">
+                        <div className="version-card-title-row">
+                          <strong className="version-card-name">{ver.name}</strong>
+                          {ver.isAutoBackup ? (
+                            <span className="badge-autobackup">자동 백업</span>
+                          ) : (
+                            <span className="badge-manual-version">버전 #{activeBook.versions.length - idx}</span>
+                          )}
+                        </div>
+                        <div className="version-card-meta">
+                          <span>🕒 {new Date(ver.createdAt).toLocaleString('ko-KR')}</span>
+                          <span>·</span>
+                          <span>📝 {(ver.totalWords || 0).toLocaleString()} 자</span>
+                          <span>·</span>
+                          <span>📚 {ver.chapterCount || ver.chapters?.length || 0}개 챕터</span>
+                        </div>
+                      </div>
+                      <div className="version-card-actions">
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm btn-version-restore"
+                          onClick={() => handleRestoreVersion(ver)}
+                          title="이 버전으로 원고 전체 되돌리기"
+                        >
+                          <RotateCcw size={13} />
+                          <span>되돌리기</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm btn-version-delete"
+                          onClick={() => handleDeleteVersion(ver)}
+                          title="버전 삭제"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+                * 되돌리기를 실행하면 현재 화면의 원고가 해당 시점의 데이터로 교체됩니다.
+              </div>
+              <button type="button" className="btn btn-secondary" onClick={() => setIsVersionModalOpen(false)}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 실시간 AI Model Quotas 모달 */}
+      <ModelQuotasModal
+        isOpen={isQuotaModalOpen}
+        onClose={() => setIsQuotaModalOpen(false)}
+      />
     </div>
   );
 }

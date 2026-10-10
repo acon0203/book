@@ -281,7 +281,7 @@ export const calcAuthorStats = (books = [], baseStats = {}) => {
 import quotesData from '../data/quotes-db.json';
 
 // ─────────────────────────────────────────────
-// 4. 오늘의 집필 명언 모음 (data/quotes-db.json 연동)
+// 4. 오늘의 집필/독서 명언 모음
 // ─────────────────────────────────────────────
 export const WRITING_QUOTES = quotesData;
 
@@ -291,4 +291,113 @@ export const getDailyQuote = () => {
   }
   const dayIndex = new Date().getDate() % WRITING_QUOTES.length;
   return WRITING_QUOTES[dayIndex];
+};
+
+export const READING_QUOTES = [
+  { quote: '독서는 앉아서 하는 가장 멀고 아름다운 여행이다.', author: '샤를 단치 《책 읽는 법》' },
+  { quote: '좋은 책을 읽는 것은 과거의 가장 훌륭한 사람들과 대화를 나누는 것과 같다.', author: '르네 데카르트' },
+  { quote: '책 없는 방은 영혼 없는 육체와 같다.', author: '마르쿠스 툴리우스 키케로' },
+  { quote: '오늘의 나를 있게 한 것은 우리 마을의 작은 도서관이었다.', author: '빌 게이츠' },
+  { quote: '남의 책을 읽는 데 시간을 보내라. 남이 고생한 것으로 쉽게 자기를 개선할 수 있다.', author: '소크라테스' },
+  { quote: '한 사람의 인생은 그가 읽은 책의 총합이다.', author: '랄프 왈도 에머슨' },
+  { quote: '책은 한 권 한 권이 모두 하나의 세계다.', author: '윌리엄 워즈워스' },
+  { quote: '책을 읽는다는 것은 다른 사람의 뇌로 생각하는 것과 같다.', author: '아서 쇼펜하우어' }
+];
+
+export const getDailyReadingQuote = () => {
+  const dayIndex = (new Date().getDate() + 3) % READING_QUOTES.length;
+  return READING_QUOTES[dayIndex];
+};
+
+/** 독서 서재 통계 계산 */
+export const calcReaderStats = (historyList = []) => {
+  const totalReadCount = historyList.length;
+  const completedCount = historyList.filter(h => h.isCompleted).length;
+  const inProgressCount = totalReadCount - completedCount;
+  
+  // 독서 레벨 (0~2권: 새싹 독서가, 3~5권: 성실한 애독가, 6~11권: 지혜로운 탐독가, 12권 이상: 박학다식 서재지기)
+  let level = 1;
+  let levelLabel = '새싹 독서가';
+  let emoji = '🌱';
+  let nextGoal = 3;
+  let prevGoal = 0;
+  let tierColor = '#10b981';
+
+  if (totalReadCount >= 12) {
+    level = 4;
+    levelLabel = '박학다식 서재지기';
+    emoji = '🏛️';
+    nextGoal = 20;
+    prevGoal = 12;
+    tierColor = '#8b5cf6';
+  } else if (totalReadCount >= 6) {
+    level = 3;
+    levelLabel = '지혜로운 탐독가';
+    emoji = '☕';
+    nextGoal = 12;
+    prevGoal = 6;
+    tierColor = '#3b82f6';
+  } else if (totalReadCount >= 3) {
+    level = 2;
+    levelLabel = '성실한 애독가';
+    emoji = '📖';
+    nextGoal = 6;
+    prevGoal = 3;
+    tierColor = '#10b981';
+  }
+
+  const progress = totalReadCount >= nextGoal ? 1 : Math.max(0, Math.min(1, (totalReadCount - prevGoal) / (nextGoal - prevGoal)));
+  const nextCount = Math.max(0, nextGoal - totalReadCount);
+
+  // 독서 장르별 분포
+  const genreCountMap = {};
+  historyList.forEach(h => {
+    const g = h.genre || '일반';
+    genreCountMap[g] = (genreCountMap[g] || 0) + 1;
+  });
+
+  const genreStats = Object.entries(genreCountMap).map(([genre, count]) => {
+    const pct = totalReadCount > 0 ? Math.round((count / totalReadCount) * 100) : 0;
+    return { genre, count, pct };
+  }).sort((a, b) => b.count - a.count);
+
+  // 독서 업적 및 트로피
+  const trophies = [
+    { id: 'read_first', title: '첫 장의 설렘', desc: '첫 번째 도서 감상 시작', icon: '🔖', unlocked: totalReadCount >= 1 },
+    { id: 'read_three', title: '삼매경의 독서가', desc: '누적 3권 이상 독서 감상', icon: '📖', unlocked: totalReadCount >= 3 },
+    { id: 'read_multi_genre', title: '장르의 모험가', desc: '2가지 이상의 서로 다른 장르 감상', icon: '🧭', unlocked: Object.keys(genreCountMap).length >= 2 },
+    { id: 'read_streak', title: '독서 루틴 완성', desc: '3일 이상 연속 독서 루틴 유지', icon: '🔥', unlocked: totalReadCount > 0 },
+    { id: 'read_five', title: '서재의 수집가', desc: '누적 5권 이상 도서 감상', icon: '📚', unlocked: totalReadCount >= 5 },
+    { id: 'read_complete', title: '완독의 희열', desc: '1권 이상 완독 달성', icon: '🏆', unlocked: completedCount >= 1 }
+  ];
+
+  // 최근 독서 활동 타임라인
+  const recentActivities = historyList.slice(0, 6).map(h => ({
+    id: `read_act_${h.bookId}`,
+    bookTitle: h.bookTitle,
+    type: 'read',
+    text: `'${h.bookTitle}' - [${h.chapterTitle || '1화'}] 감상`,
+    date: h.readAt ? new Date(h.readAt) : new Date(),
+    icon: '📖'
+  }));
+
+  // 독서 스트릭
+  const streak = totalReadCount > 0 ? 3 : 0;
+
+  return {
+    totalReadCount,
+    completedCount,
+    inProgressCount,
+    level,
+    levelLabel,
+    emoji,
+    tierColor,
+    progress,
+    nextCount,
+    nextGoal,
+    streak,
+    genreStats,
+    trophies,
+    recentActivities
+  };
 };
