@@ -1,0 +1,573 @@
+/* ==========================================================================
+   완성 작품 탐색 화면 (ExploreComplete.css)
+   교보문고 표준 장르 사이드바 + 실시간 TOP 5 랭킹 보드 + 단행본 완결 서가 목록
+   ========================================================================== */
+
+.explore-complete-container {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+}
+
+/* 1. 좌측 교보문고 8대 장르 바 (ExploreSerial과 1:1 일치) */
+.explore-genre-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.genre-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.5rem 0.8rem 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.genre-sidebar-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+.genre-count-total {
+  font-size: 0.76rem;
+  color: var(--primary);
+  font-weight: 600;
+  background-color: rgba(37, 99, 235, 0.08);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.genre-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.genre-nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.genre-nav-item:hover {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+}
+.genre-nav-item.active {
+  background-color: rgba(37, 99, 235, 0.08);
+  color: var(--primary);
+  font-weight: 700;
+}
+.genre-active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--primary);
+}
+
+/* 2. 우측 메인 영역 */
+.explore-complete-main {
+  flex: 1;
+  min-width: 0;
+  padding: 1.8rem 2.2rem 4rem 2.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
+}
+
+/* 상단 실시간 Best TOP 5 랭킹 섹션 */
+.explore-ranking-section {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.ranking-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.ranking-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ranking-icon {
+  color: #ef4444;
+}
+.ranking-title-group h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+.ranking-subinfo {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.ranking-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+}
+
+.ranking-mini-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-main);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  min-width: 0;
+}
+.ranking-mini-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.rank-number-badge {
+  font-size: 0.82rem;
+  font-weight: 800;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.rank-1 { background-color: #fef08a; color: #854d0e; }
+.rank-2 { background-color: #e2e8f0; color: #334155; }
+.rank-3 { background-color: #ffedd5; color: #9a3412; }
+.rank-4, .rank-5 { background-color: rgba(148, 163, 184, 0.15); color: var(--text-dim); }
+
+.rank-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.rank-book-genre {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+.rank-book-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rank-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* 단행본 큐레이션 / 분량 탭 바 */
+.complete-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.75rem 1.2rem;
+}
+
+.complete-tabs-left {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+.complete-tab-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.complete-title-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.complete-pills-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.complete-pill-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-main);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.complete-pill-btn:hover {
+  background-color: rgba(37, 99, 235, 0.05);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.complete-pill-btn.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.complete-sort-select {
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+/* 메인 단행본 작품 리스트 */
+.complete-books-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.list-section-summary {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.list-section-summary strong {
+  color: var(--primary);
+}
+
+.complete-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.complete-book-card {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+.complete-book-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+}
+
+/* 좌측 책 표지 */
+.complete-cover-thumb {
+  width: 96px;
+  height: 136px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 0.6rem;
+  text-align: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  border-radius: 6px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.complete-cover-thumb:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+}
+
+.complete-cover-title-clean {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.35;
+  word-break: keep-all;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* 중앙 상세 정보 */
+.complete-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.complete-card-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.badge-complete-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.badge-genre-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background-color: var(--bg-main);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.badge-volume-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.08);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.complete-card-title {
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  margin: 0;
+  transition: color 0.15s ease;
+}
+.complete-card-title:hover {
+  color: var(--primary);
+}
+
+.complete-meta-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.author-name {
+  color: var(--text-main);
+  font-weight: 600;
+}
+.meta-sep {
+  color: var(--border-color);
+}
+.page-count-badge {
+  font-weight: 600;
+  color: var(--text-main);
+}
+.rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  color: #d97706;
+}
+.meta-star-icon {
+  fill: #f59e0b;
+  color: #f59e0b;
+}
+.comment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+  color: #2563eb;
+}
+.meta-comment-icon {
+  color: #2563eb;
+}
+
+.complete-logline {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 우측 액션 버튼들 */
+.complete-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  min-width: 104px;
+}
+
+.btn-read-start,
+.btn-save-shelf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-read-start {
+  border: none;
+  background-color: var(--primary);
+  color: #ffffff;
+}
+.btn-read-start:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-save-shelf {
+  border: 1px dashed var(--border-color);
+  background-color: transparent;
+  color: var(--text-dim);
+}
+.btn-save-shelf:hover {
+  background-color: var(--bg-main);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.btn-save-shelf.saved {
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background-color: rgba(37, 99, 235, 0.08);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* 빈 상태 */
+.complete-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  border-radius: 14px;
+  border: 1px dashed var(--border-color);
+  background-color: var(--bg-card);
+  text-align: center;
+  gap: 0.8rem;
+}
+.empty-book-icon {
+  color: var(--text-dim);
+  opacity: 0.4;
+}
+.complete-empty-card h3 {
+  font-size: 1.1rem;
+  color: var(--text-main);
+  margin: 0;
+}
+.complete-empty-card p {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 0;
+}
+.btn-go-studio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  background-color: var(--primary);
+  color: #ffffff;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+  .ranking-cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .explore-complete-container {
+    flex-direction: column;
+  }
+  .explore-genre-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem;
+  }
+  .genre-nav-list {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .genre-nav-item {
+    white-space: nowrap;
+  }
+  .explore-complete-main {
+    padding: 1rem;
+  }
+  .ranking-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .complete-book-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .complete-card-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+  .btn-read-start,
+  .btn-save-shelf {
+    flex: 1;
+  }
+}

@@ -76,6 +76,14 @@ export default function Settings() {
       }));
       setSavedApiKey(cfg.geminiApiKey || '');
     }).catch(console.error);
+
+    const handleConfigUpdated = (e) => {
+      if (e.detail?.geminiModel) {
+        setConfig(prev => ({ ...prev, geminiModel: e.detail.geminiModel }));
+      }
+    };
+    window.addEventListener('ai_config_updated', handleConfigUpdated);
+    return () => window.removeEventListener('ai_config_updated', handleConfigUpdated);
   }, [user]);
 
   // 전체 설정 저장
@@ -679,14 +687,20 @@ export default function Settings() {
               onChange={(e) => handleConfigChange('geminiModel', e.target.value)}
             >
               <option value="smart_cascade">
-                ⭐ [스마트 자동 전환] 최신 3.8 Flash 우선 ➔ 한도 소진 시 3.5 Lite(500회) ➔ 3.1 Lite ➔ Gemma 순차 전환 (강력 추천)
+                ⭐ [스마트 자동 전환] 3.8 Flash 우선 ➔ 한도 소진 시 3.5 Lite(500회) ➔ 3.1 Lite ➔ Gemma 순차 전환 (강력 추천)
               </option>
-              <optgroup label="개별 단일 모델 고정">
-                <option value="gemini-3.5-flash-lite">⚡ Gemini 3.5 Flash Lite (초고속 & 무결점 안정 작동 · 일 500회 추천)</option>
-                <option value="gemini-3.6-flash">🚀 Gemini 3.6 Flash (3.5 후속 최신 플래그십 · 일 20회)</option>
-                <option value="gemini-3.8-flash">Gemini 3.8 Flash (최신 플래그십 · 일 20회)</option>
+              <optgroup label="👑 플래그십 모델 (성능 최고 · 일 20회)">
+                <option value="gemini-3.8-flash">🚀 Gemini 3.8 Flash (최신 플래그십 · 일 20회)</option>
+                <option value="gemini-3.7-flash">✨ Gemini 3.7 Flash (고지능 추론 플래그십 · 일 20회)</option>
+                <option value="gemini-3.6-flash">Gemini 3.6 Flash (안정화 플래그십 · 일 20회)</option>
+              </optgroup>
+              <optgroup label="⚡ Lite 대용량 모델 (초고속 안정 · 일 500회)">
+                <option value="gemini-3.5-flash-lite">⚡ Gemini 3.5 Flash Lite (초고속 & 안정 작동 · 일 500회 추천)</option>
                 <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (대용량 보조 · 일 500회)</option>
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash (표준 안정화 · 일 20회)</option>
+              </optgroup>
+              <optgroup label="🌐 Gemma 4 최신 모델 (대규모 한도 · 일 14.4K회)">
+                <option value="gemma-4-31b-it">Gemma 4 31B (Google 차세대 오픈 모델 · 일 14.4K회)</option>
+                <option value="gemma-4-26b-a4b-it">Gemma 4 26B (Google 차세대 경량 모델 · 일 14.4K회)</option>
               </optgroup>
             </select>
             <div style={{ marginTop: '0.6rem', display: 'flex', justifyContent: 'flex-end' }}>

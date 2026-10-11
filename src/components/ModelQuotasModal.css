@@ -68,6 +68,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
 }
 
 .quota-item-card:hover {
@@ -75,11 +77,101 @@
   border-color: var(--border-bright);
 }
 
-/* 현재 선택된 활성 모델 강조 */
-.quota-item-card.active-model {
+/* 현재 선택된 모델 강조 */
+.quota-item-card.selected-model {
   background: var(--bg-active);
   border-color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary-glow);
+  box-shadow: 0 0 0 1.5px var(--primary-glow);
+}
+
+.smart-cascade-card {
+  background: rgba(245, 158, 11, 0.04);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.smart-cascade-card:hover {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.smart-cascade-card.selected-model {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1.5px rgba(245, 158, 11, 0.3);
+}
+
+.quotas-group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.quotas-group-title {
+  display: flex;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+  padding: 0.2rem 0.1rem;
+}
+
+.quotas-group-title span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.quotas-section-divider {
+  display: flex;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  margin: 0.2rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.quotas-section-divider::before,
+.quotas-section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.quotas-section-divider span {
+  padding: 0 0.6rem;
+}
+
+.quota-select-radio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+.quota-check-icon.active {
+  color: var(--primary);
+}
+
+.smart-cascade-card.selected-model .quota-check-icon.active {
+  color: #f59e0b;
+}
+
+.quota-radio-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  transition: var(--transition);
+}
+
+.quota-item-card:hover .quota-radio-circle {
+  border-color: var(--text-muted);
 }
 
 .quota-item-main {

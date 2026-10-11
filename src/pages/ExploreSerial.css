@@ -300,41 +300,34 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem;
+  padding: 0.8rem 0.6rem;
   text-align: center;
   flex-shrink: 0;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  border-radius: 6px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .serial-cover-thumb:hover {
-  transform: scale(1.03);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
 }
 
-.cover-inner-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.cover-genre-tag {
-  font-size: 0.65rem;
-  color: #38bdf8;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-.cover-title-display {
-  font-size: 0.8rem;
+.serial-cover-title-clean {
+  font-size: 0.86rem;
   font-weight: 700;
   color: #ffffff;
-  line-height: 1.3;
+  line-height: 1.35;
   word-break: keep-all;
+  text-align: center;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin: 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* 중앙 상세 정보 */
@@ -403,6 +396,31 @@
 .meta-sep {
   color: var(--border-color);
 }
+.page-count-badge {
+  font-weight: 600;
+  color: var(--text-main);
+}
+.rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  color: #d97706;
+}
+.meta-star-icon {
+  fill: #f59e0b;
+  color: #f59e0b;
+}
+.comment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+  color: #2563eb;
+}
+.meta-comment-icon {
+  color: #2563eb;
+}
 
 .serial-logline {
   font-size: 0.85rem;
@@ -419,17 +437,19 @@
 .serial-card-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
   flex-shrink: 0;
+  min-width: 104px;
 }
 
 .btn-read-first,
-.btn-read-latest {
+.btn-read-latest,
+.btn-save-shelf {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 0.55rem 1rem;
+  gap: 4px;
+  padding: 0.5rem 0.85rem;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
@@ -455,6 +475,23 @@
 }
 .btn-read-latest:hover {
   background-color: #1d4ed8;
+}
+
+.btn-save-shelf {
+  border: 1px dashed var(--border-color);
+  background-color: transparent;
+  color: var(--text-dim);
+}
+.btn-save-shelf:hover {
+  background-color: var(--bg-main);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.btn-save-shelf.saved {
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background-color: rgba(37, 99, 235, 0.08);
+  color: var(--primary);
+  font-weight: 700;
 }
 
 /* 빈 상태 */

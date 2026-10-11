@@ -31,7 +31,8 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │   ├── Studio.jsx / .css    # 집필 스튜디오 (목차 트리 + 에디터 + 버전 관리 모달 + AI 교정)
     │   ├── Vault.jsx / .css     # 창작실 (좌측 작품 서가 바인더 + 상단 가로 5대 파이프라인: 아이디어 노트 ➔ 출간 기획서 ➔ 글감 취재 ➔ 인물/뼈대 ➔ 목차 조립대)
     │   ├── Reader.jsx / .css    # [Step 3 신설] 표준 통합 웹 뷰어 (문피아 지표/화면폭 + 네이버웹소설 간명 헤더/보기설정/작가의말/댓글 + DOMPurify XSS 방어)
-    │   ├── ExploreSerial.jsx / .css # [Step 5 신설] 연재 작품 탐색 (교보문고 8대 장르 사이드바 + 실시간 TOP 5 랭킹 보드 + 요일/자유연재 탭 + 문피아식 연재작 카드)
+    │   ├── ExploreSerial.jsx / .css # [Step 5-1 신설] 연재 작품 탐색 (교보문고 8대 장르 사이드바 + 실시간 TOP 5 랭킹 + 요일/자유연재 탭 + 카드 메타 & 서재 담기)
+    │   ├── ExploreComplete.jsx / .css # [Step 5-2 신설] 완성 작품 탐색 (교보문고 8대 장르 사이드바 + 실시간 TOP 5 랭킹 + 단행본 분량 큐레이션 + 정주행 & 서재 담기)
     │   ├── Stats.jsx / .css     # 통합 통계 (슬림 분류 탭: 집필 통계 ↔ 독서 통계, 레벨/루틴/전문성/타임라인/업적)
     │   └── Settings.jsx / .css  # 서재 관리 (계정&프로필, 데이터 백업·동기화 센터, AI 집필 엔진, 서비스 안내 4대 영역)
     │
@@ -39,7 +40,8 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │   ├── Sidebar.jsx / .css   # 글로벌 사이드바 네비게이션
     │   ├── Toast.jsx / .css     # 알림 토스트 컴포넌트
     │   ├── TiptapEditor.jsx / .css # [독립 분리] 공통 리치 텍스트 에디터 엔진 (Zero-Lag 본문 작성 & 툴바)
-    │   └── ModelQuotasModal.jsx / .css # [신설] 안티그래비티 스타일 실시간 AI 모델 Quotas 잔여 현황 팝오버
+    │   ├── ModelQuotasModal.jsx / .css # [신설] 안티그래비티 스타일 실시간 AI 모델 Quotas 잔여 현황 팝오버
+    │   └── ManuscriptImportModal.jsx / .css # [신설] 외부 원고(TXT·MD·DOCX) 가져오기 & 스마트 목차 분할 마법사
     │
     ├── data/                    # [출판 레퍼런스 및 영감 정적 DB]
     │   ├── bestseller-db.json   # 베스트셀러 25권 표본 분석 & 장르별 표준 규격(페이지수, 꼭지당 글자수, 표본 도서) DB
@@ -50,7 +52,8 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     ├── utils/                   # 공통 순수 유틸리티
     │   ├── paragraphParser.js   # 본문 HTML ↔ 문단 모듈 카드 블록 무손실 변환 유틸리티
     │   ├── authorStats.js       # 작가 레벨 공식(Mission XP) 및 서재 통합 통계 계산
-    │   └── quotaManager.js      # [신설] Gemini 및 AI 모델별 실시간 일일 쿼터 추적 & PST/KST 리셋 카운트다운
+    │   ├── quotaManager.js      # [신설] Gemini 및 AI 모델별 실시간 일일 쿼터 추적 & PST/KST 리셋 카운트다운
+    │   └── manuscriptImporter.js # [신설] 초경량 원고 파서 (.txt, .md, 네이티브 .docx Zip/XML 파싱, 챕터/섹션 자동 분할)
     │
     ├── config/                  # 글로벌 인프라 설정
     │   └── firebase.js          # Firebase 초기화 (Google Auth, Cloud Firestore)

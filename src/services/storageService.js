@@ -277,6 +277,42 @@ export const storageService = {
     return storageService.updateBook(bookId, { versions: updatedVersions });
   },
 
+  // 책 전체 저장 시 히스토리 자동 갱신: 첫 저장이면 v1.0 등록, 기존 버전 있으면 최신 버전 덮어쓰기
+  saveOrUpdateLatestVersion: (bookId, defaultVersionName = 'v1.0') => {
+    const book = storageService.getBook(bookId);
+    if (!book) throw new Error('도서를 찾을 수 없습니다.');
+    const existingVersions = Array.isArray(book.versions) ? [...book.versions] : [];
+
+    const totalWords = (book.chapters || []).reduce((acc, c) =>
+      acc + (c.sections || []).reduce((sAcc, s) => sAcc + (s.content ? s.content.replace(/<[^>]*>/g, '').trim().length : 0), 0), 0);
+
+    if (existingVersions.length === 0) {
+      const newVersion = {
+        id: `ver_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        name: defaultVersionName,
+        createdAt: new Date().toISOString(),
+        chapterCount: book.chapters?.length || 0,
+        totalWords,
+        chapters: structuredClone(book.chapters || []),
+        isAutoBackup: false
+      };
+      return storageService.updateBook(bookId, { versions: [newVersion] });
+    }
+
+    // 이미 존재하는 경우 가장 최근 버전 덮어쓰기
+    const latestVersion = existingVersions[0];
+    const updatedLatest = {
+      ...latestVersion,
+      createdAt: new Date().toISOString(),
+      chapterCount: book.chapters?.length || 0,
+      totalWords,
+      chapters: structuredClone(book.chapters || [])
+    };
+    existingVersions[0] = updatedLatest;
+
+    return storageService.updateBook(bookId, { versions: existingVersions });
+  },
+
   restoreBookVersion: (bookId, versionId) => {
     const book = storageService.getBook(bookId);
     if (!book) throw new Error('도서를 찾을 수 없습니다.');

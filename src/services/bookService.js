@@ -12,6 +12,7 @@ export const bookService = {
 
   // 1-1. 도서 버전 관리 (스냅샷 및 히스토리)
   createBookVersion: async (bookId, versionName) => storageService.createBookVersion(bookId, versionName),
+  saveOrUpdateLatestVersion: async (bookId, defaultVersionName) => storageService.saveOrUpdateLatestVersion(bookId, defaultVersionName),
   restoreBookVersion: async (bookId, versionId) => storageService.restoreBookVersion(bookId, versionId),
   deleteBookVersion: async (bookId, versionId) => storageService.deleteBookVersion(bookId, versionId),
 

@@ -12,6 +12,7 @@ import Stats from './pages/Stats';
 import Settings from './pages/Settings';
 import Reader from './pages/Reader';
 import ExploreSerial from './pages/ExploreSerial';
+import ExploreComplete from './pages/ExploreComplete';
 
 export default function App() {
   const currentView = useStore((state) => state.currentView);
@@ -36,16 +37,7 @@ export default function App() {
       case 'serial-explore':
         return <ExploreSerial />;
       case 'complete-explore':
-        return (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem', color: 'var(--text-muted)', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.8rem', marginBottom: '1rem' }}>📖</div>
-            <h2 style={{ color: 'var(--text-main)', marginBottom: '0.5rem', fontSize: '1.3rem' }}>완성 작품 단행본 서가</h2>
-            <p style={{ maxWidth: '440px', lineHeight: '1.6', fontSize: '0.9rem', color: 'var(--text-dim)' }}>
-              완결된 전자책 및 외부 기성 EPUB 도서를 열람하는 서가입니다.<br />
-              Step 5에서 단행본 큐레이션 서가와 함께 가동됩니다.
-            </p>
-          </div>
-        );
+        return <ExploreComplete />;
       case 'library':
       default:
         return <Library />;

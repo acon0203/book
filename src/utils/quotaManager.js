@@ -1,14 +1,21 @@
 // QuotaManager: Gemini 및 AI 모델별 일일 할당량(Quota) 추적 및 리셋 계산 유틸리티
 
 export const MODEL_LIMITS = {
-  'gemini-3.5-flash-lite': { name: 'Gemini 3.5 Flash Lite', dailyLimit: 500, tier: 'Lite (대용량)' },
-  'gemini-3.6-flash': { name: 'Gemini 3.6 Flash', dailyLimit: 20, tier: 'High (플래그십)' },
-  'gemini-3.8-flash': { name: 'Gemini 3.8 Flash', dailyLimit: 20, tier: 'High (플래그십)' },
-  'gemini-3.1-flash-lite': { name: 'Gemini 3.1 Flash Lite', dailyLimit: 500, tier: 'Lite (대용량)' },
-  'gemma2:9b': { name: 'Gemma 2:9b (Ollama)', dailyLimit: 999999, tier: 'Local (무제한)' }
+  // 1. 고성능 플래그십 모델 (성능 높은 순)
+  'gemini-3.8-flash': { name: 'Gemini 3.8 Flash', dailyLimit: 20, group: 'flagship', groupName: '플래그십 모델' },
+  'gemini-3.7-flash': { name: 'Gemini 3.7 Flash', dailyLimit: 20, group: 'flagship', groupName: '플래그십 모델' },
+  'gemini-3.6-flash': { name: 'Gemini 3.6 Flash', dailyLimit: 20, group: 'flagship', groupName: '플래그십 모델' },
+
+  // 2. Lite 대용량 모델 (최신순)
+  'gemini-3.5-flash-lite': { name: 'Gemini 3.5 Flash Lite', dailyLimit: 500, group: 'lite', groupName: 'Lite 대용량 모델' },
+  'gemini-3.1-flash-lite': { name: 'Gemini 3.1 Flash Lite', dailyLimit: 500, group: 'lite', groupName: 'Lite 대용량 모델' },
+
+  // 3. Gemma 4 최신 모델 (대규모 한도)
+  'gemma-4-31b-it': { name: 'Gemma 4 31B', dailyLimit: 14400, group: 'gemma', groupName: 'Gemma 4 기타 모델' },
+  'gemma-4-26b-a4b-it': { name: 'Gemma 4 26B', dailyLimit: 14400, group: 'gemma', groupName: 'Gemma 4 기타 모델' }
 };
 
-const STORAGE_KEY = 'bookstudio_model_quotas_v1';
+const STORAGE_KEY = 'bookstudio_model_quotas_v2';
 
 // 구글 Gemini Quota 리셋 시간 계산 (태평양 표준시 자정 = 한국 시간 오후 5:00 리셋)
 export const getNextResetInfo = () => {
@@ -129,7 +136,8 @@ export const getModelQuotasSummary = (activeModelId = 'gemini-3.5-flash-lite') =
     return {
       id,
       name: info.name,
-      tier: info.tier,
+      group: info.group,
+      groupName: info.groupName,
       dailyLimit: info.dailyLimit,
       usedCount,
       remainingPct: remainingPct.toFixed(1),
@@ -138,6 +146,18 @@ export const getModelQuotasSummary = (activeModelId = 'gemini-3.5-flash-lite') =
       resetText: resetInfo.resetTimeFormatted
     };
   });
+};
+
+// 오늘 호출 카운트를 깨끗하게 0회로 초기화
+export const resetAllQuotaUsage = () => {
+  try {
+    const data = getQuotaData();
+    data.usage = {};
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    window.dispatchEvent(new CustomEvent('ai_quota_updated'));
+  } catch (e) {
+    console.error('Failed to reset quota usage:', e);
+  }
 };
 
 // 현재 활성 모델의 단일 Quota 요약 헬퍼
@@ -155,4 +175,25 @@ export const getActiveModelQuota = () => {
 
   const summary = getModelQuotasSummary(activeModelId);
   return summary.find(s => s.id === activeModelId) || summary[0];
+};
+
+// 사용자가 Google AI Studio 콘솔 실제 사용량을 수동으로 맞출 수 있도록 지원
+export const setManualModelUsage = (modelId, count) => {
+  try {
+    const data = getQuotaData();
+    if (!data.usage) data.usage = {};
+    const limit = MODEL_LIMITS[modelId]?.dailyLimit || 20;
+    const safeCount = Math.max(0, Math.min(limit, Number(count) || 0));
+
+    data.usage[modelId] = {
+      count: safeCount,
+      isExhausted: safeCount >= limit,
+      lastUsedAt: new Date().toISOString()
+    };
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    window.dispatchEvent(new CustomEvent('ai_quota_updated'));
+  } catch (e) {
+    console.error('Failed to set manual model usage:', e);
+  }
 };

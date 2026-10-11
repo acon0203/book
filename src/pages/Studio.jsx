@@ -11,9 +11,10 @@ import { aiService } from '../services/aiService';
 import {
   ArrowLeft, Plus, Sparkles, Download, Save, Lightbulb, Copy, Check, Wand2, X, FileText, Calendar, Send,
   PenTool, Bot, Zap, RotateCcw, FilePlus, Layers, MoveUp, MoveDown, Trash2, LayoutList, AlertTriangle,
-  History, MessageSquare, ChevronUp, ChevronDown, ChevronRight, BookOpen
+  History, MessageSquare, ChevronUp, ChevronDown, ChevronRight, BookOpen, UploadCloud, Clock
 } from 'lucide-react';
 import ModelQuotasModal from '../components/ModelQuotasModal';
+import ManuscriptImportModal from '../components/ManuscriptImportModal';
 import { getActiveModelQuota } from '../utils/quotaManager';
 
 marked.setOptions({ breaks: true, gfm: true });
@@ -72,7 +73,7 @@ export default function Studio() {
     moveChapter, moveSection, reorderChapters, reorderSections, openBook, loadBooks,
     setChapterDeadline, toggleChapterPublish,
     vault, loadVault, selectedVaultIds, toggleSelectVaultId, clearSelectedVaultIds,
-    createBookVersion, restoreBookVersion, deleteBookVersion,
+    createBookVersion, saveOrUpdateLatestVersion, restoreBookVersion, deleteBookVersion,
     openReader, setView, showToast, showActionToast
   } = useStore();
 
@@ -292,6 +293,7 @@ export default function Studio() {
   // 모달 제어 상태
   const [isOutlineModalOpen, setIsOutlineModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const [isCreateVersionModalOpen, setIsCreateVersionModalOpen] = useState(false);
@@ -309,6 +311,137 @@ export default function Studio() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // 소목차 임시저장(세이브포인트) 상태 및 관리
+  const [draftList, setDraftList] = useState([]);
+  const [isDraftMenuOpen, setIsDraftMenuOpen] = useState(false);
+  const draftMenuRef = useRef(null);
+  const [lastSavedTime, setLastSavedTime] = useState(Date.now());
+  const [timeAgoText, setTimeAgoText] = useState('방금 전 자동 저장됨');
+
+  // 활성 소목차 변경 시 해당 소목차의 임시저장 목록 불러오기
+  useEffect(() => {
+    if (activeBook?.id && activeSectionId) {
+      try {
+        const key = `book_drafts_${activeBook.id}_${activeSectionId}`;
+        const raw = localStorage.getItem(key);
+        setDraftList(raw ? JSON.parse(raw) : []);
+      } catch {
+        setDraftList([]);
+      }
+      setLastSavedTime(Date.now());
+    }
+  }, [activeBook?.id, activeSectionId]);
+
+  // 자동저장 상대 시간 타이머 (3초마다 갱신)
+  useEffect(() => {
+    const updateAgo = () => {
+      if (!lastSavedTime) {
+        setTimeAgoText('자동 저장 대기');
+        return;
+      }
+      const diffSec = Math.floor((Date.now() - lastSavedTime) / 1000);
+      if (diffSec < 5) {
+        setTimeAgoText('방금 전 자동 저장됨');
+      } else if (diffSec < 60) {
+        setTimeAgoText(`${diffSec}초 전 자동 저장됨`);
+      } else {
+        const diffMin = Math.floor(diffSec / 60);
+        if (diffMin < 60) {
+          setTimeAgoText(`${diffMin}분 전 자동 저장됨`);
+        } else {
+          const diffHours = Math.floor(diffMin / 60);
+          setTimeAgoText(`${diffHours}시간 전 자동 저장됨`);
+        }
+      }
+    };
+    updateAgo();
+    const timer = setInterval(updateAgo, 3000);
+    return () => clearInterval(timer);
+  }, [lastSavedTime]);
+
+  // 임시저장 메뉴 외부 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (draftMenuRef.current && !draftMenuRef.current.contains(e.target)) {
+        setIsDraftMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // 수동 임시저장 생성 (스냅샷 보관)
+  const handleSaveDraft = (toggleMenu = false) => {
+    if (!activeBook?.id || !activeSectionId) return;
+    let html = '';
+    if (editorMode === 'block') {
+      html = paragraphsToHtml(paragraphs);
+    } else {
+      html = editor ? editor.getHTML() : localContent;
+    }
+    const plainText = html.replace(/<[^>]*>/g, '').trim();
+    const newDraft = {
+      id: `draft_${Date.now()}`,
+      timestamp: Date.now(),
+      title: localTitle || currentSection?.title || '제목 없음',
+      content: html,
+      charCount: plainText.length,
+      preview: plainText.slice(0, 70) || '(빈 원고)'
+    };
+
+    const key = `book_drafts_${activeBook.id}_${activeSectionId}`;
+    const updated = [newDraft, ...draftList.filter(d => d.content !== html)].slice(0, 10);
+    setDraftList(updated);
+    try {
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('임시저장 실패', e);
+    }
+    setLastSavedTime(Date.now());
+    showToast('현재 소목차 원고가 임시 저장되었습니다.', 'success');
+    if (toggleMenu) {
+      setIsDraftMenuOpen(prev => !prev);
+    }
+  };
+
+  // 임시저장 복원
+  const handleRestoreDraft = (draft) => {
+    if (!window.confirm(`'${new Date(draft.timestamp).toLocaleTimeString()}'에 저장된 임시본(${draft.charCount}자)으로 복원하시겠습니까?\n현재 원고는 새로운 임시저장본으로 백업됩니다.`)) {
+      return;
+    }
+    // 현재 원고 먼저 백업
+    handleSaveDraft(false);
+
+    // 복원
+    const restoredHtml = draft.content || '';
+    setLocalContent(restoredHtml);
+    if (draft.title) {
+      setLocalTitle(draft.title);
+      updateActiveSectionTitle(draft.title);
+    }
+    if (editorMode === 'block') {
+      setParagraphs(htmlToParagraphs(restoredHtml));
+    } else {
+      if (editor) editor.commands.setContent(restoredHtml);
+    }
+    updateActiveSectionContent(restoredHtml);
+    setLastSavedTime(Date.now());
+    setIsDraftMenuOpen(false);
+    showToast('임시 저장된 원고가 복원되었습니다.', 'success');
+  };
+
+  // 임시저장 삭제
+  const handleDeleteDraft = (e, draftId) => {
+    e.stopPropagation();
+    const key = `book_drafts_${activeBook.id}_${activeSectionId}`;
+    const updated = draftList.filter(d => d.id !== draftId);
+    setDraftList(updated);
+    try {
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch {}
+    showToast('임시저장 항목이 삭제되었습니다.', 'info');
+  };
 
   // 새 버전 저장 핸들러 (현재 작성 중인 글 자동 저장 후 버전 생성)
   const handleCreateVersion = async (e) => {
@@ -524,6 +657,7 @@ export default function Studio() {
         setLocalContent(html);
         if (editor) editor.commands.setContent(html);
         updateActiveSectionContent(html);
+        setLastSavedTime(Date.now());
       }, 300);
       return updated;
     });
@@ -632,6 +766,7 @@ export default function Studio() {
     const title = e.target.value;
     setLocalTitle(title);
     updateActiveSectionTitle(title);
+    setLastSavedTime(Date.now());
   };
 
   const handleSave = async () => {
@@ -644,9 +779,10 @@ export default function Studio() {
       html = editor ? editor.getHTML() : localContent;
     }
     updateActiveSectionContent(html);
-    const success = await saveActiveSection();
+    await saveActiveSection();
+    // 책 전체 저장 시 히스토리 자동 갱신 (첫 저장이면 v1.0 자동 생성, 이후 저장은 최신 버전 덮어쓰기)
+    await saveOrUpdateLatestVersion('v1.0');
     setIsSaving(false);
-    if (success) showToast('저장되었습니다.', 'success');
   };
 
   // AI 초고 집필 에이전트 실행
@@ -1057,7 +1193,88 @@ export default function Studio() {
     }
   };
 
-  // 내보내기 텍스트 생성 (번호 중복 없는 깔끔한 포맷)
+  // HTML 태그를 순수 텍스트로 무손실 정제하는 헬퍼
+  const htmlToPlainText = (html) => {
+    if (!html) return '';
+    let text = html;
+    // 1. 블록 요소 줄바꿈 치환
+    text = text.replace(/<\/p>/gi, '\n\n');
+    text = text.replace(/<\/div>/gi, '\n');
+    text = text.replace(/<\/h[1-6]>/gi, '\n\n');
+    text = text.replace(/<br\s*[\/]?>/gi, '\n');
+    text = text.replace(/<\/li>/gi, '\n');
+    text = text.replace(/<li>/gi, '• ');
+    // 2. 모든 HTML 태그 제거
+    text = text.replace(/<[^>]*>/g, '');
+    // 3. HTML 특수문자 디코딩
+    text = text
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'");
+    // 4. 불필요한 연속 빈 줄 정리
+    return text.replace(/\n{3,}/g, '\n\n').trim();
+  };
+
+  // HTML 태그를 표준 마크다운 문단으로 정제하는 헬퍼
+  const htmlToMarkdown = (html) => {
+    if (!html) return '';
+    let md = html;
+    // 인라인 강조 태그 변환
+    md = md.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**');
+    md = md.replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**');
+    md = md.replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+    md = md.replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*');
+    // 문단 및 줄바꿈 변환
+    md = md.replace(/<\/p>/gi, '\n\n');
+    md = md.replace(/<br\s*[\/]?>/gi, '\n');
+    md = md.replace(/<\/li>/gi, '\n');
+    md = md.replace(/<li>/gi, '- ');
+    // 잔여 모든 HTML 태그(h1~h6 등) 제거
+    md = md.replace(/<[^>]*>/g, '');
+    // HTML 엔티티 디코딩
+    md = md
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'");
+    return md.replace(/\n{3,}/g, '\n\n').trim();
+  };
+
+  // 본문 첫머리에 반복되는 챕터/소목차 제목 중복 제거 헬퍼
+  const stripDuplicateHeader = (content, sectionTitle, chapterTitle) => {
+    if (!content) return '';
+    let lines = content.split('\n');
+    const sTitle = cleanTitle(sectionTitle || '').trim();
+    const cTitle = cleanTitle(chapterTitle || '').trim();
+
+    let checkLimit = 0;
+    while (lines.length > 0 && checkLimit < 4) {
+      const line = lines[0].trim();
+      if (!line) {
+        lines.shift();
+        continue;
+      }
+      // 소목차 제목이나 챕터 제목과 완전히 겹치는 첫 줄 제거
+      if (
+        (sTitle && (line === sTitle || line.endsWith(sTitle))) ||
+        (cTitle && (line === cTitle || line.endsWith(cTitle))) ||
+        (activeBook?.title && line === activeBook.title.trim())
+      ) {
+        lines.shift();
+        checkLimit++;
+      } else {
+        break;
+      }
+    }
+    return lines.join('\n').trim();
+  };
+
+  // 내보내기 텍스트 생성 (HTML 태그 0% 완전 제거 순수 원고 포맷)
   const getExportText = () => {
     if (exportFormat === 'md') {
       let md = `# ${activeBook.title}\n\n`;
@@ -1065,19 +1282,33 @@ export default function Studio() {
       activeBook.chapters?.forEach((c, cI) => {
         md += `## 제 ${cI + 1}장. ${cleanTitle(c.title)}\n\n`;
         c.sections?.forEach((s, sI) => {
-          md += `### ${cI + 1}.${sI + 1} ${cleanTitle(s.title)}\n\n${s.content || ''}\n\n`;
+          let cleanSecBody = htmlToMarkdown(s.content);
+          cleanSecBody = stripDuplicateHeader(cleanSecBody, s.title, c.title);
+          md += `### ${cI + 1}.${sI + 1} ${cleanTitle(s.title)}\n\n${cleanSecBody}\n\n`;
         });
       });
-      return md;
+      return md.trim();
     }
-    let txt = `[${activeBook.title}]\n\n`;
+
+    // 순수 텍스트 (.txt) 내보내기: 독자/출판사 투고용 군더더기 없는 원고 포맷
+    let txt = `==================================================\n`;
+    txt += `${activeBook.title}\n`;
+    if (activeBook.subtitle) txt += `${activeBook.subtitle}\n`;
+    txt += `==================================================\n\n`;
+
     activeBook.chapters?.forEach((c, cI) => {
-      txt += `[제 ${cI + 1}장. ${cleanTitle(c.title)}]\n\n`;
+      txt += `\n[ 제 ${cI + 1} 장. ${cleanTitle(c.title)} ]\n\n`;
       c.sections?.forEach((s, sI) => {
-        txt += `(${cI + 1}.${sI + 1} ${cleanTitle(s.title)})\n${s.content || ''}\n\n`;
+        let cleanSecBody = htmlToPlainText(s.content);
+        cleanSecBody = stripDuplicateHeader(cleanSecBody, s.title, c.title);
+        txt += `(${cI + 1}.${sI + 1} ${cleanTitle(s.title)})\n\n`;
+        if (cleanSecBody) {
+          txt += `${cleanSecBody}\n\n`;
+        }
       });
     });
-    return txt;
+
+    return txt.trim();
   };
 
   return (
@@ -1091,14 +1322,57 @@ export default function Studio() {
           </button>
           <div className="toc-book-title-row">
             <div className="toc-book-title" title={activeBook.title}>{activeBook.title}</div>
-            <button
-              type="button"
-              className="btn-toc-version-history"
-              onClick={() => setIsVersionModalOpen(true)}
-              title="버전 관리"
-            >
-              <History size={15} />
-            </button>
+            <div className="toc-header-icon-group">
+              {/* 책 전체 저장 드롭다운 (전체 저장 / 새 버전으로 저장) */}
+              <div className="save-dropdown-wrapper" ref={saveMenuRef}>
+                <button
+                  type="button"
+                  className={`btn-toc-action-icon ${isSaveMenuOpen ? 'active' : ''}`}
+                  onClick={() => setIsSaveMenuOpen(prev => !prev)}
+                  title="책 전체 저장 및 새 버전 생성"
+                  disabled={isSaving}
+                >
+                  <Save size={15} />
+                </button>
+                {isSaveMenuOpen && (
+                  <div className="save-dropdown-menu">
+                    <button
+                      type="button"
+                      className="save-dropdown-item"
+                      onClick={async () => {
+                        setIsSaveMenuOpen(false);
+                        await handleSave();
+                      }}
+                    >
+                      <Save size={14} />
+                      <span>책 전체 저장</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="save-dropdown-item"
+                      onClick={() => {
+                        setIsSaveMenuOpen(false);
+                        const nextVer = `v${(activeBook.versions?.length || 0) + 1}.0`;
+                        setNewVersionName(nextVer);
+                        setIsCreateVersionModalOpen(true);
+                      }}
+                    >
+                      <History size={14} />
+                      <span>새 버전으로 저장</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className="btn-toc-action-icon btn-toc-version-history"
+                onClick={() => setIsVersionModalOpen(true)}
+                title="버전 관리 (히스토리)"
+              >
+                <History size={15} />
+              </button>
+            </div>
           </div>
           <div className="toc-actions">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', width: '100%' }}>
@@ -1133,10 +1407,16 @@ export default function Studio() {
               <span className="chief-badge-pill">Agent</span>
             </button>
 
-            <button className="btn btn-primary btn-full" onClick={() => setIsExportModalOpen(true)}>
-              <Download size={13} />
-              <span>전자책 내보내기</span>
-            </button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.4rem' }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setIsImportModalOpen(true)} title="외부 원고 파일(.txt, .md, .docx) 불러오기">
+                <UploadCloud size={13} />
+                <span>원고 가져오기</span>
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={() => setIsExportModalOpen(true)} title="전체 원고 텍스트/마크다운 내보내기">
+                <Download size={13} />
+                <span>원고 내보내기</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1388,115 +1668,130 @@ export default function Studio() {
           />
           <div className="editor-tools">
             <span className="word-count-badge">{(editor?.getText()?.trim()?.length || 0).toLocaleString()} 자</span>
-            <button className="btn btn-secondary" onClick={() => { loadVault(); setIsVaultModalOpen(true); }}>
-              <Lightbulb size={15} />
-              <span>자료 금고 ({selectedVaultIds.length})</span>
-            </button>
-            <button className="btn btn-primary" onClick={handleGenerateSectionAI} disabled={isGenerating}>
-              <Sparkles size={15} />
-              <span>{isGenerating ? 'AI 집필 중...' : 'AI 소목차 집필'}</span>
-            </button>
-            {/* 디스켓 저장 드롭다운 (저장 / 새 버전으로 저장) */}
-            <div className="save-dropdown-wrapper" ref={saveMenuRef}>
-              <button
-                type="button"
-                className={`btn btn-secondary btn-save-icon-only ${isSaveMenuOpen ? 'active' : ''}`}
-                onClick={() => setIsSaveMenuOpen(prev => !prev)}
-                title="저장 메뉴 (저장 / 새 버전으로 저장)"
-                disabled={isSaving}
-              >
-                <Save size={16} />
-              </button>
-              {isSaveMenuOpen && (
-                <div className="save-dropdown-menu">
-                  <button
-                    type="button"
-                    className="save-dropdown-item"
-                    onClick={async () => {
-                      setIsSaveMenuOpen(false);
-                      await handleSave();
-                    }}
-                  >
-                    <Save size={14} />
-                    <span>저장</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="save-dropdown-item"
-                    onClick={() => {
-                      setIsSaveMenuOpen(false);
-                      const nextVer = `v${(activeBook.versions?.length || 0) + 1}.0`;
-                      setNewVersionName(nextVer);
-                      setIsCreateVersionModalOpen(true);
-                    }}
-                  >
-                    <History size={14} />
-                    <span>새 버전으로 저장</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
 
-        {/* 2열 에디터 서브 탑바: 듀얼 모드 토글 (본문 모드 vs 문단 모드) & 미리보기 버튼 */}
-        <div className="editor-sub-topbar">
-          <div className="editor-mode-toggle-group">
+            {/* 표준 뷰어 미리보기 */}
             <button
               type="button"
-              className={`btn-mode-toggle ${editorMode === 'doc' ? 'active' : ''}`}
-              onClick={() => switchEditorMode('doc')}
-              title="한 편의 글을 끊김 없이 작성하는 표준 통합 에디터"
-            >
-              <FileText size={13} />
-              <span>본문 모드</span>
-            </button>
-            <button
-              type="button"
-              className={`btn-mode-toggle ${editorMode === 'block' ? 'active' : ''}`}
-              onClick={() => switchEditorMode('block')}
-              title="문단을 모듈형 블록으로 순서 변경, 추가/삭제, 개별 퇴고하는 모드"
-            >
-              <Layers size={13} />
-              <span>문단 모드 ({paragraphs.length})</span>
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              className="btn-html-preview-popup"
+              className="btn btn-secondary"
               onClick={() => {
                 if (activeBook) {
                   openReader(activeBook.id, activeChapterId);
                 }
               }}
-              title="문피아·네이버 스타일 표준 통합 웹 뷰어로 즉시 열람합니다"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '4px 10px',
-                borderRadius: '6px',
-                border: '1px solid var(--border-color)',
-                background: 'var(--bg-card)',
-                color: 'var(--text-main)',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
+              title="문피아·네이버 스타일 표준 웹 뷰어로 즉시 열람합니다"
             >
-              <BookOpen size={14} style={{ color: 'var(--primary)' }} />
-              <span>표준 뷰어로 읽기</span>
+              <BookOpen size={15} style={{ color: 'var(--primary)' }} />
+              <span>미리보기</span>
             </button>
+
+            {/* 단일 토글 모드 전환 버튼 (본문 모드 ↔ 문단 모드) */}
             <button
-              className="btn-html-preview-popup"
-              onClick={() => setIsPreviewModalOpen(true)}
-              title="작성 중인 원고의 완성된 전자책 스타일 뷰를 팝업으로 봅니다"
+              type="button"
+              className={`btn btn-secondary btn-mode-toggle-single ${editorMode === 'block' ? 'active-block-mode' : ''}`}
+              onClick={() => switchEditorMode(editorMode === 'doc' ? 'block' : 'doc')}
+              title={editorMode === 'doc' ? '문단을 블록별로 순서 이동/개별 퇴고하는 문단 모드로 전환' : '한 편의 글을 끊김 없이 이어 쓰는 통합 본문 모드로 전환'}
             >
-              <span className="preview-eye-icon">👁</span> HTML 미리보기 팝업
+              {editorMode === 'doc' ? (
+                <>
+                  <Layers size={14} style={{ color: 'var(--primary)' }} />
+                  <span>문단 모드 ({paragraphs.length})</span>
+                </>
+              ) : (
+                <>
+                  <FileText size={14} style={{ color: 'var(--primary)' }} />
+                  <span>본문 모드</span>
+                </>
+              )}
             </button>
+
+            {/* 현재 소목차 임시저장 & 상태 아래 표시 & 임시저장 목록 팝오버 */}
+            <div className="draft-save-wrapper" ref={draftMenuRef}>
+              <div className="draft-btn-group">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-draft-save"
+                  onClick={() => handleSaveDraft(false)}
+                  title="현재 작성 중인 원고를 즉시 임시저장합니다"
+                >
+                  <span>임시저장</span>
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-secondary btn-draft-list-toggle ${isDraftMenuOpen ? 'active' : ''}`}
+                  onClick={() => setIsDraftMenuOpen(prev => !prev)}
+                  title="임시저장 목록 조회 및 복원"
+                >
+                  <span className="draft-count-badge">{draftList.length}</span>
+                  <ChevronDown size={13} />
+                </button>
+              </div>
+
+              {/* 버튼 아래에 상대 시간 표시 (구분선 잘림 없이 여유 배치) */}
+              <span className="draft-saved-time-caption">
+                {timeAgoText}
+              </span>
+
+              {/* 임시저장 목록 팝오버 (조회 및 복원 창) */}
+              {isDraftMenuOpen && (
+                <div className="draft-popover-menu">
+                  <div className="draft-popover-header">
+                    <div className="draft-popover-title">
+                      <Clock size={13} />
+                      <span>임시 보관함 ({draftList.length})</span>
+                    </div>
+                    <span className="draft-popover-subtitle">원고 복원 및 스냅샷 내역</span>
+                  </div>
+
+                  <div className="draft-popover-list">
+                    {draftList.length === 0 ? (
+                      <div className="draft-popover-empty">
+                        임시 저장된 내역이 없습니다.<br />
+                        [임시저장]을 누르면 스냅샷이 보관됩니다.
+                      </div>
+                    ) : (
+                      draftList.map((d) => (
+                        <div key={d.id} className="draft-popover-item" onClick={() => handleRestoreDraft(d)}>
+                          <div className="draft-item-info">
+                            <div className="draft-item-time-row">
+                              <span className="draft-item-time">
+                                {new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                              </span>
+                              <span className="draft-item-chars">{d.charCount.toLocaleString()}자</span>
+                            </div>
+                            <div className="draft-item-preview" title={d.preview}>
+                              {d.preview || '(빈 원고)'}
+                            </div>
+                          </div>
+                          <div className="draft-item-actions">
+                            <button
+                              type="button"
+                              className="btn-draft-restore"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRestoreDraft(d);
+                              }}
+                              title="이 시점의 원고로 복원"
+                            >
+                              복원
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-draft-delete"
+                              onClick={(e) => handleDeleteDraft(e, d.id)}
+                              title="삭제"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </header>
 
         <div className="editor-body-split">
           <div className="main-textarea-pane">
@@ -1740,7 +2035,7 @@ export default function Studio() {
                               placeholder="문단 내용을 입력하세요..."
                               onChange={(e) => handleParagraphChange(p.id, e.target.value)}
                               onFocus={() => setActiveParagraphId(p.id)}
-                              rows={Math.max(2, Math.min(12, Math.ceil(((p.text || '').length || 1) / 45) + ((p.text || '').split('\n').length - 1)))}
+                              rows={Math.max(2, Math.min(25, Math.ceil(((p.text || '').length || 1) / 45) + ((p.text || '').split('\n').length - 1)))}
                             />
                           </div>
                         </div>
@@ -1809,9 +2104,15 @@ export default function Studio() {
                     <Bot size={16} color="var(--primary)" />
                     <span>AI 초고 집필 에이전트</span>
                   </div>
-                  <span className="polish-header-sub">
-                    {currentChapter ? `📍 제 ${currentChapterIndex + 1}장. ${cleanTitle(currentChapter.title)} > ${cleanTitle(localTitle || currentSection?.title || '소목차')}` : '키워드와 지시어로 소목차 본문을 완성합니다.'}
-                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-vault-link-ai"
+                    onClick={() => { loadVault(); setIsVaultModalOpen(true); }}
+                    title="창작실 소재 연동: 아이디어 메모, 캐릭터 설정, 복선 레퍼런스 열람 및 AI 반영"
+                  >
+                    <Lightbulb size={14} style={{ color: 'var(--primary)' }} />
+                    <span>창작실 연동 ({selectedVaultIds.length})</span>
+                  </button>
                 </div>
 
                 {/* 1. 핵심 키워드 및 소재 */}
@@ -2921,6 +3222,13 @@ export default function Studio() {
       <ModelQuotasModal
         isOpen={isQuotaModalOpen}
         onClose={() => setIsQuotaModalOpen(false)}
+      />
+
+      {/* 외부 원고 가져오기 마법사 모달 */}
+      <ManuscriptImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        currentBook={activeBook}
       />
     </div>
   );

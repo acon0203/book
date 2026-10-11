@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   BookOpen, 
   Flame, 
@@ -11,19 +11,23 @@ import {
   Clock, 
   SlidersHorizontal,
   ChevronRight,
-  TrendingUp
+  TrendingUp,
+  Bookmark,
+  BookmarkCheck,
+  Star,
+  MessageSquare
 } from 'lucide-react';
 import { useStore } from '../store';
 import './ExploreSerial.css';
 
-// 교보문고 표준 핵심 8대 장르
+// 교보문고 표준 핵심 8대 장르 (자서전, 회고록, 평전 포함)
 const KYOBO_GENRES = [
   { id: 'all', label: '전체 장르' },
   { id: 'novel', label: '소설', keywords: ['소설', '웹소설', '문학'] },
-  { id: 'essay', label: '시 / 에세이', keywords: ['시', '에세이', '산문'] },
+  { id: 'essay', label: '시 / 에세이', keywords: ['시', '에세이', '산문', '자서전', '회고록', '일대기'] },
   { id: 'economy', label: '경제 / 경영', keywords: ['경제', '경영', '재테크', '투자', '비즈니스'] },
   { id: 'self', label: '자기계발', keywords: ['자기계발', '동기부여', '생산성'] },
-  { id: 'humanities', label: '인문 / 사회', keywords: ['인문', '철학', '역사', '문화', '사회', '정치'] },
+  { id: 'humanities', label: '인문 / 사회', keywords: ['인문', '철학', '역사', '문화', '사회', '정치', '평전', '자서전', '인물'] },
   { id: 'tech', label: 'IT / 과학', keywords: ['IT', '컴퓨터', '프로그래밍', '과학', '공학', 'AI'] },
   { id: 'life', label: '라이프 / 실용', keywords: ['건강', '요리', '취미', '실용', '스포츠', '여행'] },
   { id: 'art', label: '예술 / 문화', keywords: ['예술', '디자인', '대중문화', '음악', '영화'] }
@@ -47,10 +51,29 @@ export default function ExploreSerial() {
   const loadBooks = useStore((state) => state.loadBooks);
   const openReader = useStore((state) => state.openReader);
   const setView = useStore((state) => state.setView);
+  const user = useStore((state) => state.user);
+  const showToast = useStore((state) => state.showToast);
 
-  // 컴포넌트 마운트 시 최신 도서 데이터 로드
-  React.useEffect(() => {
+  // 독서 서재(reader_history) 담김 상태 추적
+  const [savedBookIds, setSavedBookIds] = useState(() => new Set());
+
+  // 최신 독서 서재 담김 목록 동기화
+  const syncSavedBooks = () => {
+    try {
+      const raw = localStorage.getItem('reader_history') || '[]';
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setSavedBookIds(new Set(parsed.map(item => item.bookId)));
+      }
+    } catch {
+      setSavedBookIds(new Set());
+    }
+  };
+
+  // 컴포넌트 마운트 시 최신 도서 데이터 및 서재 담김 동기화
+  useEffect(() => {
     loadBooks();
+    syncSavedBooks();
   }, [loadBooks]);
 
   // 필터 상태
@@ -58,7 +81,56 @@ export default function ExploreSerial() {
   const [selectedCycle, setSelectedCycle] = useState('all');
   const [sortBy, setSortBy] = useState('latest'); // 'latest' | 'views' | 'likes'
 
-  // 연재 데이터 가공 & 통계 집계: 'published' 상태의 챕터가 1개 이상 있는 도서만 엄격히 필터링!
+  // 작가 필명 헬퍼 (Library.jsx와 1:1 일체화)
+  const getDisplayAuthor = (book) => {
+    if (book?.author && book.author !== '작가' && book.author.trim().length > 0) {
+      return book.author;
+    }
+    const cfgRaw = localStorage.getItem('bookstudio_config');
+    let cfgAuthor = '';
+    try { if (cfgRaw) cfgAuthor = JSON.parse(cfgRaw).defaultAuthor; } catch {}
+    const userAuthor = user?.displayName || cfgAuthor;
+    return userAuthor || '작가 미상';
+  };
+
+  // 독서 서재 담기 / 빼기 토글 액션
+  const handleToggleShelf = (e, book) => {
+    e.stopPropagation();
+    try {
+      const historyRaw = localStorage.getItem('reader_history') || '[]';
+      const history = JSON.parse(historyRaw);
+      const isAlreadySaved = history.some(h => h.bookId === book.id);
+      let updatedHistory;
+
+      if (isAlreadySaved) {
+        updatedHistory = history.filter(h => h.bookId !== book.id);
+        localStorage.setItem('reader_history', JSON.stringify(updatedHistory));
+        setSavedBookIds(new Set(updatedHistory.map(h => h.bookId)));
+        showToast(`'${book.title}' 도서가 독서 서재에서 제거되었습니다.`, 'info');
+      } else {
+        const firstChap = book.publishedChapters?.[0] || book.chapters?.[0];
+        const newEntry = {
+          bookId: book.id,
+          bookTitle: book.title,
+          subtitle: book.subtitle || '',
+          author: getDisplayAuthor(book),
+          genre: book.genre || '소설',
+          chapterId: firstChap?.id,
+          chapterTitle: firstChap?.title || '1화',
+          coverColor: book.coverColor || '#2563eb',
+          readAt: new Date().toISOString()
+        };
+        updatedHistory = [newEntry, ...history.filter(h => h.bookId !== book.id)].slice(0, 30);
+        localStorage.setItem('reader_history', JSON.stringify(updatedHistory));
+        setSavedBookIds(new Set(updatedHistory.map(h => h.bookId)));
+        showToast(`'${book.title}' 도서가 독서 서재에 담겼습니다! 📚`, 'success');
+      }
+    } catch (err) {
+      console.error('Failed to toggle shelf bookmark:', err);
+    }
+  };
+
+  // 연재 데이터 가공 & 통계 집계: 100% 실제 데이터 기반 집계 (더미값 0)
   const serialBooks = useMemo(() => {
     return books
       .filter((book) => (book.chapters || []).some((c) => c.status === 'published'))
@@ -67,15 +139,26 @@ export default function ExploreSerial() {
         const publishedChapters = chapters.filter((c) => c.status === 'published');
         const latestChap = publishedChapters[publishedChapters.length - 1];
 
-        // 총 조회수 및 관심수 집계
-        const totalViews = chapters.reduce((acc, c) => acc + (c.views || 0), 0) + (1200 + idx * 150);
+        // 100% 실제 조회수, 관심수, 댓글수 집계 (더미 오프셋 완전 제거)
+        const totalViews = chapters.reduce((acc, c) => acc + (c.views || 0), 0);
         const totalLikes = chapters.reduce((acc, c) => acc + (c.likes || 0), 0);
+        const commentCount = chapters.reduce((acc, c) => acc + (c.comments?.length || 0), 0);
+        
+        // 실제 챕터 섹션 본문 기준 글자수 & 페이지수 환산 (출판 표준: 500자 = 1페이지)
         const totalWords = chapters.reduce((acc, c) => {
           const secWords = (c.sections || []).reduce((sAcc, s) => sAcc + (s.content || '').replace(/<[^>]*>/g, '').length, 0);
           return acc + secWords;
         }, 0);
 
-        // 연재 주기 결정 (도서에 설정된 값 없으면 인덱스 기반 요일 매핑)
+        const latestChapWords = latestChap 
+          ? (latestChap.sections || []).reduce((acc, s) => acc + (s.content || '').replace(/<[^>]*>/g, '').length, 0)
+          : 0;
+
+        // 실제 텍스트 기준 최신화 쪽수 & 누적 쪽수
+        const latestChapPages = Math.max(1, Math.ceil(latestChapWords / 500));
+        const totalPages = Math.max(1, Math.ceil(totalWords / 500));
+
+        // 연재 주기 결정 (도서에 설정된 값 없으면 요일 순환 매핑)
         const dayCycleMap = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun', 'free'];
         const cycle = book.serialCycle || dayCycleMap[idx % dayCycleMap.length];
 
@@ -85,14 +168,17 @@ export default function ExploreSerial() {
           publishedChaptersCount: publishedChapters.length,
           totalChaptersCount: chapters.length,
           latestChap,
+          latestChapPages,
+          totalPages,
+          commentCount,
           totalViews,
           totalLikes,
-          totalWords,
           cycle,
+          displayAuthor: getDisplayAuthor(book),
           latestPublishedAt: latestChap?.publishedAt || book.updatedAt || book.createdAt
         };
       });
-  }, [books]);
+  }, [books, user]);
 
   // 상단 실시간 Best TOP 5 집계 (조회수 + 관심수 가중치)
   const topRankedBooks = useMemo(() => {
@@ -248,19 +334,18 @@ export default function ExploreSerial() {
               {filteredBooks.map(book => {
                 const firstChapId = book.publishedChapters?.[0]?.id || book.chapters?.[0]?.id;
                 const latestChapId = book.latestChap?.id || firstChapId;
+                const isSaved = savedBookIds.has(book.id);
 
                 return (
                   <article key={book.id} className="serial-book-card">
-                    {/* 좌측 썸네일 표지 */}
+                    {/* 좌측 썸네일 표지 (Library.jsx 양식과 1:1 일체화: 도서 제목만 크고 깔끔하게 표시) */}
                     <div 
                       className="serial-cover-thumb"
+                      style={{ background: book.coverColor || 'linear-gradient(135deg, #1e293b, #0f172a)' }}
                       onClick={() => openReader(book.id, firstChapId)}
                       title="첫 회부터 읽기"
                     >
-                      <div className="cover-inner-text">
-                        <span className="cover-genre-tag">{book.genre || '연재'}</span>
-                        <h4 className="cover-title-display">{book.title}</h4>
-                      </div>
+                      <h3 className="serial-cover-title-clean">{book.title}</h3>
                     </div>
 
                     {/* 중앙 상세 정보 */}
@@ -279,16 +364,19 @@ export default function ExploreSerial() {
                         {book.title}
                       </h3>
 
+                      {/* 개편된 메타 라인: 작가명 · 화수 · 쪽수(최신/누적) · 평점 · 댓글 · 조회 · 하트 */}
                       <div className="serial-meta-line">
-                        <span className="author-name">글 {book.author || '연재 작가'}</span>
+                        <span className="author-name">글 {book.displayAuthor}</span>
                         <span className="meta-sep">·</span>
                         <span className="chap-count">총 {book.totalChaptersCount}화 ({book.publishedChaptersCount}화 발행)</span>
+                        <span className="meta-sep">·</span>
+                        <span className="page-count-badge">최신화 {book.latestChapPages}쪽 (누적 {book.totalPages}쪽)</span>
+                        <span className="meta-sep">·</span>
+                        <span className="comment-badge"><MessageSquare size={12} className="meta-comment-icon" /> {book.commentCount}</span>
                         <span className="meta-sep">·</span>
                         <span className="views-count">👁️ {book.totalViews.toLocaleString()}</span>
                         <span className="meta-sep">·</span>
                         <span className="likes-count">❤️ {book.totalLikes}</span>
-                        <span className="meta-sep">·</span>
-                        <span className="words-count">✍️ {book.totalWords.toLocaleString()}자</span>
                       </div>
 
                       <p className="serial-logline">
@@ -296,7 +384,7 @@ export default function ExploreSerial() {
                       </p>
                     </div>
 
-                    {/* 우측 뷰어 퀵 이동 버튼들 */}
+                    {/* 우측 뷰어 퀵 이동 및 서재 담기 버튼들 */}
                     <div className="serial-card-actions">
                       <button 
                         className="btn-read-first"
@@ -311,6 +399,14 @@ export default function ExploreSerial() {
                         title="최신 연재화 바로 읽기"
                       >
                         최신화 <ChevronRight size={14} />
+                      </button>
+                      <button 
+                        className={`btn-save-shelf ${isSaved ? 'saved' : ''}`}
+                        onClick={(e) => handleToggleShelf(e, book)}
+                        title={isSaved ? '독서 서재에서 제거' : '내 독서 서재에 보관'}
+                      >
+                        {isSaved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+                        <span>{isSaved ? '서재에 담김' : '+ 서재 담기'}</span>
                       </button>
                     </div>
                   </article>

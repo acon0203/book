@@ -22,8 +22,10 @@ import {
   Play, 
   Compass,
   Zap,
-  Edit3
+  Edit3,
+  UploadCloud
 } from 'lucide-react';
+import ManuscriptImportModal from '../components/ManuscriptImportModal';
 
 export default function Library() {
   const {
@@ -34,6 +36,7 @@ export default function Library() {
   const [baseStats, setBaseStats] = useState({ totalWordsGenerated: 0, totalChaptersCompleted: 0, aiGenerationsCount: 0 });
   const [libraryTab, setLibraryTab] = useState(() => localStorage.getItem('library_active_tab') || 'author'); // 'author' | 'reader'
   const [readingHistory, setReadingHistory] = useState([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // 모달 폼 상태
   const [title, setTitle] = useState('');
@@ -172,10 +175,16 @@ export default function Library() {
           <h1>내 서재</h1>
           <p>창작과 독서가 공존하는 나만의 공간입니다. 멈췄던 작업을 0초 만에 이어가세요.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setNewBookModalOpen(true)}>
-          <Plus size={18} />
-          <span>새 책 만들기</span>
-        </button>
+        <div className="library-header-actions" style={{ display: 'flex', gap: '0.6rem' }}>
+          <button className="btn btn-secondary" onClick={() => setIsImportModalOpen(true)} title="외부 원고 파일(.txt, .md, .docx) 불러오기">
+            <UploadCloud size={16} />
+            <span>원고 가져오기</span>
+          </button>
+          <button className="btn btn-primary" onClick={() => setNewBookModalOpen(true)}>
+            <Plus size={18} />
+            <span>새 책 만들기</span>
+          </button>
+        </div>
       </header>
 
       <div className="library-body">
@@ -737,6 +746,12 @@ export default function Library() {
           </div>
         </div>
       )}
+
+      {/* 원고 가져오기 마법사 모달 */}
+      <ManuscriptImportModal 
+        isOpen={isImportModalOpen} 
+        onClose={() => setIsImportModalOpen(false)} 
+      />
     </div>
   );
 }

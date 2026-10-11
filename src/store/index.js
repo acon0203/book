@@ -410,6 +410,27 @@ export const useStore = create((set, get) => {
       }
     },
 
+    saveOrUpdateLatestVersion: async (defaultVersionName = 'v1.0') => {
+      const { activeBook } = get();
+      if (!activeBook) return false;
+      try {
+        const isFirst = !activeBook.versions || activeBook.versions.length === 0;
+        const updatedBook = await bookService.saveOrUpdateLatestVersion(activeBook.id, defaultVersionName);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+        if (isFirst) {
+          get().showToast(`책 전체가 저장되어 히스토리에 '${defaultVersionName}'(으)로 등록되었습니다!`, 'success');
+        } else {
+          const latestVerName = updatedBook.versions?.[0]?.name || '최신본';
+          get().showToast(`책 전체가 저장되었습니다. (히스토리 ${latestVerName} 갱신)`, 'success');
+        }
+        return true;
+      } catch (err) {
+        get().showToast(`책 전체 저장 실패: ${err.message}`, 'error');
+        return false;
+      }
+    },
+
     restoreBookVersion: async (versionId) => {
       const { activeBook } = get();
       if (!activeBook) return false;
