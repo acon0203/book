@@ -41,6 +41,11 @@ export const storageService = {
     localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(books));
   },
 
+  saveBook: (book) => {
+    if (!book?.id) return null;
+    return storageService.updateBook(book.id, book);
+  },
+
   getBook: (id) => {
     const books = storageService.getBooks();
     const book = books.find(b => b.id === id);
@@ -145,6 +150,107 @@ export const storageService = {
     const nextStatus = chap.status === 'published' ? 'draft' : 'published';
     chap.status = nextStatus;
     chap.publishedAt = nextStatus === 'published' ? new Date().toISOString() : null;
+    return storageService.updateBook(bookId, book);
+  },
+
+  // 소목차(에피소드/1화) 개별 연재 발행 토글
+  toggleSectionPublish: (bookId, chapterId, sectionId) => {
+    const book = storageService.getBook(bookId);
+    const chap = book.chapters?.find(c => c.id === chapterId);
+    if (!chap) throw new Error('챕터를 찾을 수 없습니다.');
+    const sec = chap.sections?.find(s => s.id === sectionId);
+    if (!sec) throw new Error('소목차를 찾을 수 없습니다.');
+
+    const nextStatus = sec.status === 'published' ? 'draft' : 'published';
+    sec.status = nextStatus;
+    sec.publishedAt = nextStatus === 'published' ? new Date().toISOString() : null;
+
+    // 소목차가 하나라도 발행되면 상위 챕터도 발행 상태로 연동
+    if (nextStatus === 'published') {
+      chap.status = 'published';
+      if (!chap.publishedAt) chap.publishedAt = new Date().toISOString();
+    } else {
+      // 챕터 내 남은 발행 소목차가 없으면 챕터도 초고로 조정
+      const hasOtherPublished = chap.sections.some(s => s.status === 'published');
+      if (!hasOtherPublished) {
+        chap.status = 'draft';
+        chap.publishedAt = null;
+      }
+    }
+    return storageService.updateBook(bookId, book);
+  },
+
+  // 챕터 전체 일괄 발행/취소 (하위 소목차 포함)
+  toggleChapterPublishAll: (bookId, chapterId) => {
+    const book = storageService.getBook(bookId);
+    const chap = book.chapters?.find(c => c.id === chapterId);
+    if (!chap) throw new Error('챕터를 찾을 수 없습니다.');
+
+    const nextStatus = chap.status === 'published' ? 'draft' : 'published';
+    const nowIso = new Date().toISOString();
+    chap.status = nextStatus;
+    chap.publishedAt = nextStatus === 'published' ? nowIso : null;
+
+    if (Array.isArray(chap.sections)) {
+      chap.sections.forEach(s => {
+        s.status = nextStatus;
+        s.publishedAt = nextStatus === 'published' ? (s.publishedAt || nowIso) : null;
+      });
+    }
+    return storageService.updateBook(bookId, book);
+  },
+
+  // 도서 전체 완결 연재 발행/취소 (모든 챕터 & 소목차 일괄)
+  toggleBookPublishAll: (bookId) => {
+    const book = storageService.getBook(bookId);
+    const isCurrentlyAllPublished = (book.chapters || []).every(c => c.status === 'published');
+    const nextStatus = isCurrentlyAllPublished ? 'draft' : 'published';
+    const nowIso = new Date().toISOString();
+
+    book.status = nextStatus === 'published' ? 'completed' : 'draft';
+    book.publishedAt = nextStatus === 'published' ? (book.publishedAt || nowIso) : null;
+
+    (book.chapters || []).forEach(c => {
+      c.status = nextStatus;
+      c.publishedAt = nextStatus === 'published' ? (c.publishedAt || nowIso) : null;
+      (c.sections || []).forEach(s => {
+        s.status = nextStatus;
+        s.publishedAt = nextStatus === 'published' ? (s.publishedAt || nowIso) : null;
+      });
+    });
+    return storageService.updateBook(bookId, book);
+  },
+
+  // 목차 체크박스 기반 일괄 발행 상태 저장
+  updateBatchPublishSections: (bookId, publishedSectionIds) => {
+    const book = storageService.getBook(bookId);
+    const idSet = new Set(publishedSectionIds);
+    const nowIso = new Date().toISOString();
+
+    (book.chapters || []).forEach(chap => {
+      let chapHasPublished = false;
+      (chap.sections || []).forEach(sec => {
+        if (idSet.has(sec.id)) {
+          sec.status = 'published';
+          sec.publishedAt = sec.publishedAt || nowIso;
+          chapHasPublished = true;
+        } else {
+          sec.status = 'draft';
+          sec.publishedAt = null;
+        }
+      });
+      chap.status = chapHasPublished ? 'published' : 'draft';
+      chap.publishedAt = chapHasPublished ? (chap.publishedAt || nowIso) : null;
+    });
+
+    const isAllPublished = (book.chapters || []).length > 0 && (book.chapters || []).every(c => c.status === 'published' && (c.sections || []).every(s => s.status === 'published'));
+    if (isAllPublished) {
+      book.status = 'completed';
+      book.publishedAt = book.publishedAt || nowIso;
+    } else {
+      book.status = (book.chapters || []).some(c => c.status === 'published') ? 'publishing' : 'draft';
+    }
+
     return storageService.updateBook(bookId, book);
   },
 

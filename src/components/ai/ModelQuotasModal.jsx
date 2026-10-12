@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './ModelQuotasModal.css';
-import { getModelQuotasSummary } from '../utils/quotaManager';
-import { storageService } from '../services/storageService';
+import { getModelQuotasSummary } from '../../utils/quotaManager';
+import { storageService } from '../../services/storageService';
 import { X, RefreshCw, Zap, Clock, ExternalLink, Info, CheckCircle2, Sparkles } from 'lucide-react';
 
 export default function ModelQuotasModal({ isOpen, onClose }) {
@@ -44,6 +44,19 @@ export default function ModelQuotasModal({ isOpen, onClose }) {
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [isOpen, onClose]);
+
+  // ESC 키로 닫기
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
   // 확인 클릭 시 선택한 모델 즉시 저장 및 적용

@@ -1,0 +1,173 @@
+/* ==========================================================================
+   AI 목차 자동 기획 모달 (OutlineModal.css)
+   - 1:1 매칭 컴포넌트 전용 스타일
+   - 베스트셀러 25권 표본 규격 그리드, 실시간 분량 계산 카드, 에러 배너
+   ========================================================================== */
+
+/* 상단 장르 라벨 헤더 */
+.outline-genre-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.outline-genre-badge {
+  font-size: 0.78rem;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* 베스트셀러 장르 템플릿 선택 그리드 */
+.outline-genre-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+/* 장르 선택 칩 버튼 */
+.outline-genre-chip {
+  padding: 0.55rem 0.65rem;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card-sub);
+  color: var(--text-main);
+  font-weight: 400;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.outline-genre-chip:hover {
+  border-color: var(--primary);
+  background-color: var(--bg-hover, rgba(0, 114, 245, 0.05));
+}
+
+.outline-genre-chip.active {
+  border: 1.5px solid var(--primary);
+  background-color: var(--bg-active, rgba(0, 114, 245, 0.1));
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.outline-genre-icon {
+  font-size: 1rem;
+}
+
+.outline-genre-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 챕터 및 소목차 2열 그리드 */
+.outline-counts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.outline-custom-input {
+  margin-top: 0.4rem;
+}
+
+/* 실시간 출판 분량 & DB 기반 레퍼런스 가이드 카드 */
+.outline-spec-card {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md, 8px);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+}
+
+.outline-spec-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.outline-spec-pages-highlight {
+  color: var(--primary);
+  font-size: 0.94rem;
+}
+
+.outline-spec-words {
+  font-size: 0.8rem;
+}
+
+.outline-spec-detail {
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.45rem;
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.outline-spec-detail-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.outline-spec-bold {
+  color: var(--text-main);
+}
+
+.outline-spec-dim {
+  color: var(--text-dim);
+}
+
+/* 특별 요구사항 텍스트에어리어 */
+.outline-prompt-textarea {
+  min-height: 80px;
+}
+
+/* AI 모델 호출 실패 시 모달 내 직관적 에러 안내 배너 */
+.outline-error-banner {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  background-color: rgba(239, 68, 68, 0.08);
+  border: 1.5px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-md, 8px);
+  color: var(--text-main);
+  font-size: 0.85rem;
+}
+
+.outline-error-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #ef4444;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.outline-error-msg {
+  margin: 0 0 0.65rem 0;
+  color: var(--text-muted);
+  line-height: 1.45;
+  font-size: 0.82rem;
+}
+
+.outline-error-tip {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-dim);
+}
+
+.outline-error-action-btn {
+  padding: 0.5rem 0.85rem;
+  font-size: 0.83rem;
+  width: 100%;
+  justify-content: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}

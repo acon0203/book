@@ -123,9 +123,11 @@ export default function ExploreComplete() {
     }
   };
 
-  // 완성 도서 가공 및 100% 실제 데이터 산출 (더미 오프셋 0)
+  // 완성 도서 가공 및 100% 실제 데이터 산출 (완결작 isCompleted만 필터링)
   const completeBooks = useMemo(() => {
-    return books.map((book) => {
+    return books
+      .filter((book) => !!book.isCompleted)
+      .map((book) => {
       const chapters = book.chapters || [];
       const totalWords = chapters.reduce((acc, c) => {
         const secWords = (c.sections || []).reduce((sAcc, s) => sAcc + (s.content || '').replace(/<[^>]*>/g, '').length, 0);

@@ -16,8 +16,8 @@ const cleanTitle = (str) => (str || '').replace(/^제?\s*\d+\s*[장회편절단�
 export default function Vault() {
   const {
     vault, loadVault, deleteVaultItem, activeTagFilter, setTagFilter, showToast,
-    books, activeBook, setActiveBook, openBook, setView,
-    updateActiveBookPlanning, updateActiveBookCharacters, updateActiveBookPlotStages
+    books, loadBooks, activeBook, setActiveBook, openBook, setView,
+    updateActiveBookPlanning, updateActiveBookCharacters, updateActiveBookPlotStages, openConfirm
   } = useStore();
 
   // 상단 5대 순차 파이프라인 단계 ('ideas' | 'proposal' | 'materials' | 'story' | 'outline')
@@ -106,8 +106,9 @@ export default function Vault() {
   }, [activeBook]);
 
   useEffect(() => {
+    loadBooks();
     loadVault();
-  }, [loadVault]);
+  }, [loadBooks, loadVault]);
 
   // 태그 목록
   const tags = useMemo(() => {
@@ -290,12 +291,17 @@ export default function Vault() {
     setIsCharModalOpen(false);
   };
 
-  const handleApplyPlotTemplate = (templateKey) => {
+  const handleApplyPlotTemplate = async (templateKey) => {
     if (!activeBook) return;
     const tpl = PLOT_TEMPLATES[templateKey];
     if (!tpl) return;
     if (plotStages.length > 0) {
-      if (!window.confirm(`'${tpl.name}' 표준 뼈대를 적용하시겠습니까?\n기존 단계가 교체됩니다.`)) return;
+      const ok = await openConfirm({
+        title: '플롯 뼈대 적용',
+        message: `'${tpl.name}' 표준 뼈대를 적용하시겠습니까?\n기존 단계 내용이 교체됩니다.`,
+        confirmText: '적용하기'
+      });
+      if (!ok) return;
     }
     const newStages = tpl.stages.map(s => ({ ...s, content: '' }));
     updateActiveBookPlotStages(newStages);
@@ -349,7 +355,13 @@ export default function Vault() {
 
   // 챕터 삭제
   const handleDeleteDraftChapter = async (chapId) => {
-    if (window.confirm('이 챕터를 가목차에서 삭제하시겠습니까?')) {
+    const ok = await openConfirm({
+      title: '가목차 챕터 삭제',
+      message: '이 챕터를 가목차에서 삭제하시겠습니까?',
+      danger: true,
+      confirmText: '삭제'
+    });
+    if (ok) {
       const updated = draftChapters.filter(c => c.id !== chapId);
       await saveDraftOutline(updated);
       showToast('챕터가 삭제되었습니다.', 'info');
@@ -540,7 +552,12 @@ export default function Vault() {
       return;
     }
     if (draftChapters.length > 0) {
-      if (!window.confirm('현재 작업 중인 가목차를 3단계 플롯 뼈대로 새로 구성하시겠습니까?\n기존 가목차가 교체됩니다.')) return;
+      const ok = await openConfirm({
+        title: '가목차 재구성',
+        message: '현재 작업 중인 가목차를 3단계 플롯 뼈대로 새로 구성하시겠습니까?\n기존 가목차가 교체됩니다.',
+        confirmText: '새로 구성하기'
+      });
+      if (!ok) return;
     }
 
     const generated = plotStages.map((stage, idx) => ({
@@ -561,7 +578,12 @@ export default function Vault() {
       showToast('스튜디오에 등록된 목차가 없습니다.', 'info');
       return;
     }
-    if (!window.confirm('집필 스튜디오의 현재 본문 목차를 가목차 작업대로 불러오시겠습니까?')) return;
+    const ok = await openConfirm({
+      title: '스튜디오 목차 불러오기',
+      message: '집필 스튜디오의 현재 본문 목차를 가목차 작업대로 불러오시겠습니까?',
+      confirmText: '불러오기'
+    });
+    if (!ok) return;
 
     const cloned = activeBook.chapters.map((c, cIdx) => ({
       id: `draft_chap_${c.id || cIdx}`,
@@ -584,7 +606,12 @@ export default function Vault() {
     }
 
     const confirmMsg = `조립한 ${draftChapters.length}개 챕터 가목차를 집필 스튜디오에 최종 반영하시겠습니까?\n(기존에 작성된 본문 내용은 제목 매핑을 통해 안전하게 보존됩니다)`;
-    if (!window.confirm(confirmMsg)) return;
+    const ok = await openConfirm({
+      title: '가목차 스튜디오 반영',
+      message: confirmMsg,
+      confirmText: '목차 반영하기'
+    });
+    if (!ok) return;
 
     try {
       await bookService.applyOutline(activeBook.id, draftChapters);
@@ -663,7 +690,10 @@ export default function Vault() {
                 <div
                   key={b.id}
                   className={`project-nav-item ${isSelected ? 'active-project' : ''}`}
-                  onClick={() => setActiveBook(b)}
+                  onClick={() => {
+                    setActiveBook(b);
+                    showToast(`《${b.title}》 프로젝트로 전환되었습니다.`, 'info', 1500);
+                  }}
                 >
                   <div className="project-item-top">
                     <span className="project-genre-badge">{b.genre || '일반'}</span>
@@ -1131,8 +1161,14 @@ export default function Vault() {
                               </button>
                               <button
                                 className="btn-icon-subtle"
-                                onClick={() => {
-                                  if (window.confirm('이 인물을 삭제하시겠습니까?')) {
+                                onClick={async () => {
+                                  const ok = await openConfirm({
+                                    title: '인물 삭제',
+                                    message: `'${char.name}' 인물을 삭제하시겠습니까?`,
+                                    danger: true,
+                                    confirmText: '삭제'
+                                  });
+                                  if (ok) {
                                     updateActiveBookCharacters(characters.filter(c => c.id !== char.id));
                                   }
                                 }}

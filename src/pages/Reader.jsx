@@ -31,12 +31,15 @@ export default function Reader() {
   const activeChapterId = useStore((state) => state.activeChapterId);
   const setReaderChapter = useStore((state) => state.setReaderChapter);
   const setView = useStore((state) => state.setView);
+  const closeReader = useStore((state) => state.closeReader);
+  const previousView = useStore((state) => state.previousView);
   const toggleChapterLike = useStore((state) => state.toggleChapterLike);
   const addChapterComment = useStore((state) => state.addChapterComment);
   const editChapterComment = useStore((state) => state.editChapterComment);
   const deleteChapterComment = useStore((state) => state.deleteChapterComment);
   const incrementChapterViews = useStore((state) => state.incrementChapterViews);
   const showToast = useStore((state) => state.showToast);
+  const openConfirm = useStore((state) => state.openConfirm);
 
   // 1. 독서 설정 상태 (기본 글꼴: 가독성 최상의 'dotum/고딕'으로 설정)
   const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('reader_font') || 'dotum');
@@ -202,8 +205,14 @@ export default function Reader() {
   };
 
   // 댓글 삭제
-  const handleDeleteComment = (commentId) => {
-    if (!window.confirm('이 댓글을 삭제하시겠습니까?')) return;
+  const handleDeleteComment = async (commentId) => {
+    const ok = await openConfirm({
+      title: '댓글 삭제',
+      message: '이 댓글을 삭제하시겠습니까?',
+      danger: true,
+      confirmText: '삭제'
+    });
+    if (!ok) return;
 
     setLocalComments(prev => prev.filter(c => c.id !== commentId));
     deleteChapterComment(currentChapter.id, commentId);
@@ -241,6 +250,45 @@ export default function Reader() {
     });
   };
 
+  // 이전 화면으로 복귀 (스튜디오에서 열었으면 스튜디오로, 서재에서 열었으면 서재로)
+  const handleBack = () => {
+    if (window.history.state?.view === 'reader') {
+      window.history.back();
+    } else {
+      closeReader();
+    }
+  };
+
+  // 브라우저 뒤로가기(popstate) 및 ESC 키 네비게이션
+  useEffect(() => {
+    window.history.pushState({ view: 'reader' }, '');
+
+    const handlePopState = () => {
+      closeReader();
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (isTocOpen) {
+          setIsTocOpen(false);
+        } else if (isSettingsOpen) {
+          setIsSettingsOpen(false);
+        } else {
+          handleBack();
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeReader, isTocOpen, isSettingsOpen]);
+
   return (
     <div 
       className={`reader-container theme-${readerTheme} font-${fontFamily} ${isWide ? 'mode-wide' : 'mode-normal'}`}
@@ -256,8 +304,8 @@ export default function Reader() {
         <div className="reader-header-left">
           <button 
             className="reader-icon-btn" 
-            onClick={() => setView('library')}
-            title="내 서재로 돌아가기"
+            onClick={handleBack}
+            title="이전 화면으로 돌아가기 (ESC)"
           >
             <ArrowLeft size={18} />
           </button>

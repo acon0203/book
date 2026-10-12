@@ -11,8 +11,14 @@
 - **실천**:
   - `pages/` 폴더에 화면 단위 컴포넌트(`Library`, `Studio`, `Vault`, `Settings`)를 배치한다.
   - 각 컴포넌트는 복잡한 CSS Module 대신 **1:1 일반 CSS (`ComponentName.jsx` + `ComponentName.css`)**로 나란히 매칭한다.
-  - 화면과 밀접하게 연결된 모달이나 서브 뷰는 별도 파일로 찢지 않고, 해당 페이지 컴포넌트 내부에 직관적으로 응집한다.
   - 전역 테마 및 공통 버튼/모달 스타일은 `src/styles/theme.css`에서 통합 관리한다.
+
+## 2-1. Modal & Dialog Implementation Principle (모달 및 다이얼로그 구현 원칙)
+- **단순 확인/입력 팝업 (1순위)**:
+  - 챕터명 변경, 삭제 재확인, 단순 알림 등은 별도 모달 JSX나 파일을 만들지 않고, **전역 다이얼로그(`openConfirm`, `openPrompt`) 함수 호출**로 1줄 처리하여 파일 증식을 원천 차단한다.
+- **대형 복합 기능 모달 (예외 분리 허용)**:
+  - 연재 발행(`PublishModal`), AI 편집장(`ChiefModal`)처럼 자체 로직이 방대(200줄 이상)하고 상태가 복합적인 모달은 메인 컴포넌트의 가독성과 Zero-Lag 렌더링 성능을 위해 **해당 페이지 전용 서브 폴더(예: `src/pages/studio/`)**로 분리하여 격리 관리한다.
+  - 전역 공통 컴포넌트(`src/components/`)에 특정 페이지 전용 모달을 섞어 오염시키지 않는다.
 
 ## 3. Unified Store & Service (단일 스토어 & 단일 서비스)
 - **상태 관리**: 상태를 여러 파일로 파편화하지 않고, `src/store/index.js` 단일 Zustand 스토어에서 중앙 관리한다.

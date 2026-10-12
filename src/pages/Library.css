@@ -418,13 +418,12 @@
   display: flex;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
+  cursor: default;
   height: 156px;
 }
 .horizontal-book-card:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  border-color: var(--primary);
+  border-color: var(--border-bright, rgba(255, 255, 255, 0.18));
 }
 
 /* 좌측: 책 표지 영역 */
@@ -491,10 +490,79 @@
   border: 1px solid var(--border-color);
 }
 
+.h-status-badge-btn {
+  font-size: 0.72rem;
+  padding: 0.18rem 0.52rem;
+  border-radius: 4px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  line-height: 1.2;
+}
+
+.h-status-badge-btn.ongoing {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+.h-status-badge-btn.ongoing:hover {
+  background: rgba(59, 130, 246, 0.22);
+}
+
+.h-status-badge-btn.completed {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.h-status-badge-btn.completed:hover {
+  background: rgba(16, 185, 129, 0.22);
+}
+
+.btn-continue-write {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
 .h-author-tag {
   font-size: 0.76rem;
   color: var(--text-dim);
   font-weight: 500;
+}
+
+/* 도서 카드 상단 우측 액션 버튼 그룹 (수정 연필 + 삭제 휴지통) */
+.h-card-action-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-icon-subtle {
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  color: var(--text-dim);
+  opacity: 0.6;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.horizontal-book-card:hover .btn-icon-subtle {
+  opacity: 1;
+}
+.btn-icon-subtle:hover {
+  color: var(--primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.12);
 }
 
 /* 단순하고 깔끔한 플랫 휴지통 버튼 (입체감·불필요한 보더 완전 배제) */
@@ -505,7 +573,7 @@
   box-shadow: none;
   color: var(--text-dim);
   opacity: 0.6;
-  transition: opacity 0.15s ease, color 0.15s ease;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
   padding: 4px;
   border-radius: 4px;
   cursor: pointer;

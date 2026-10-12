@@ -1,0 +1,522 @@
+/* ==========================================================================
+   연재 발행 모달 전용 스타일 (PublishModal.css)
+   - 1:1 매칭 컴포넌트 전용 스타일
+   - 이번화 즉시 발행 카드 + 전체 목차 일괄 선택 트리 + 발행 스코프 뱃지
+   ========================================================================== */
+
+/* 연재 발행 모달 컨테이너 */
+.modal-box-publish {
+  width: 100%;
+  max-width: 660px;
+  width: 94vw;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.publish-modal-guide {
+  font-size: 0.86rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+
+.publish-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.publish-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: 10px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  transition: var(--transition);
+}
+
+.publish-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.publish-card.is-published {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.03);
+}
+
+.publish-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.publish-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.publish-scope-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.publish-scope-pill.section-pill {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.publish-scope-pill.chapter-pill {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.publish-scope-pill.book-pill {
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+.publish-card-title {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.publish-status-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.publish-status-tag.pub {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.publish-status-tag.draft {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-dim);
+}
+
+.publish-card-desc {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.publish-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-glass);
+}
+
+.publish-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* 연재 발행하기 통합 모달 프리미엄 헤더 */
+.publish-unified-header {
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.publish-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.publish-header-icon-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(0, 114, 245, 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.publish-header-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.publish-header-title-wrap h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.publish-book-badge {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.publish-unified-body {
+  padding: 1.3rem 1.4rem;
+  max-height: 72vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.publish-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.publish-section-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.section-step-tag {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.publish-section-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.publish-section-subguide {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.publish-batch-quick-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.35rem;
+}
+
+.btn-quick-select {
+  background: var(--bg-card-sub);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-quick-select:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: var(--primary);
+}
+
+/* 1. 상단 이번화 바로 발행 카드 */
+.publish-now-card {
+  background: var(--bg-card-sub);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: var(--transition);
+}
+
+.publish-now-card:hover {
+  border-color: var(--border-bright);
+}
+
+.publish-now-card.is-published {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.publish-now-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.publish-now-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.publish-chap-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(0, 114, 245, 0.1);
+  color: var(--primary);
+}
+
+.publish-now-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.publish-now-stats {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.publish-now-stats strong {
+  color: var(--text-main);
+}
+
+.divider-dot {
+  color: var(--text-dim);
+}
+
+.publish-now-btn-wrap {
+  flex-shrink: 0;
+}
+
+.btn-now-action {
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 6px;
+}
+
+/* 2. 하단 선택하여 발행하기 트리 */
+.publish-batch-tree-wrapper {
+  background: var(--bg-card-sub);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.publish-batch-chap-group {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.publish-batch-chap-group:last-child {
+  border-bottom: none;
+}
+
+.publish-batch-chap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.95rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.chap-info-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.chap-label-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.chap-title-text {
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.chap-count-badge {
+  font-size: 0.72rem;
+  color: var(--primary);
+  font-weight: 600;
+  background: rgba(0, 114, 245, 0.08);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.btn-chap-toggle-check {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-chap-toggle-check:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: var(--primary);
+}
+
+.publish-batch-sec-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.publish-batch-sec-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.95rem;
+  border-bottom: 1px solid var(--border-glass);
+  cursor: pointer;
+  transition: var(--transition);
+  background: transparent;
+}
+
+.publish-batch-sec-row:last-child {
+  border-bottom: none;
+}
+
+.publish-batch-sec-row:hover {
+  background: var(--bg-hover);
+}
+
+.publish-batch-sec-row.is-checked {
+  background: rgba(0, 114, 245, 0.05);
+}
+
+.publish-batch-sec-checkbox {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.publish-batch-sec-main {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.sec-num {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.sec-title {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.publish-batch-sec-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.sec-words {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+
+.sec-status-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.sec-status-badge.pub {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.sec-status-badge.draft {
+  background: var(--bg-hover);
+  color: var(--text-dim);
+}
+
+.batch-empty-row {
+  padding: 0.85rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* 모달 푸터 */
+.publish-unified-footer {
+  padding: 0.9rem 1.4rem;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.publish-footer-stat {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.publish-footer-stat strong {
+  color: var(--primary);
+}
+
+.publish-footer-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-save-batch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}

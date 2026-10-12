@@ -33,12 +33,12 @@ import {
   ArrowLeft,
   Zap
 } from 'lucide-react';
-import ModelQuotasModal from '../components/ModelQuotasModal';
+import ModelQuotasModal from '../components/ai/ModelQuotasModal';
 
 export default function Settings() {
   const { 
     books, loadBooks, loadVault, showToast, user, loginWithGoogle, logout,
-    syncStatus, syncToCloud, restoreFromCloud, lastSyncedAt, setView, activeBook 
+    syncStatus, syncToCloud, restoreFromCloud, lastSyncedAt, setView, activeBook, openConfirm 
   } = useStore();
 
   const [config, setConfig] = useState({
@@ -128,8 +128,13 @@ export default function Settings() {
   };
 
   // 클라우드 복원 컨펌
-  const handleCloudRestoreConfirm = () => {
-    if (window.confirm('클라우드에서 최신 데이터를 복원하시겠습니까?\n현재 로컬 데이터는 클라우드 데이터로 갱신됩니다.')) {
+  const handleCloudRestoreConfirm = async () => {
+    const ok = await openConfirm({
+      title: '클라우드 데이터 복원',
+      message: '클라우드에서 최신 데이터를 복원하시겠습니까?\n현재 로컬 데이터는 클라우드 데이터로 갱신됩니다.',
+      confirmText: '복원하기'
+    });
+    if (ok) {
       restoreFromCloud();
     }
   };
@@ -156,11 +161,16 @@ export default function Settings() {
   };
 
   // [로컬 오프라인 복원] JSON 파일 불러오기
-  const handleImportBackupFile = (e) => {
+  const handleImportBackupFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!window.confirm(`'${file.name}' 파일로부터 서재 데이터를 복원하시겠습니까?\n현재 브라우저의 도서 및 자료가 해당 파일 내용으로 복원됩니다.`)) {
+    const ok = await openConfirm({
+      title: '서재 백업 복원',
+      message: `'${file.name}' 파일로부터 서재 데이터를 복원하시겠습니까?\n현재 브라우저의 도서 및 자료가 해당 파일 내용으로 복원됩니다.`,
+      confirmText: '복원하기'
+    });
+    if (!ok) {
       e.target.value = '';
       return;
     }

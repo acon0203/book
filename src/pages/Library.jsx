@@ -11,8 +11,6 @@ import {
 import { 
   Plus, 
   Trash2, 
-  X, 
-  Sparkles, 
   Calendar, 
   ArrowRight, 
   BookOpen, 
@@ -22,28 +20,25 @@ import {
   Play, 
   Compass,
   Zap,
+  Edit2,
   Edit3,
   UploadCloud
 } from 'lucide-react';
 import ManuscriptImportModal from '../components/ManuscriptImportModal';
+import BookInfoModal from '../components/BookInfoModal';
 
 export default function Library() {
   const {
     books, loadBooks, openBook, openReader, deleteBook, isBooksLoading, showToast,
-    isNewBookModalOpen, setNewBookModalOpen, setView, activeBook, user
+    isNewBookModalOpen, setNewBookModalOpen, setView, activeBook, user, openConfirm,
+    toggleBookCompleted
   } = useStore();
 
   const [baseStats, setBaseStats] = useState({ totalWordsGenerated: 0, totalChaptersCompleted: 0, aiGenerationsCount: 0 });
   const [libraryTab, setLibraryTab] = useState(() => localStorage.getItem('library_active_tab') || 'author'); // 'author' | 'reader'
   const [readingHistory, setReadingHistory] = useState([]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-
-  // 모달 폼 상태
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
-  const [genre, setGenre] = useState('자기계발');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingBook, setEditingBook] = useState(null);
 
   const loadReadingHistory = () => {
     try {
@@ -60,6 +55,19 @@ export default function Library() {
     loadReadingHistory();
     bookService.getStats().then(setBaseStats).catch(console.error);
   }, [loadBooks]);
+
+  // ESC 키로 새 책 만들기 모달 닫기
+  useEffect(() => {
+    if (!isNewBookModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setNewBookModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isNewBookModalOpen, setNewBookModalOpen]);
 
   const authorStats = calcAuthorStats(books, baseStats);
   const readerStats = calcReaderStats(readingHistory);
@@ -111,47 +119,36 @@ export default function Library() {
     return { text: `D+${Math.abs(diffDays)} 초과 ⚠️`, status: 'urgent', chapterTitle: nearest.title };
   };
 
-  const handleCreateBook = async (e) => {
-    e.preventDefault();
-    if (!title.trim()) {
-      showToast('도서 제목을 입력해주세요.', 'error');
-      return;
-    }
-    try {
-      setIsSubmitting(true);
-      const cfgRaw = localStorage.getItem('bookstudio_config');
-      let defaultAuthor = user?.displayName || '김연재';
-      try {
-        if (cfgRaw) {
-          const cfg = JSON.parse(cfgRaw);
-          if (cfg.defaultAuthor) defaultAuthor = cfg.defaultAuthor;
-        }
-      } catch {}
-
-      const newBook = await bookService.createBook({
-        title: title.trim(),
-        subtitle: subtitle.trim(),
-        targetAudience: targetAudience.trim(),
-        genre,
-        author: defaultAuthor
+  // 도서 완결/연재중 전환 확인 팝업 (openConfirm 기반 재확인)
+  const handleToggleBookComplete = async (e, book) => {
+    if (e) e.stopPropagation();
+    if (!book.isCompleted) {
+      const ok = await openConfirm({
+        title: '도서 완결(완성작) 등록',
+        message: `《${book.title}》 도서를 [완성 작품]으로 등록하시겠습니까?\n\n• 독자 공간의 '완성 서가'에 완결 도서로 전시됩니다.\n• 언제든 다시 연재중으로 되돌릴 수 있습니다.`,
+        confirmText: '완결 등록 🏆'
       });
-      await loadBooks();
-      showToast('새 도서 프로젝트가 생성되었습니다!', 'success');
-      setNewBookModalOpen(false);
-      setTitle('');
-      setSubtitle('');
-      setTargetAudience('');
-      openBook(newBook.id);
-    } catch (err) {
-      showToast(`도서 생성 실패: ${err.message}`, 'error');
-    } finally {
-      setIsSubmitting(false);
+      if (!ok) return;
+    } else {
+      const ok = await openConfirm({
+        title: '연재중으로 전환',
+        message: `《${book.title}》 도서를 다시 [연재중] 상태로 전환하시겠습니까?\n\n• 완성 서가에서 연재 공간으로 변경됩니다.`,
+        confirmText: '연재중 전환 ✍️'
+      });
+      if (!ok) return;
     }
+    toggleBookCompleted(book.id);
   };
 
-  const handleDelete = (e, bookId, bookTitle) => {
+  const handleDelete = async (e, bookId, bookTitle) => {
     e.stopPropagation();
-    if (window.confirm(`'${bookTitle}' 프로젝트를 정말 삭제하시겠습니까?`)) {
+    const ok = await openConfirm({
+      title: '도서 프로젝트 삭제',
+      message: `'${bookTitle}' 프로젝트를 정말 삭제하시겠습니까?\n작성된 모든 챕터와 원고가 영구 삭제됩니다.`,
+      danger: true,
+      confirmText: '삭제'
+    });
+    if (ok) {
       deleteBook(bookId);
     }
   };
@@ -242,7 +239,10 @@ export default function Library() {
                 <button 
                   type="button" 
                   className="btn btn-outline-primary btn-sm"
-                  onClick={() => setNewBookModalOpen(true)}
+                  onClick={() => {
+                    setEditingBook(null);
+                    setNewBookModalOpen(true);
+                  }}
                 >
                   <Plus size={13} />
                   <span>새 책 기획</span>
@@ -438,7 +438,13 @@ export default function Library() {
                     <p style={{ marginTop: '0.5rem', marginBottom: '1.5rem' }}>
                       '새 책 만들기'를 눌러 AI와 함께 첫 번째 전자책을 시작해보세요!
                     </p>
-                    <button className="btn btn-primary" onClick={() => setNewBookModalOpen(true)}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setEditingBook(null);
+                        setNewBookModalOpen(true);
+                      }}
+                    >
                       <Plus size={18} />
                       <span>새 책 만들기</span>
                     </button>
@@ -449,21 +455,39 @@ export default function Library() {
                       const progress = calculateProgress(book);
                       const deadlineInfo = getBookDeadlineInfo(book);
                       return (
-                        <div key={book.id} className="horizontal-book-card" onClick={() => openBook(book.id)}>
+                        <div key={book.id} className="horizontal-book-card">
                           {/* 좌측: 책 표지 영역 */}
                           <div 
                             className="h-card-cover"
                             style={{ background: book.coverColor || 'linear-gradient(135deg, #1e293b, #0f172a)' }}
                           >
-                            <h3 className="h-cover-title">{book.title}</h3>
+                            <h3 
+                              className="h-cover-title"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingBook(book);
+                              }}
+                              title="클릭하여 도서 정보 수정"
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {book.title}
+                            </h3>
                           </div>
 
                           {/* 우측: 세부 내용 박스 */}
                           <div className="h-card-body">
-                            {/* 1행: 장르, 마감일, 우측 휴지통 */}
+                            {/* 1행: 장르, 완결/연재 토글 뱃지, 마감일, 우측 수정/휴지통 */}
                             <div className="h-card-top-row">
                               <div className="h-badge-group">
                                 <span className="h-genre-badge">{book.genre || '기획'}</span>
+                                <button
+                                  type="button"
+                                  className={`h-status-badge-btn ${book.isCompleted ? 'completed' : 'ongoing'}`}
+                                  onClick={(e) => handleToggleBookComplete(e, book)}
+                                  title={book.isCompleted ? '클릭 시 연재중으로 전환' : '클릭 시 완결(완성작)로 등록'}
+                                >
+                                  {book.isCompleted ? '🏆 완결' : '✍️ 연재중'}
+                                </button>
                                 {deadlineInfo && (
                                   <span
                                     className={`book-dday-badge ${deadlineInfo.status}`}
@@ -474,14 +498,27 @@ export default function Library() {
                                   </span>
                                 )}
                               </div>
-                              <button
-                                type="button"
-                                className="btn-icon-danger"
-                                title="프로젝트 삭제"
-                                onClick={(e) => handleDelete(e, book.id, book.title)}
-                              >
-                                <Trash2 size={15} />
-                              </button>
+                              <div className="h-card-action-group">
+                                <button
+                                  type="button"
+                                  className="btn-icon-subtle"
+                                  title="도서 정보 수정 (제목, 필명, 장르, 표지 등)"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingBook(book);
+                                  }}
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-icon-danger"
+                                  title="프로젝트 삭제"
+                                  onClick={(e) => handleDelete(e, book.id, book.title)}
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
                             </div>
 
                             {/* 2행: 태그 바로 아래 - 최근 집필 챕터 및 최종 수정일 */}
@@ -509,19 +546,17 @@ export default function Library() {
                               </div>
                             </div>
 
-                            {/* 4행: 푸터 (챕터 수, 뷰어 버튼) */}
+                            {/* 4행: 푸터 (챕터 수, 집필하기 버튼 - 이 버튼 클릭 시에만 스튜디오 진입) */}
                             <div className="h-card-footer">
                               <span className="h-meta-text">챕터 {book.chapters?.length || 0}개</span>
                               <button
-                                className="btn btn-secondary btn-sm"
-                                title="독자 뷰어로 열람"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openReader(book.id);
-                                }}
+                                type="button"
+                                className="btn btn-primary btn-sm btn-continue-write"
+                                title="집필 스튜디오로 이동"
+                                onClick={() => openBook(book.id)}
                               >
-                                <BookOpen size={13} />
-                                <span>뷰어</span>
+                                <Edit3 size={13} />
+                                <span>집필하기</span>
                               </button>
                             </div>
                           </div>
@@ -565,7 +600,6 @@ export default function Library() {
                         <div 
                           key={item.bookId} 
                           className="horizontal-book-card"
-                          onClick={() => openReader(item.bookId, item.chapterId)}
                         >
                           {/* 좌측: 책 표지 영역 */}
                           <div 
@@ -633,119 +667,16 @@ export default function Library() {
         </div>
       </div>
 
-      {/* 새 책 만들기 기획 모달 */}
-      {isNewBookModalOpen && (
-        <div className="modal-overlay" onClick={() => setNewBookModalOpen(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles size={20} style={{ color: 'var(--primary)' }} />
-                <h3>새 전자책 프로젝트 기획</h3>
-              </div>
-              <button className="btn-icon" onClick={() => setNewBookModalOpen(false)}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateBook}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label>도서 제목 (필수)</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="예: 생성형 AI로 시작하는 1인 비즈니스"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>부제 / 한 줄 슬로건</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="예: 기획부터 출간까지 3주 만에 끝내는 실전 로드맵"
-                    value={subtitle}
-                    onChange={(e) => setSubtitle(e.target.value)}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>도서 장르 (출판 표준 8대 장르)</label>
-                  <select
-                    className="form-control"
-                    value={genre}
-                    onChange={(e) => setGenre(e.target.value)}
-                  >
-                    <optgroup label="경제 / 경영 / 자기계발">
-                      <option value="자기계발">자기계발</option>
-                      <option value="경제/경영">경제 / 경영</option>
-                      <option value="재테크/투자/부동산">재테크 / 투자 / 부동산</option>
-                    </optgroup>
-
-                    <optgroup label="문학 / 에세이">
-                      <option value="소설">소설</option>
-                      <option value="시/에세이">시 / 에세이</option>
-                      <option value="웹소설/장르문학">웹소설 / 장르문학</option>
-                    </optgroup>
-
-                    <optgroup label="인문 / 사회 / 과학">
-                      <option value="인문/철학">인문 / 철학</option>
-                      <option value="역사/문화">역사 / 문화</option>
-                      <option value="사회/정치">사회 / 정치</option>
-                      <option value="자연과학/공학">자연과학 / 공학</option>
-                    </optgroup>
-
-                    <optgroup label="IT / 테크">
-                      <option value="IT/프로그래밍/AI">IT / 프로그래밍 / AI</option>
-                      <option value="데이터/컴퓨터공학">데이터 / 컴퓨터공학</option>
-                    </optgroup>
-
-                    <optgroup label="라이프스타일 / 실용">
-                      <option value="건강/요리/다이어트">건강 / 요리 / 다이어트</option>
-                      <option value="취미/실용/스포츠">취미 / 실용 / 스포츠</option>
-                      <option value="여행/레저">여행 / 레저</option>
-                    </optgroup>
-
-                    <optgroup label="예술 / 대중문화">
-                      <option value="예술/디자인">예술 / 디자인</option>
-                      <option value="음악/영화/대중문화">음악 / 영화 / 대중문화</option>
-                    </optgroup>
-
-                    <optgroup label="교육 / 어학">
-                      <option value="외국어/어학">외국어 / 어학</option>
-                      <option value="청소년/아동">청소년 / 아동</option>
-                    </optgroup>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>목표 독자층</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="예: AI 툴을 업무에 바로 써먹고 싶은 직장인"
-                    value={targetAudience}
-                    onChange={(e) => setTargetAudience(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setNewBookModalOpen(false)} disabled={isSubmitting}>
-                  취소
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                  <Sparkles size={16} />
-                  <span>{isSubmitting ? '생성 중...' : '프로젝트 시작'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* 새 책 기획 및 도서 기본 정보 수정 통합 모달 */}
+      <BookInfoModal
+        isOpen={isNewBookModalOpen || !!editingBook}
+        onClose={() => {
+          setNewBookModalOpen(false);
+          setEditingBook(null);
+        }}
+        mode={editingBook ? 'edit' : 'create'}
+        book={editingBook}
+      />
 
       {/* 원고 가져오기 마법사 모달 */}
       <ManuscriptImportModal 

@@ -8,6 +8,7 @@ export const bookService = {
   getBook: async (id) => storageService.getBook(id),
   createBook: async (data) => storageService.createBook(data),
   updateBook: async (id, data) => storageService.updateBook(id, data),
+  saveBook: async (book) => storageService.saveBook(book),
   deleteBook: async (id) => storageService.deleteBook(id),
 
   // 1-1. 도서 버전 관리 (스냅샷 및 히스토리)
@@ -27,6 +28,14 @@ export const bookService = {
   deleteChapter: async (bookId, chapterId) => storageService.deleteChapter(bookId, chapterId),
   setChapterDeadline: async (bookId, chapterId, deadline) => storageService.setChapterDeadline(bookId, chapterId, deadline),
   toggleChapterPublish: async (bookId, chapterId) => storageService.toggleChapterPublish(bookId, chapterId),
+  toggleSectionPublish: async (bookId, chapterId, sectionId) =>
+    storageService.toggleSectionPublish(bookId, chapterId, sectionId),
+  toggleChapterPublishAll: async (bookId, chapterId) =>
+    storageService.toggleChapterPublishAll(bookId, chapterId),
+  toggleBookPublishAll: async (bookId) =>
+    storageService.toggleBookPublishAll(bookId),
+  updateBatchPublishSections: async (bookId, publishedSectionIds) =>
+    storageService.updateBatchPublishSections(bookId, publishedSectionIds),
   addSection: async (bookId, chapterId, title) => storageService.addSection(bookId, chapterId, title),
   updateSection: async (bookId, chapterId, sectionId, data) =>
     storageService.updateSection(bookId, chapterId, sectionId, data),

@@ -108,11 +108,24 @@ export const useStore = create((set, get) => {
     },
 
     // --- UI 상태 ---
-    currentView: 'library', // 'library' | 'studio' | 'vault' | 'stats' | 'settings'
+    currentView: 'library', // 'library' | 'studio' | 'vault' | 'stats' | 'settings' | 'reader'
+    previousView: 'library',
     theme: initialTheme,
     toast: null,
 
-    setView: (view) => set({ currentView: view }),
+    setView: (view) => {
+      const current = get().currentView;
+      set({
+        previousView: (current && current !== view) ? current : get().previousView,
+        currentView: view
+      });
+    },
+
+    closeReader: () => {
+      const { previousView } = get();
+      const targetView = (previousView && previousView !== 'reader') ? previousView : 'library';
+      set({ currentView: targetView });
+    },
 
     toggleTheme: () => {
       const nextTheme = get().theme === 'dark' ? 'light' : 'dark';
@@ -159,6 +172,48 @@ export const useStore = create((set, get) => {
 
     hideToast: () => set({ toast: null }),
 
+    // --- 전역 커스텀 다이얼로그 (Confirm / Prompt) ---
+    dialog: null, // { type: 'confirm'|'prompt', title, message, placeholder, defaultValue, confirmText, cancelText, danger, resolve }
+    openConfirm: (options = {}) => {
+      return new Promise((resolve) => {
+        set({
+          dialog: {
+            type: 'confirm',
+            title: options.title || '확인',
+            message: options.message || '',
+            confirmText: options.confirmText || '확인',
+            cancelText: options.cancelText || '취소',
+            danger: !!options.danger,
+            resolve
+          }
+        });
+      });
+    },
+    openPrompt: (options = {}) => {
+      return new Promise((resolve) => {
+        set({
+          dialog: {
+            type: 'prompt',
+            title: options.title || '입력',
+            message: options.message || '',
+            placeholder: options.placeholder || '',
+            defaultValue: options.defaultValue || '',
+            confirmText: options.confirmText || '확인',
+            cancelText: options.cancelText || '취소',
+            danger: !!options.danger,
+            resolve
+          }
+        });
+      });
+    },
+    closeDialog: (result = null) => {
+      const currentDialog = get().dialog;
+      if (currentDialog?.resolve) {
+        currentDialog.resolve(result);
+      }
+      set({ dialog: null });
+    },
+
     // --- 도서 및 집필 상태 ---
     books: [],
     activeBook: null,
@@ -188,6 +243,24 @@ export const useStore = create((set, get) => {
         });
       } catch (err) {
         set({ isBooksLoading: false });
+      }
+    },
+
+    setActiveBook: (bookOrId) => {
+      if (!bookOrId) {
+        set({ activeBook: null });
+        return;
+      }
+      const book = typeof bookOrId === 'object' ? bookOrId : get().books.find(b => b.id === bookOrId);
+      if (book) {
+        localStorage.setItem('last_active_book_id', book.id);
+        const firstChapId = book.chapters?.[0]?.id || null;
+        const firstSecId = book.chapters?.[0]?.sections?.[0]?.id || null;
+        set({
+          activeBook: book,
+          activeChapterId: firstChapId,
+          activeSectionId: firstSecId
+        });
       }
     },
 
@@ -255,10 +328,12 @@ export const useStore = create((set, get) => {
           console.error('Failed to update reader_history:', e);
         }
 
+        const current = get().currentView;
         set({
           activeBook: book,
           activeChapterId: targetChapId,
           activeSectionId: targetSecId,
+          previousView: (current && current !== 'reader') ? current : (get().previousView || 'library'),
           currentView: 'reader',
           isBooksLoading: false
         });
@@ -279,6 +354,67 @@ export const useStore = create((set, get) => {
       });
     },
 
+    toggleBookCompleted: async (bookId) => {
+      const { books, activeBook } = get();
+      const targetId = bookId || activeBook?.id;
+      const target = books.find(b => b.id === targetId) || activeBook;
+      if (!target) return;
+      const nextCompleted = !target.isCompleted;
+      const updatedBook = {
+        ...target,
+        isCompleted: nextCompleted,
+        status: nextCompleted ? 'completed' : 'ongoing'
+      };
+      await bookService.saveBook(updatedBook);
+      set((state) => ({
+        activeBook: (state.activeBook?.id === targetId) ? updatedBook : state.activeBook,
+        books: state.books.map(b => b.id === targetId ? updatedBook : b)
+      }));
+      get().showToast(
+        nextCompleted
+          ? `'${target.title}' 도서가 완결(완성작)로 등록되었습니다! 🏆`
+          : `'${target.title}' 도서가 연재중으로 전환되었습니다. ✍️`,
+        'success'
+      );
+      return nextCompleted;
+    },
+
+    updateBookTitle: async (bookId, newTitle) => {
+      const { books, activeBook } = get();
+      const targetId = bookId || activeBook?.id;
+      const target = books.find(b => b.id === targetId) || activeBook;
+      if (!target || !newTitle?.trim()) return null;
+      const trimmed = newTitle.trim();
+      const updatedBook = { ...target, title: trimmed };
+      await bookService.saveBook(updatedBook);
+      set((state) => ({
+        activeBook: (state.activeBook?.id === targetId) ? updatedBook : state.activeBook,
+        books: state.books.map(b => b.id === targetId ? updatedBook : b)
+      }));
+      get().showToast(`도서 제목이 '${trimmed}'(으)로 변경되었습니다.`, 'success');
+      return updatedBook;
+    },
+
+    updateBookInfo: async (bookId, updateData) => {
+      const { books, activeBook } = get();
+      const targetId = bookId || activeBook?.id;
+      const target = books.find(b => b.id === targetId) || activeBook;
+      if (!target) return null;
+      const updatedBook = {
+        ...target,
+        ...updateData,
+        title: updateData.title ? updateData.title.trim() : target.title,
+        updatedAt: new Date().toISOString()
+      };
+      await bookService.saveBook(updatedBook);
+      set((state) => ({
+        activeBook: (state.activeBook?.id === targetId) ? updatedBook : state.activeBook,
+        books: state.books.map(b => b.id === targetId ? updatedBook : b)
+      }));
+      get().showToast(`도서 정보가 성공적으로 저장되었습니다. ✨`, 'success');
+      return updatedBook;
+    },
+
     toggleChapterLike: async (chapterId) => {
       const { activeBook } = get();
       if (!activeBook) return;
@@ -296,7 +432,10 @@ export const useStore = create((set, get) => {
       });
       const updatedBook = { ...activeBook, chapters: updatedChapters };
       await bookService.saveBook(updatedBook);
-      set({ activeBook: updatedBook });
+      set((state) => ({
+        activeBook: updatedBook,
+        books: state.books.map(b => b.id === updatedBook.id ? updatedBook : b)
+      }));
     },
 
     addChapterComment: async (chapterId, text, author = '익명 독자') => {
@@ -321,7 +460,10 @@ export const useStore = create((set, get) => {
       });
       const updatedBook = { ...activeBook, chapters: updatedChapters };
       await bookService.saveBook(updatedBook);
-      set({ activeBook: updatedBook });
+      set((state) => ({
+        activeBook: updatedBook,
+        books: state.books.map(b => b.id === updatedBook.id ? updatedBook : b)
+      }));
       get().showToast('소중한 독자 댓글이 등록되었습니다! 💬', 'success');
     },
 
@@ -343,7 +485,10 @@ export const useStore = create((set, get) => {
       });
       const updatedBook = { ...activeBook, chapters: updatedChapters };
       await bookService.saveBook(updatedBook);
-      set({ activeBook: updatedBook });
+      set((state) => ({
+        activeBook: updatedBook,
+        books: state.books.map(b => b.id === updatedBook.id ? updatedBook : b)
+      }));
       get().showToast('댓글이 수정되었습니다.', 'success');
     },
 
@@ -361,7 +506,10 @@ export const useStore = create((set, get) => {
       });
       const updatedBook = { ...activeBook, chapters: updatedChapters };
       await bookService.saveBook(updatedBook);
-      set({ activeBook: updatedBook });
+      set((state) => ({
+        activeBook: updatedBook,
+        books: state.books.map(b => b.id === updatedBook.id ? updatedBook : b)
+      }));
       get().showToast('댓글이 삭제되었습니다.', 'info');
     },
 
@@ -376,7 +524,10 @@ export const useStore = create((set, get) => {
       });
       const updatedBook = { ...activeBook, chapters: updatedChapters };
       await bookService.saveBook(updatedBook);
-      set({ activeBook: updatedBook });
+      set((state) => ({
+        activeBook: updatedBook,
+        books: state.books.map(b => b.id === updatedBook.id ? updatedBook : b)
+      }));
     },
 
     updateChapterAuthorNote: async (chapterId, note) => {
@@ -390,7 +541,10 @@ export const useStore = create((set, get) => {
       });
       const updatedBook = { ...activeBook, chapters: updatedChapters };
       await bookService.saveBook(updatedBook);
-      set({ activeBook: updatedBook });
+      set((state) => ({
+        activeBook: updatedBook,
+        books: state.books.map(b => b.id === updatedBook.id ? updatedBook : b)
+      }));
       get().showToast('작가의 말이 업데이트되었습니다.', 'success');
     },
 
@@ -651,12 +805,79 @@ export const useStore = create((set, get) => {
         set({ activeBook: updatedBook });
         get().loadBooks();
         if (chap?.status === 'published') {
-          get().showToast(`🎉 제 ${chap.title} 챕터가 연재 발행되었습니다!`, 'success');
+          get().showToast(`🎉 '${chap.title}' 챕터가 연재 발행되었습니다!`, 'success');
         } else {
-          get().showToast('연재 발행이 취소되고 초고 상태로 전환되었습니다.', 'info');
+          get().showToast('챕터 연재 발행이 취소되고 초고 상태로 전환되었습니다.', 'info');
         }
       } catch (err) {
         get().showToast(`발행 상태 변경 실패: ${err.message}`, 'error');
+      }
+    },
+
+    toggleSectionPublish: async (chapterId, sectionId) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.toggleSectionPublish(activeBook.id, chapterId, sectionId);
+        const chap = updatedBook.chapters?.find(c => c.id === chapterId);
+        const sec = chap?.sections?.find(s => s.id === sectionId);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+        if (sec?.status === 'published') {
+          get().showToast(`🎉 '${sec.title}' 소목차가 연재 발행되었습니다!`, 'success');
+        } else {
+          get().showToast('소목차 연재 발행이 취소되었습니다.', 'info');
+        }
+      } catch (err) {
+        get().showToast(`소목차 발행 변경 실패: ${err.message}`, 'error');
+      }
+    },
+
+    toggleChapterPublishAll: async (chapterId) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.toggleChapterPublishAll(activeBook.id, chapterId);
+        const chap = updatedBook.chapters?.find(c => c.id === chapterId);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+        if (chap?.status === 'published') {
+          get().showToast(`🎉 '${chap.title}' 챕터와 하위 소목차가 모두 연재 발행되었습니다!`, 'success');
+        } else {
+          get().showToast('챕터 및 하위 소목차 발행이 일괄 취소되었습니다.', 'info');
+        }
+      } catch (err) {
+        get().showToast(`챕터 일괄 발행 변경 실패: ${err.message}`, 'error');
+      }
+    },
+
+    toggleBookPublishAll: async () => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.toggleBookPublishAll(activeBook.id);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+        if (updatedBook.status === 'completed') {
+          get().showToast(`🎊 《${updatedBook.title}》 도서 전체가 완결 출간(발행)되었습니다!`, 'success');
+        } else {
+          get().showToast('도서 전체 연재 발행이 초고 상태로 일괄 전환되었습니다.', 'info');
+        }
+      } catch (err) {
+        get().showToast(`도서 전체 발행 변경 실패: ${err.message}`, 'error');
+      }
+    },
+
+    updateBatchPublishSections: async (publishedSectionIds) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      try {
+        const updatedBook = await bookService.updateBatchPublishSections(activeBook.id, publishedSectionIds);
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+        get().showToast(`✨ 선택한 회차(${publishedSectionIds.length}개)의 연재 발행 상태가 저장되었습니다.`, 'success');
+      } catch (err) {
+        get().showToast(`선택 발행 저장 실패: ${err.message}`, 'error');
       }
     },
 
@@ -696,46 +917,79 @@ export const useStore = create((set, get) => {
       }
     },
 
+    // --- 목차 구조 실행취소(Undo) 히스토리 스택 ---
+    chapterHistoryStack: [],
+    pushChapterHistory: (chapters) => {
+      if (!chapters) return;
+      const stack = get().chapterHistoryStack || [];
+      const newStack = [...stack, JSON.parse(JSON.stringify(chapters))].slice(-20);
+      set({ chapterHistoryStack: newStack });
+    },
+    undoChapterOrder: async () => {
+      const { activeBook, chapterHistoryStack } = get();
+      if (!activeBook || !chapterHistoryStack || chapterHistoryStack.length === 0) {
+        get().showToast('되돌릴 목차 변경 이력이 없습니다.', 'info');
+        return;
+      }
+      const previousChapters = chapterHistoryStack[chapterHistoryStack.length - 1];
+      const newStack = chapterHistoryStack.slice(0, -1);
+      try {
+        const updatedBook = await bookService.updateBook(activeBook.id, { chapters: previousChapters });
+        set({ activeBook: updatedBook, chapterHistoryStack: newStack });
+        get().loadBooks();
+        get().showToast('목차 순서가 이전 상태로 되돌려졌습니다.', 'success');
+      } catch (err) {
+        get().showToast(`되돌리기 실패: ${err.message}`, 'error');
+      }
+    },
+
     moveChapter: async (chapterId, direction) => {
-      const { activeBook } = get();
+      const { activeBook, pushChapterHistory, undoChapterOrder } = get();
       if (!activeBook) return;
       try {
+        pushChapterHistory(activeBook.chapters);
         const updatedBook = await bookService.moveChapter(activeBook.id, chapterId, direction);
         set({ activeBook: updatedBook });
         get().loadBooks();
+        get().showActionToast('챕터 순서가 이동되었습니다.', () => undoChapterOrder(), null, { yesText: '되돌리기 (Undo)', noText: '닫기' });
       } catch (err) {
         get().showToast(`챕터 순서 이동 실패: ${err.message}`, 'error');
       }
     },
 
     moveSection: async (chapterId, sectionId, direction) => {
-      const { activeBook } = get();
+      const { activeBook, pushChapterHistory, undoChapterOrder } = get();
       if (!activeBook) return;
       try {
+        pushChapterHistory(activeBook.chapters);
         const updatedBook = await bookService.moveSection(activeBook.id, chapterId, sectionId, direction);
         set({ activeBook: updatedBook });
         get().loadBooks();
+        get().showActionToast('소목차 순서가 이동되었습니다.', () => undoChapterOrder(), null, { yesText: '되돌리기 (Undo)', noText: '닫기' });
       } catch (err) {
         get().showToast(`소목차 순서 이동 실패: ${err.message}`, 'error');
       }
     },
 
     reorderChapters: async (sourceIndex, targetIndex) => {
-      const { activeBook } = get();
+      const { activeBook, pushChapterHistory, undoChapterOrder } = get();
       if (!activeBook) return;
       try {
+        pushChapterHistory(activeBook.chapters);
         const updatedBook = await bookService.reorderChapters(activeBook.id, sourceIndex, targetIndex);
         set({ activeBook: updatedBook });
         get().loadBooks();
+        get().showActionToast('챕터 순서가 변경되었습니다.', () => undoChapterOrder(), null, { yesText: '되돌리기 (Undo)', noText: '닫기' });
       } catch (err) {
         get().showToast(`챕터 순서 변경 실패: ${err.message}`, 'error');
       }
     },
 
     reorderSections: async (sourceChapterId, targetChapterId, sourceIndex, targetIndex) => {
-      const { activeBook } = get();
+      const { activeBook, pushChapterHistory, undoChapterOrder } = get();
       if (!activeBook) return;
       try {
+        pushChapterHistory(activeBook.chapters);
         const updatedBook = await bookService.reorderSections(
           activeBook.id,
           sourceChapterId,
@@ -745,6 +999,7 @@ export const useStore = create((set, get) => {
         );
         set({ activeBook: updatedBook });
         get().loadBooks();
+        get().showActionToast('소목차 순서가 변경되었습니다.', () => undoChapterOrder(), null, { yesText: '되돌리기 (Undo)', noText: '닫기' });
       } catch (err) {
         get().showToast(`소목차 순서 변경 실패: ${err.message}`, 'error');
       }

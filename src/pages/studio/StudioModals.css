@@ -1,0 +1,155 @@
+/* ==========================================================================
+   스튜디오 보조 모달 통합 스타일 (StudioModals.css)
+   - 버전 관리 모달 (VersionModal) 전용 스타일
+   ========================================================================== */
+
+/* 1. 버전 관리 모달 */
+.modal-box-version {
+  max-width: 620px;
+  width: 92%;
+}
+
+.version-book-title-badge {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  font-weight: normal;
+  margin-left: 0.4rem;
+}
+
+.version-list-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.version-list-intro p {
+  font-size: 0.84rem;
+  color: var(--text-dim);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.version-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.version-empty-state p {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0 0 0.35rem 0;
+  color: var(--text-main);
+}
+
+.version-empty-state span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.version-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.version-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-panel, #181b24);
+  border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
+}
+
+.version-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.version-card.is-autobackup {
+  border-left: 3px solid #818cf8;
+}
+
+.version-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.version-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.version-card-name {
+  font-size: 0.92rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge-autobackup {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.badge-manual-version {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.version-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+
+.version-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.btn-version-restore {
+  padding: 0.35rem 0.65rem !important;
+  font-size: 0.78rem !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn-version-delete {
+  padding: 0.35rem 0.5rem !important;
+  color: var(--text-dim) !important;
+}
+
+.btn-version-delete:hover {
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}

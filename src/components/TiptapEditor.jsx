@@ -83,6 +83,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     getHTML: () => editor?.getHTML() || '',
     getText: () => editor?.getText() || '',
     isEmpty: () => editor?.isEmpty ?? true,
+    isFocused: () => editor?.isFocused ?? false,
     setContent: (newContent) => {
       if (editor) editor.commands.setContent(newContent || '');
     },
@@ -96,6 +97,59 @@ const TiptapEditor = forwardRef(function TiptapEditor(
       if (!editor) return '';
       const { from, to } = editor.state.selection;
       return editor.state.doc.textBetween(from, to, ' ').trim();
+    },
+    // 본문 검색 및 치환 헬퍼 (Ctrl+F 연동)
+    findMatches: (query) => {
+      if (!editor || !query) return [];
+      const matches = [];
+      const qLower = query.toLowerCase();
+      editor.state.doc.descendants((node, pos) => {
+        if (node.isText) {
+          const text = node.text;
+          const textLower = text.toLowerCase();
+          let idx = textLower.indexOf(qLower);
+          while (idx !== -1) {
+            matches.push({ from: pos + idx, to: pos + idx + query.length, text: text.substr(idx, query.length) });
+            idx = textLower.indexOf(qLower, idx + 1);
+          }
+        }
+      });
+      return matches;
+    },
+    selectMatch: (from, to) => {
+      if (!editor) return;
+      editor.chain().focus().setTextSelection({ from, to }).scrollIntoView().run();
+    },
+    replaceCurrent: (from, to, replaceText) => {
+      if (!editor) return;
+      editor.chain().focus().setTextSelection({ from, to }).insertContent(replaceText).run();
+    },
+    replaceAll: (query, replaceText) => {
+      if (!editor || !query) return 0;
+      let count = 0;
+      const qLower = query.toLowerCase();
+      const matches = [];
+      editor.state.doc.descendants((node, pos) => {
+        if (node.isText) {
+          const text = node.text;
+          const textLower = text.toLowerCase();
+          let idx = textLower.indexOf(qLower);
+          while (idx !== -1) {
+            matches.push({ from: pos + idx, to: pos + idx + query.length });
+            idx = textLower.indexOf(qLower, idx + 1);
+            count++;
+          }
+        }
+      });
+      // 뒤에서부터 치환하여 위치 어긋남 방지
+      if (matches.length > 0) {
+        editor.chain().focus();
+        for (let i = matches.length - 1; i >= 0; i--) {
+          editor.commands.setTextSelection({ from: matches[i].from, to: matches[i].to });
+          editor.commands.insertContent(replaceText);
+        }
+      }
+      return count;
     }
   }));
 
@@ -115,6 +169,29 @@ const TiptapEditor = forwardRef(function TiptapEditor(
       {/* 상단 서식 툴바 */}
       {showToolbar && (
         <div className="rich-toolbar">
+          {/* 실행취소 & 다시실행 */}
+          <div className="toolbar-group">
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={() => editor?.chain().focus().undo().run()}
+              disabled={!editor?.can().undo()}
+              title="실행 취소 (Ctrl+Z)"
+            >
+              ↶
+            </button>
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={() => editor?.chain().focus().redo().run()}
+              disabled={!editor?.can().redo()}
+              title="다시 실행 (Ctrl+Y / Ctrl+Shift+Z)"
+            >
+              ↷
+            </button>
+          </div>
+
+          <div className="toolbar-divider" />
           {/* 단락 서식 선택 (H1, H2, H3, 인용문, 본문) */}
           <div className="toolbar-group">
             <select
