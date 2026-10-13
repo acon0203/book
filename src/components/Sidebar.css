@@ -142,140 +142,136 @@
   width: 100%;
 }
 
-.btn-google-login {
-  width: 100%;
+/* ==========================================================================
+   하단 작가 프로필 박스 (샘플 스타일 + 우측 상단 유틸리티 아이콘)
+   ========================================================================== */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 0.75rem 0.65rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.side-user-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 8px;
+  user-select: none;
+}
+
+.side-user-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.side-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(139, 90, 43, 0.08);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--bg-card);
+  font-weight: 700;
+  font-size: 0.85rem;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-main);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
 }
 
-.btn-google-login:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-bright);
-}
-
-.logged-in-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.user-info-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.user-avatar-img {
-  width: 26px;
-  height: 26px;
+.side-user-avatar-img {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  border: 1px solid var(--border-color);
 }
 
-.user-avatar-fallback {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--primary);
-  color: #ffffff;
-  font-size: 12px;
+.side-user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.side-user-name {
+  font-size: 0.86rem;
   font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.side-user-role {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+  margin-top: 2px;
+}
+
+/* 프로필 우측상단 유틸리티 아이콘 그룹 (동기화, 로그아웃) */
+.side-user-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 3px;
   flex-shrink: 0;
 }
 
-.user-details {
-  flex: 1;
-  min-width: 0;
+.side-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
   display: flex;
-  flex-direction: column;
-}
-
-.user-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-email {
-  font-size: 10px;
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.btn-logout {
+  align-items: center;
+  justify-content: center;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
+  transition: all 0.15s ease;
+  padding: 0;
 }
 
-.btn-logout:hover {
-  color: #ff4757;
-  background: rgba(255, 71, 87, 0.12);
-}
-
-.btn-sync-trigger {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 5px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card-sub);
-  color: var(--text-main);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.btn-sync-trigger:hover:not(:disabled) {
+.side-action-btn:hover {
   background: var(--bg-hover);
-  border-color: var(--border-bright);
   color: var(--text-main);
+  border-color: var(--border-color);
 }
 
-.btn-sync-trigger.synced {
-  border-color: #b2f2bb;
-  color: #2b8a3e;
-  background: #f4fbf6;
+.side-action-btn.sync-btn.synced {
+  color: #10b981;
 }
 
-.synced-icon {
-  color: #2b8a3e;
+.side-action-btn.sync-btn.synced:hover {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.side-action-btn.logout-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.side-action-btn.login-btn:hover {
+  color: var(--primary);
+  background: rgba(139, 90, 43, 0.08);
+  border-color: rgba(139, 90, 43, 0.2);
+}
+
+.synced-check-icon {
+  color: #10b981;
 }
 
 .spin-icon {
@@ -288,23 +284,3 @@
   }
 }
 
-.theme-toggle-btn {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-glass);
-  color: var(--text-muted);
-  padding: 0.45rem 0.85rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-size: 0.82rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: var(--transition);
-  width: 100%;
-  justify-content: center;
-}
-
-.theme-toggle-btn:hover {
-  border-color: var(--primary);
-  color: var(--text-main);
-}

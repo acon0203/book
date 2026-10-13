@@ -246,8 +246,8 @@ export default function ExploreComplete() {
                     <span className="rank-book-genre">{book.genre || '단행본'}</span>
                     <strong className="rank-book-title">{book.title}</strong>
                     <div className="rank-meta-row">
-                      <span>👁️ {book.totalViews.toLocaleString()}</span>
-                      <span>❤️ {book.totalLikes}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Eye size={12} /> {book.totalViews.toLocaleString()}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Heart size={12} /> {book.totalLikes}</span>
                     </div>
                   </div>
                 </div>
@@ -298,7 +298,7 @@ export default function ExploreComplete() {
             <div className="complete-empty-card">
               <BookOpen size={42} className="empty-book-icon" />
               <h3>해당 조건의 완결 도서가 없습니다</h3>
-              <p>스튜디오에서 집필을 완료하고 완결 전자책으로 완성해보세요!</p>
+              <p>집필을 완료한 도서가 여기에 표시됩니다.</p>
               <button className="btn-go-studio" onClick={() => setView('studio')}>
                 집필 스튜디오로 가기 <ArrowRight size={14} />
               </button>
@@ -347,13 +347,13 @@ export default function ExploreComplete() {
                         <span className="meta-sep">·</span>
                         <span className="comment-badge"><MessageSquare size={12} className="meta-comment-icon" /> {book.commentCount}</span>
                         <span className="meta-sep">·</span>
-                        <span className="views-count">👁️ {book.totalViews.toLocaleString()}</span>
+                        <span className="views-count" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Eye size={12} /> {book.totalViews.toLocaleString()}</span>
                         <span className="meta-sep">·</span>
-                        <span className="likes-count">❤️ {book.totalLikes}</span>
+                        <span className="likes-count" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Heart size={12} /> {book.totalLikes}</span>
                       </div>
 
                       <p className="complete-logline">
-                        {book.subtitle || '완성된 이야기를 처음부터 끝까지 끊김 없이 만나보세요. 정주행을 지금 시작할 수 있습니다.'}
+                        {book.subtitle || '완결된 단행본 작품입니다.'}
                       </p>
                     </div>
 

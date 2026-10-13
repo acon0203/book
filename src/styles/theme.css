@@ -1,28 +1,28 @@
 :root {
-  /* [배경 계층] */
-  --bg-deep: #0a0a0d;
-  --bg-surface: rgba(18, 18, 24, 0.75);
-  --bg-panel: rgba(255, 255, 255, 0.03);
-  --bg-card: #13151c;
-  --bg-card-sub: #1a1d26;
-  --bg-hover: #232734;
-  --bg-active: rgba(0, 229, 255, 0.12);
+  /* [배경 계층 - 다크: 모던 월넛 (Modern Nordic Walnut)] */
+  --bg-deep: #1e1916;        /* 깊은 월넛 원목 */
+  --bg-surface: #27211c;     /* 패널/사이드바 */
+  --bg-panel: #2e2620;
+  --bg-card: #322a24;        /* 카드 및 부유 요소 */
+  --bg-card-sub: #27211c;
+  --bg-hover: #3c322b;
+  --bg-active: rgba(196, 138, 84, 0.18);
 
-  /* [테두리 계층] */
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-bright: rgba(255, 255, 255, 0.18);
+  /* [테두리 계층 - 다크] */
+  --border-color: rgba(184, 150, 118, 0.12);
+  --border-glass: rgba(184, 150, 118, 0.08);
+  --border-bright: rgba(184, 150, 118, 0.25);
 
-  /* [브랜드 & 액센트] */
-  --primary: #00e5ff;
-  --primary-glow: rgba(0, 229, 255, 0.25);
-  --secondary: #7b61ff;
-  --secondary-glow: rgba(123, 97, 255, 0.2);
+  /* [브랜드 & 액센트 - 다크] */
+  --primary: #c48a54;        /* 호박석 & 가죽 브라운 */
+  --primary-glow: rgba(196, 138, 84, 0.25);
+  --secondary: #9c6e43;
+  --secondary-glow: rgba(156, 110, 67, 0.2);
   
-  /* [텍스트 계층] */
-  --text-main: #f4f4f7;
-  --text-muted: #9ba1b0;
-  --text-dim: #606470;
+  /* [텍스트 계층 - 다크] */
+  --text-main: #f5efe6;      /* 양장지 백색 */
+  --text-muted: #b8aba0;     /* 베이지 그레이 */
+  --text-dim: #7d7268;
 
   /* [상태 색상] */
   --success: #10b981;
@@ -32,47 +32,54 @@
   --danger: #ef4444;
   --danger-bg: rgba(239, 68, 68, 0.15);
 
-  --font-family: 'Inter', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --radius-lg: 16px;
-  --radius-md: 10px;
-  --radius-sm: 6px;
-  --blur: blur(24px);
+  --font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --radius-lg: 14px;
+  --radius-md: 8px;
+  --radius-sm: 5px;
+  --blur: blur(20px);
   --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* [전역 글자 크기 스케일 - 서재 환경설정 연동] */
+html { font-size: 15px; }
+html[data-font-scale="small"] { font-size: 13.5px; }
+html[data-font-scale="normal"] { font-size: 15px; }
+html[data-font-scale="large"] { font-size: 16.5px; }
+html[data-font-scale="xlarge"] { font-size: 18px; }
+
 body.light-mode {
-  /* [배경 계층 - 라이트] */
-  --bg-deep: #f5f7fa;
-  --bg-surface: rgba(255, 255, 255, 0.85);
+  /* [배경 계층 - 라이트: v2 에디토리얼 페이퍼 (Editorial Paper)] */
+  --bg-deep: #faf8f5;        /* 맑고 편안한 오트밀 페이퍼 캔버스 */
+  --bg-surface: #f3ede4;     /* 부드러운 서재 목재 톤 */
   --bg-panel: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-sub: #f8f9fa;
-  --bg-hover: #eef2f6;
-  --bg-active: rgba(0, 114, 245, 0.1);
+  --bg-card: #ffffff;        /* 순백색 양장지 카드 */
+  --bg-card-sub: #f7f3ec;
+  --bg-hover: #ede6da;
+  --bg-active: rgba(139, 90, 43, 0.08);
 
   /* [테두리 계층 - 라이트] */
-  --border-color: #e4e4e7;
-  --border-glass: rgba(0, 0, 0, 0.07);
-  --border-bright: #ced4da;
+  --border-color: rgba(139, 90, 43, 0.09);
+  --border-glass: rgba(139, 90, 43, 0.06);
+  --border-bright: rgba(139, 90, 43, 0.22);
 
   /* [브랜드 & 액센트 - 라이트] */
-  --primary: #0072f5;
-  --primary-glow: rgba(0, 114, 245, 0.2);
-  --secondary: #7928ca;
-  --secondary-glow: rgba(121, 40, 202, 0.15);
+  --primary: #8b5a2b;        /* 클래식 가죽 브라운 */
+  --primary-glow: rgba(139, 90, 43, 0.18);
+  --secondary: #6e441f;
+  --secondary-glow: rgba(110, 68, 31, 0.15);
 
   /* [텍스트 계층 - 라이트] */
-  --text-main: #18191f;
-  --text-muted: #4e5361;
-  --text-dim: #8b92a2;
+  --text-main: #2b231d;      /* 먹물 잉크 블랙 */
+  --text-muted: #63574c;     /* 고서적 브라운 그레이 */
+  --text-dim: #948577;
 
   /* [상태 색상 - 라이트] */
   --success: #2b8a3e;
   --success-bg: #e6fcf5;
-  --warning: #e67700;
-  --warning-bg: #fff9db;
-  --danger: #e03131;
-  --danger-bg: #ffe3e3;
+  --warning: #b45309;
+  --warning-bg: #fef3c7;
+  --danger: #b91c1c;
+  --danger-bg: #fee2e2;
 }
 
 * {
@@ -135,13 +142,20 @@ body {
   transform: scale(0.98);
 }
 .btn-primary {
-  background: linear-gradient(135deg, #0284c7, #2563eb);
+  background: linear-gradient(135deg, #c48a54, #ab733e);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 4px 14px rgba(196, 138, 84, 0.28);
 }
 .btn-primary:hover {
-  background: linear-gradient(135deg, #0369a1, #1d4ed8);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+  background: linear-gradient(135deg, #d99b64, #be834c);
+  box-shadow: 0 6px 18px rgba(196, 138, 84, 0.38);
+}
+body.light-mode .btn-primary {
+  background: linear-gradient(135deg, #96612e, #7c4c1e);
+  box-shadow: 0 4px 14px rgba(139, 90, 43, 0.22);
+}
+body.light-mode .btn-primary:hover {
+  background: linear-gradient(135deg, #835224, #693d14);
 }
 .btn-outline {
   background: transparent;
@@ -150,13 +164,17 @@ body {
 }
 .btn-outline:hover {
   background: var(--bg-hover);
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 .btn-secondary {
-  background: var(--bg-card-sub);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   color: var(--text-main);
+}
+.btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-bright);
 }
 .btn-secondary:hover {
   background: var(--bg-hover);

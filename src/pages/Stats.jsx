@@ -49,7 +49,7 @@ export default function Stats() {
           <div className="header-title-row">
             <h1>통합 통계</h1>
           </div>
-          <p>창작과 독서의 모든 여정을 한눈에 조망하는 나만의 종합 서재 리포트입니다.</p>
+          <p>집필 및 독서 활동 기록을 한눈에 확인합니다.</p>
         </div>
       </header>
 
@@ -61,7 +61,7 @@ export default function Stats() {
           onClick={() => handleTabChange('writing')}
         >
           <div className="stats-tab-content">
-            <span className="stats-tab-icon">✍️</span>
+            <PenTool size={15} className="stats-tab-icon" />
             <span className="stats-tab-label">집필 통계</span>
             <span className="stats-tab-count-badge">{books.length}권</span>
           </div>
@@ -73,7 +73,7 @@ export default function Stats() {
           onClick={() => handleTabChange('reading')}
         >
           <div className="stats-tab-content">
-            <span className="stats-tab-icon">📖</span>
+            <BookOpen size={15} className="stats-tab-icon" />
             <span className="stats-tab-label">독서 통계</span>
             <span className="stats-tab-count-badge">{readingHistory.length}작품</span>
           </div>
@@ -125,7 +125,7 @@ export default function Stats() {
                   />
                 </div>
                 <div className="progress-sub-text">
-                  <span>글자 작성(+10XP), 챕터 탈고(+50XP), 마감 준수(+100XP)로 작가 레벨을 올려보세요!</span>
+                  <span>원고 집필 및 챕터 탈고 활동에 따라 경험치가 누적됩니다.</span>
                   <span className="progress-pct">{Math.round(writingStats.progress * 100)}%</span>
                 </div>
               </div>
@@ -147,7 +147,7 @@ export default function Stats() {
                   <span className="stat-card-title">연속 집필 스트릭</span>
                   <Flame size={18} className="stat-icon icon-flame" />
                 </div>
-                <div className="stat-card-value">{writingStats.streak} <span className="stat-unit">일 연속 🔥</span></div>
+                <div className="stat-card-value">{writingStats.streak} <span className="stat-unit">일 연속</span></div>
                 <div className="stat-card-sub">이번 주 작성: 약 {writingStats.weeklyWords.toLocaleString()}자</div>
               </div>
 
@@ -168,7 +168,7 @@ export default function Stats() {
                 <div className="stat-card-value">
                   {writingStats.urgentDeadline ? (
                     <span className={writingStats.urgentDeadline.daysLeft <= 0 ? 'text-urgent' : ''}>
-                      {writingStats.urgentDeadline.daysLeft === 0 ? 'D-Day 🔥' : writingStats.urgentDeadline.daysLeft > 0 ? `D-${writingStats.urgentDeadline.daysLeft}` : `D+${Math.abs(writingStats.urgentDeadline.daysLeft)}`}
+                      {writingStats.urgentDeadline.daysLeft === 0 ? 'D-Day' : writingStats.urgentDeadline.daysLeft > 0 ? `D-${writingStats.urgentDeadline.daysLeft}` : `D+${Math.abs(writingStats.urgentDeadline.daysLeft)}`}
                     </span>
                   ) : (
                     <span className="text-normal">여유로움</span>
@@ -184,7 +184,7 @@ export default function Stats() {
             <section className="weekly-streak-section">
               <div className="section-header-row">
                 <h3><Sparkles size={16} /> 이번 주 집필 루틴</h3>
-                <span className="routine-sub-info">매일 300자 이상 집필 시 연속 스트릭이 유지됩니다</span>
+                <span className="routine-sub-info">요일별 집필 기록 현황</span>
               </div>
               <div className="days-row">
                 {daysOfWeek.map((day, idx) => {
@@ -193,7 +193,7 @@ export default function Stats() {
                   return (
                     <div key={day} className={`day-pill ${isPassedOrToday ? 'completed' : ''} ${isToday ? 'today' : ''}`}>
                       <span className="day-name">{day}</span>
-                      <span className="day-stamp">{isPassedOrToday ? '✍️' : '⚪'}</span>
+                      <span className="day-stamp">{isPassedOrToday ? <CheckCircle size={13} /> : '·'}</span>
                       <span className="day-status-txt">{isToday ? '오늘' : isPassedOrToday ? '완료' : '예정'}</span>
                     </div>
                   );
@@ -255,7 +255,7 @@ export default function Stats() {
 
               {writingStats.recentActivities.length === 0 ? (
                 <div className="empty-activities-box">
-                  <p>아직 집필 활동 기록이 없습니다. 스튜디오에서 첫 문장을 작성해보세요!</p>
+                  <p>아직 집필 활동 기록이 없습니다.</p>
                 </div>
               ) : (
                 <div className="timeline-list">
@@ -277,12 +277,12 @@ export default function Stats() {
             {/* 1-6. 도서별 진행률 */}
             <section className="books-progress-section">
               <div className="section-header-row">
-                <h3>📚 서재 도서별 집필 현황 ({writingStats.bookProgressList.length}권)</h3>
+                <h3><BookOpen size={16} /> 서재 도서별 집필 현황 ({writingStats.bookProgressList.length}권)</h3>
               </div>
 
               {writingStats.bookProgressList.length === 0 ? (
                 <div className="empty-books-box">
-                  <p>서재에 등록된 도서가 없습니다. 새 책을 시작해보세요!</p>
+                  <p>서재에 등록된 도서가 없습니다.</p>
                   <button className="btn btn-primary" onClick={() => setView('library')}>
                     내 서재로 이동
                   </button>
@@ -421,8 +421,8 @@ export default function Stats() {
                   <span className="stat-card-title">연속 독서 스트릭</span>
                   <Flame size={18} className="stat-icon icon-flame" />
                 </div>
-                <div className="stat-card-value">{readerStats.streak} <span className="stat-unit">일 연속 🔥</span></div>
-                <div className="stat-card-sub">매일 이어지는 지적 탐색의 시간</div>
+                <div className="stat-card-value">{readerStats.streak} <span className="stat-unit">일 연속</span></div>
+                <div className="stat-card-sub">최근 7일간의 독서 연속성</div>
               </div>
 
               <div className="stat-card">
@@ -452,7 +452,7 @@ export default function Stats() {
             <section className="weekly-streak-section">
               <div className="section-header-row">
                 <h3><Sparkles size={16} /> 이번 주 독서 루틴</h3>
-                <span className="routine-sub-info">매일 책을 열람하면 독서 루틴 스탬프가 채워집니다</span>
+                <span className="routine-sub-info">요일별 독서 기록 현황</span>
               </div>
               <div className="days-row">
                 {daysOfWeek.map((day, idx) => {
@@ -461,7 +461,7 @@ export default function Stats() {
                   return (
                     <div key={day} className={`day-pill ${isPassedOrToday ? 'completed' : ''} ${isToday ? 'today' : ''}`}>
                       <span className="day-name">{day}</span>
-                      <span className="day-stamp">{isPassedOrToday ? '📖' : '⚪'}</span>
+                      <span className="day-stamp">{isPassedOrToday ? <CheckCircle size={13} /> : '·'}</span>
                       <span className="day-status-txt">{isToday ? '오늘' : isPassedOrToday ? '완료' : '예정'}</span>
                     </div>
                   );
@@ -473,20 +473,20 @@ export default function Stats() {
             <section className="expertise-section">
               <div className="section-header-row">
                 <h3><Compass size={17} /> 나의 독서 취향 (장르별 분석)</h3>
-                <span className="expertise-help-txt">다양한 장르를 골고루 감상하여 독서의 지평을 넓혀보세요</span>
+                <span className="expertise-help-txt">최근 감상한 장르 분포</span>
               </div>
 
               {readerStats.genreStats.length === 0 ? (
                 <div className="empty-activities-box">
-                  <p>아직 감상한 도서가 없습니다. 연재 서가에서 관심 있는 장르를 선택해보세요!</p>
+                  <p>아직 감상한 도서가 없습니다.</p>
                 </div>
               ) : (
                 <div className="expertise-grid">
                   {readerStats.genreStats.map((item) => (
                     <div key={item.genre} className="genre-rank-card">
                       <div className="genre-card-top">
-                        <div className="genre-emoji-box" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
-                          <span className="genre-emoji">📚</span>
+                        <div className="genre-emoji-box" style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                          <BookOpen size={16} />
                         </div>
                         <div className="genre-info">
                           <span className="genre-name">{item.genre}</span>
@@ -527,7 +527,7 @@ export default function Stats() {
 
               {readerStats.recentActivities.length === 0 ? (
                 <div className="empty-activities-box">
-                  <p>아직 독서 활동 기록이 없습니다. 연재 작품 둘러보기에서 마음에 드는 글을 읽어보세요!</p>
+                  <p>아직 독서 활동 기록이 없습니다.</p>
                 </div>
               ) : (
                 <div className="timeline-list">
@@ -551,12 +551,12 @@ export default function Stats() {
             {/* 2-6. 감상 중인 도서 목록 일람 */}
             <section className="books-progress-section">
               <div className="section-header-row">
-                <h3>📖 보관 서재 감상 목록 ({readingHistory.length}권)</h3>
+                <h3><BookOpen size={16} /> 보관 서재 감상 목록 ({readingHistory.length}권)</h3>
               </div>
 
               {readingHistory.length === 0 ? (
                 <div className="empty-books-box">
-                  <p>아직 읽고 있는 도서가 없습니다. 독자 공간에서 새로운 작품을 만나보세요!</p>
+                  <p>아직 읽고 있는 도서가 없습니다.</p>
                   <button className="btn btn-primary" onClick={() => setView('serial-explore')}>
                     연재 작품 둘러보기
                   </button>

@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연재서재 - 서재 화면 정밀 마감 디테일 샘플</title>
+  <!-- Google Fonts: 클래식 세리프 & 프리텐다드 산세리프 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+KR:wght@300;400;600;700&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       1. 디자인 토큰 (라이트 v2: 에디토리얼 페이퍼 기본 + 다크 모드)
+       ========================================================================= */
+    :root {
+      /* 기본값: 라이트 v2 (에디토리얼 페이퍼) */
+      --bg-base: #faf8f5;           /* 맑은 오트밀 페이퍼 바닥 (98% 명도) */
+      --bg-surface: #f3ede4;        /* 상단 음영 행 & 패널 배경 */
+      --bg-card: #ffffff;           /* 순백색 카드 (100% 명도) */
+      --bg-hover: #f7f3ee;
+      
+      --border-subtle: rgba(139, 90, 43, 0.08); /* 0.08 투명도 초미세 헤어라인 */
+      --border-focus: rgba(139, 90, 43, 0.28);
+      --border-divider: rgba(139, 90, 43, 0.12);
+
+      --color-primary: #8b5a2b;     /* 클래식 가죽 브라운 */
+      --color-primary-hover: #70441d;
+      --color-primary-soft: rgba(139, 90, 43, 0.06);
+
+      --color-reading: #2a6f55;     /* 세이지 에메랄드 (독서 톤) */
+      --color-reading-soft: rgba(42, 111, 85, 0.08);
+
+      --text-main: #2b231d;         /* 먹물 잉크 블랙 */
+      --text-sub: #63574c;          /* 차분한 고서적 브라운 그레이 */
+      --text-muted: #948577;        /* 연한 브라운 그레이 */
+
+      --shadow-sm: 0 2px 8px rgba(100, 70, 40, 0.03);
+      --shadow-md: 0 4px 16px rgba(100, 70, 40, 0.06);
+      --shadow-hover: 0 8px 24px rgba(80, 50, 20, 0.09);
+
+      --font-serif: 'Noto Serif KR', Georgia, serif;
+      --font-sans: 'Pretendard', -apple-system, sans-serif;
+    }
+
+    /* 다크 모드 (모던 월넛) */
+    [data-theme="dark"] {
+      --bg-base: #1e1916;           /* 깊은 월넛 원목 바닥 */
+      --bg-surface: #26201a;        /* 음영 행 */
+      --bg-card: #2c251f;           /* 차분한 월넛 카드 */
+      --bg-hover: #352d26;
+
+      --border-subtle: rgba(196, 138, 84, 0.12);
+      --border-focus: rgba(196, 138, 84, 0.32);
+      --border-divider: rgba(196, 138, 84, 0.15);
+
+      --color-primary: #c48a54;     /* 호박석 골드 */
+      --color-primary-hover: #d99b64;
+      --color-primary-soft: rgba(196, 138, 84, 0.12);
+
+      --color-reading: #48a381;
+      --color-reading-soft: rgba(72, 163, 129, 0.12);
+
+      --text-main: #f5efe6;
+      --text-sub: #b8aba0;
+      --text-muted: #7d7268;
+
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+      --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 상단 미리보기 제어 바 */
+    .preview-header-bar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-divider);
+      padding: 0.75rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .preview-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .preview-logo {
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .preview-tag {
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      font-weight: 600;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .theme-toggle-group {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .theme-btn {
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--bg-card);
+      color: var(--text-sub);
+      border: 1px solid var(--border-subtle);
+      transition: all 0.2s ease;
+    }
+
+    .theme-btn.active {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+    }
+
+    /* 본문 레이아웃 */
+    .app-layout {
+      display: flex;
+      flex: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* 사이드바 */
+    .app-sidebar {
+      width: 230px;
+      border-right: 1px solid var(--border-divider);
+      padding: 2rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .side-nav-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .side-nav-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0 0.5rem 0.35rem;
+    }
+
+    .side-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-sub);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .side-nav-item:hover {
+      background: var(--color-primary-soft);
+      color: var(--text-main);
+    }
+
+    .side-nav-item.active {
+      background: var(--bg-card);
+      color: var(--color-primary);
+      font-weight: 600;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .side-user-box {
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-divider);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .side-user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 0.85rem;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* 메인 서재 컨테이너 */
+    .library-main {
+      flex: 1;
+      padding: 2.25rem 2.75rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+      overflow-y: auto;
+    }
+
+    /* =========================================================================
+       1. [수정 1] 페이지 헤더: 제목 옆에 설명글 인라인 배치 (수직 높이 슬림화)
+       ========================================================================= */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1.15rem;
+      border-bottom: 1px solid var(--border-divider);
+    }
+
+    .page-title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: 1.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    /* 제목 옆 인라인 설명 텍스트 */
+    .page-subtitle-inline {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .page-subtitle-inline::before {
+      content: '·';
+      color: var(--border-divider);
+      font-weight: 700;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.65rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.55rem 1.05rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-outline {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-surface);
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: #ffffff;
+      border: 1px solid transparent;
+      box-shadow: 0 2px 8px rgba(139, 90, 43, 0.2);
+    }
+
+    .btn-primary:hover {
+      background: var(--color-primary-hover);
+      transform: translateY(-1px);
+    }
+
+    /* =========================================================================
+       2. [수정 2 & 3] 명언 + 레벨 통계 1개 카드 일체형 밴드
+          - 상단 1행 (음영): [별 아이콘] + 따옴표 없는 담백한 명언
+          - 하단 2행 (흰색): 좌측 [Lv.4 예비 작가] / 우측 [Lv.2 성실한 애독가]
+       ========================================================================= */
+    .integrated-overview-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 1행: 상단 음영 명언 바 (따옴표 없음, '사유' 태그 대신 별 아이콘) */
+    .overview-quote-row {
+      background: var(--bg-surface);
+      padding: 0.75rem 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-divider);
+    }
+
+    .quote-inline-text {
+      font-family: var(--font-serif);
+      font-size: 0.88rem;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .quote-star-icon {
+      color: var(--color-primary);
+      opacity: 0.85;
+      flex-shrink: 0;
+    }
+
+    .quote-author-tag {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-left: 0.35rem;
+      font-style: italic;
+    }
+
+    /* 2행: 하단 흰색 통계 요약 (Lv.4 예비 작가 & Lv.2 성실한 애독가) */
+    .overview-stats-row {
+      background: var(--bg-card);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .overview-stat-col {
+      padding: 0.85rem 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .overview-stat-col.left-col {
+      border-right: 1px solid var(--border-divider);
+    }
+
+    .stat-col-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Lv.4 예비 작가 / Lv.2 성실한 애독가 레벨 뱃지 */
+    .stat-col-level-badge {
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .stat-col-level-badge.author {
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .stat-col-level-badge.author:hover {
+      background: rgba(139, 90, 43, 0.12);
+      border-color: var(--border-focus);
+    }
+
+    .stat-col-level-badge.reader {
+      background: var(--color-reading-soft);
+      color: var(--color-reading);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .stat-col-level-badge.reader:hover {
+      background: rgba(42, 111, 85, 0.14);
+      border-color: rgba(42, 111, 85, 0.3);
+    }
+
+    .stat-items-group {
+      display: flex;
+      align-items: center;
+      gap: 1.15rem;
+    }
+
+    .stat-mini-item {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .stat-mini-label {
+      font-size: 0.66rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-mini-val {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .stat-divider-line {
+      width: 1px;
+      height: 20px;
+      background: var(--border-divider);
+    }
+
+    .stat-more-link {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .stat-more-link:hover {
+      color: var(--text-main);
+    }
+
+    /* =========================================================================
+       3. [수정 4] '지금 이어하기': 소제목 아래 '그냥 은은한 구분선만' 배치
+       ========================================================================= */
+    .section-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+    }
+
+    /* 소제목 아래 가로 전체 구분선 (글자 밑줄 제거하고 은은한 선만) */
+    .section-divider-header {
+      display: flex;
+      align-items: center;
+      padding-bottom: 0.55rem;
+      border-bottom: 1px solid var(--border-divider);
+    }
+
+    .section-clean-title {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+    }
+
+    /* 이어하기 50:50 그리드 */
+    .quick-continue-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .continue-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1.15rem 1.35rem;
+      display: flex;
+      align-items: center;
+      gap: 1.15rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .continue-card:hover {
+      border-color: var(--border-focus);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .continue-card.writing::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--color-primary);
+    }
+
+    .continue-card.reading::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--color-reading);
+    }
+
+    /* 양장본 책등 썸네일 */
+    .book-spine-thumb {
+      width: 44px;
+      height: 62px;
+      border-radius: 3px 6px 6px 3px;
+      box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0.4rem;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .book-spine-line {
+      position: absolute;
+      left: 5px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .spine-genre {
+      font-size: 0.55rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.85);
+      letter-spacing: 0.04em;
+    }
+
+    .spine-title {
+      font-family: var(--font-serif);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.15;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .continue-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .continue-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .continue-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .continue-tag.writing {
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+    }
+
+    .continue-tag.reading {
+      color: var(--color-reading);
+      background: var(--color-reading-soft);
+    }
+
+    .continue-timestamp {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .continue-book-name {
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .continue-chapter-txt {
+      font-size: 0.82rem;
+      color: var(--text-sub);
+      margin-top: 0.2rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .continue-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-sub);
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .continue-card:hover .continue-action-btn {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+      transform: translateX(2px);
+    }
+
+    .continue-card.reading:hover .continue-action-btn {
+      background: var(--color-reading);
+      color: #ffffff;
+      border-color: var(--color-reading);
+    }
+
+    /* =========================================================================
+       4. [수정 6] 하단 서재 선반: 2대 전환 탭 + [우측 사족 제거 및 정렬 드롭다운 배치]
+       ========================================================================= */
+    .shelf-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--border-divider);
+      padding-bottom: 0.65rem;
+    }
+
+    .shelf-tabs {
+      display: flex;
+      gap: 1.75rem;
+      margin-bottom: -0.65rem;
+    }
+
+    .shelf-tab-btn {
+      background: none;
+      border: none;
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding-bottom: 0.65rem;
+      position: relative;
+      transition: color 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .shelf-tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .shelf-tab-btn.active {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .shelf-tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2.5px;
+      background: var(--color-primary);
+      border-radius: 2px;
+    }
+
+    .shelf-tab-btn.reading-tab.active::after {
+      background: var(--color-reading);
+    }
+
+    .shelf-tab-count {
+      font-size: 0.74rem;
+      padding: 1px 7px;
+      border-radius: 10px;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      font-family: var(--font-sans);
+      font-weight: 600;
+    }
+
+    .shelf-tab-btn.reading-tab .shelf-tab-count {
+      background: var(--color-reading-soft);
+      color: var(--color-reading);
+    }
+
+    /* 우측: 누적 글자수 사족 대신 실용적인 정렬 셀렉터 */
+    .shelf-sort-select {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 5px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.76rem;
+      color: var(--text-sub);
+      font-family: var(--font-sans);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .shelf-sort-select:hover {
+      border-color: var(--border-focus);
+      color: var(--text-main);
+    }
+
+    /* =========================================================================
+       5. [수정 5] 샘플 양장본 카드 UI: 태그는 '집필중' & '완결' 딱 2개로 일원화
+          + [우측 상단 연필 ✏️ & 휴지통 🗑️] + 가로 3열 배치
+       ========================================================================= */
+    .sample-book-grid-3col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.35rem;
+    }
+
+    @media (max-width: 1200px) {
+      .sample-book-grid-3col {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sample-book-grid-3col, .quick-continue-grid, .overview-stats-row {
+        grid-template-columns: 1fr;
+      }
+      .overview-stat-col.left-col {
+        border-right: none;
+        border-bottom: 1px solid var(--border-divider);
+      }
+    }
+
+    /* 샘플 양장본 도서 카드 (.book-card) */
+    .book-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 1.2rem;
+      display: flex;
+      gap: 1.15rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .book-card:hover {
+      border-color: var(--border-focus);
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+
+    /* 좌측: 양장본 책 표지 (샘플 디자인) */
+    .book-cover {
+      width: 78px;
+      height: 114px;
+      border-radius: 3px 6px 6px 3px;
+      border: 1px solid rgba(0,0,0,0.08);
+      box-shadow: 2px 4px 12px rgba(0,0,0,0.18);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0.65rem;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .book-cover-line {
+      position: absolute;
+      left: 7px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .book-cover-genre {
+      font-size: 0.58rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.85);
+      letter-spacing: 0.04em;
+    }
+
+    .book-cover-title {
+      font-family: var(--font-serif);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.25;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+
+    /* 우측: 카드 본문 상세 */
+    .book-details {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* 1행: 상태 뱃지 (집필중 / 완결) & 장르 (좌) + ★ [우측 상단 연필 & 휴지통] (우) ★ */
+    .card-top-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .card-badges-left {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    /* 일원화된 상태 뱃지: '집필중' or '완결' */
+    .status-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .status-pill.completed {
+      background: rgba(16, 185, 129, 0.08);
+      color: #10b981;
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+
+    .genre-label {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    /* ★ 카드 내 우측 상단 연필 & 휴지통 버튼 그룹 ★ */
+    .card-actions-top-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .action-icon-top {
+      width: 25px;
+      height: 25px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .action-icon-top:hover {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+    }
+
+    .action-icon-top.edit-btn:hover {
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+      border-color: var(--border-focus);
+    }
+
+    .action-icon-top.danger-btn:hover {
+      color: #b91c1c;
+      background: rgba(185, 28, 28, 0.08);
+      border-color: rgba(185, 28, 28, 0.2);
+    }
+
+    /* 툴팁 */
+    .action-icon-top[data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 120%;
+      right: 50%;
+      transform: translateX(50%);
+      background: var(--text-main);
+      color: var(--bg-card);
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 10;
+    }
+
+    .action-icon-top:hover[data-tooltip]::after {
+      opacity: 1;
+    }
+
+    /* 2행: 세리프 도서명 */
+    .book-title-text {
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      line-height: 1.3;
+    }
+
+    .book-title-text:hover {
+      color: var(--color-primary);
+    }
+
+    /* 3행: 감성적인 로그라인 */
+    .book-desc-text {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      line-height: 1.45;
+      margin-top: 0.3rem;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    /* 4행: 푸터 (챕터 수 + 진행률 바) */
+    .book-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border-divider);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    .progress-bar-thin {
+      width: 70px;
+      height: 4px;
+      background: var(--border-divider);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--color-primary);
+      border-radius: 2px;
+    }
+
+    .progress-bar-fill.reading {
+      background: var(--color-reading);
+    }
+
+    /* SVG 아이콘 헬퍼 */
+    .icon {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .icon-lg {
+      width: 17px;
+      height: 17px;
+    }
+
+    /* 토스트 알림 */
+    .toast-msg {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--text-main);
+      color: var(--bg-card);
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-hover);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s ease;
+      z-index: 999;
+    }
+
+    .toast-msg.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+  <!-- =========================================================================
+       상단 미리보기 제어 바
+       ========================================================================= -->
+  <header class="preview-header-bar">
+    <div class="preview-title-group">
+      <span class="preview-logo">연재서재 (Book Studio)</span>
+      <span class="preview-tag">서재 정밀 마감 디테일 v3</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <span style="font-size: 0.8rem; color: var(--text-sub);">
+        제목 인라인 설명 · 명언 별 아이콘 · Lv.4 뱃지 · 이어하기 구분선 · 집필중/완결 일원화
+      </span>
+
+      <!-- 테마 토글 버튼 -->
+      <div class="theme-toggle-group">
+        <button class="theme-btn active" id="btn-theme-light" onclick="setTheme('light')">✨ 라이트 v2</button>
+        <button class="theme-btn" id="btn-theme-dark" onclick="setTheme('dark')">🌙 다크</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       본문 영역
+       ========================================================================= -->
+  <div class="app-layout">
+    <!-- 사이드바 -->
+    <aside class="app-sidebar">
+      <div class="side-nav-group">
+        <div class="side-nav-title">Studio</div>
+        <div class="side-nav-item active">
+          <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span>내 서재</span>
+        </div>
+        <a href="sample-studio.html" class="side-nav-item" style="text-decoration: none;">
+          <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          <span>집필 스튜디오</span>
+        </a>
+        <div class="side-nav-item">
+          <svg class="icon icon-lg" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <span>창작실 & 보관함</span>
+        </div>
+      </div>
+
+      <div class="side-nav-group">
+        <div class="side-nav-title">Reader</div>
+        <div class="side-nav-item">
+          <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+          <span>연재 서가</span>
+        </div>
+        <div class="side-nav-item">
+          <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <span>완결 서가</span>
+        </div>
+      </div>
+
+      <div class="side-user-box">
+        <div class="side-user-avatar">김</div>
+        <div>
+          <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-main);">김서경 작가</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">Personal Atelier</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 메인 서재 콘텐츠 -->
+    <main class="library-main">
+      <!-- =======================================================================
+           1. [수정 1 반영] 페이지 헤더: '내 서재' 옆에 설명글을 인라인으로 나란히 배치!
+           ======================================================================= -->
+      <div class="page-header">
+        <div class="page-title-row">
+          <h1 class="page-title">내 서재</h1>
+          <span class="page-subtitle-inline">집필 중인 원고와 보관된 도서를 관리합니다.</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-outline" onclick="showToast('원고 파일 불러오기')">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>원고 가져오기</span>
+          </button>
+          <button class="btn btn-primary" onclick="showToast('새 책 만들기 대화상자')">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>새 책 만들기</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- =======================================================================
+           2. [수정 2 & 3 반영] 명언 + 레벨 통계 일체형 2행 카드
+           - 1행 (음영): [별 아이콘] + 따옴표 없는 담백한 명언
+           - 2행 (흰색): 좌측 [Lv.4 예비 작가] / 우측 [Lv.2 성실한 애독가]
+           ======================================================================= -->
+      <section class="integrated-overview-card">
+        <!-- 1행: 상단 음영 명언 바 (따옴표 없음, 별 아이콘 적용) -->
+        <div class="overview-quote-row">
+          <div class="quote-inline-text">
+            <!-- 별(Sparkle) 라인 아이콘 -->
+            <svg class="icon quote-star-icon" viewBox="0 0 24 24">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <span>책을 읽는다는 것은 타인의 방에 불을 켜는 일이며, 글을 쓴다는 것은 내 방의 창문을 내는 일이다.</span>
+            <span class="quote-author-tag">— 서재의 사유</span>
+          </div>
+        </div>
+
+        <!-- 2행: 하단 흰색 통계 요약 (Lv.4 예비 작가 & Lv.2 성실한 애독가) -->
+        <div class="overview-stats-row">
+          <!-- 좌측: 집필 통계 (Lv.4 예비 작가 뱃지 탑재) -->
+          <div class="overview-stat-col left-col">
+            <div class="stat-col-left">
+              <span class="stat-col-level-badge author" onclick="showToast('작가 성장 리포트로 이동')">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <span>Lv.4 예비 작가</span>
+              </span>
+              <div class="stat-items-group">
+                <div class="stat-mini-item">
+                  <span class="stat-mini-label">작가 루틴</span>
+                  <span class="stat-mini-val">7일 연속</span>
+                </div>
+                <div class="stat-divider-line"></div>
+                <div class="stat-mini-item">
+                  <span class="stat-mini-label">이번 주</span>
+                  <span class="stat-mini-val">4,280자</span>
+                </div>
+                <div class="stat-divider-line"></div>
+                <div class="stat-mini-item">
+                  <span class="stat-mini-label">완주율</span>
+                  <span class="stat-mini-val">65%</span>
+                </div>
+              </div>
+            </div>
+            <span class="stat-more-link" onclick="showToast('통합 통계(집필) 화면으로 이동')">
+              상세 <svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </span>
+          </div>
+
+          <!-- 우측: 독서 통계 (Lv.2 성실한 애독가 뱃지 탑재) -->
+          <div class="overview-stat-col">
+            <div class="stat-col-left">
+              <span class="stat-col-level-badge reader" onclick="showToast('독서 활동 리포트로 이동')">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                <span>Lv.2 성실한 애독가</span>
+              </span>
+              <div class="stat-items-group">
+                <div class="stat-mini-item">
+                  <span class="stat-mini-label">누적 감상</span>
+                  <span class="stat-mini-val">12권</span>
+                </div>
+                <div class="stat-divider-line"></div>
+                <div class="stat-mini-item">
+                  <span class="stat-mini-label">독서 루틴</span>
+                  <span class="stat-mini-val">4일 연속</span>
+                </div>
+                <div class="stat-divider-line"></div>
+                <div class="stat-mini-item">
+                  <span class="stat-mini-label">완독 도서</span>
+                  <span class="stat-mini-val">5권 완독</span>
+                </div>
+              </div>
+            </div>
+            <span class="stat-more-link" onclick="showToast('통합 통계(독서) 화면으로 이동')">
+              상세 <svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- =======================================================================
+           3. [수정 4 반영] '지금 이어하기': 소제목 아래 '그냥 은은한 구분선만' 배치
+           ======================================================================= -->
+      <section class="section-block">
+        <div class="section-divider-header">
+          <h2 class="section-clean-title">지금 이어하기</h2>
+        </div>
+
+        <div class="quick-continue-grid">
+          <!-- 1) 좌측: 최근 집필 이어쓰기 퀵 카드 (50%) -->
+          <article class="continue-card writing" onclick="showToast('《심야의 문장과 고요한 방》 스튜디오로 복귀')">
+            <div class="book-spine-thumb" style="background: linear-gradient(135deg, #a67c52, #7a5430);">
+              <div class="book-spine-line"></div>
+              <span class="spine-genre">에세이</span>
+              <span class="spine-title">심야의 문장</span>
+            </div>
+            <div class="continue-content">
+              <div class="continue-badge-row">
+                <span class="continue-tag writing">최근 집필 · 이어쓰기</span>
+                <span class="continue-timestamp">오늘 14:20</span>
+              </div>
+              <h3 class="continue-book-name">《심야의 문장과 고요한 방》</h3>
+              <p class="continue-chapter-txt">제 3장. 낡은 원목 책상과 잉크 냄새 · 3,420자 집필 중</p>
+            </div>
+            <button class="continue-action-btn" title="스튜디오로 이동">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+          </article>
+
+          <!-- 2) 우측: 최근 독서 이어읽기 퀵 카드 (50%) -->
+          <article class="continue-card reading" onclick="showToast('《시간의 모서리에서》 뷰어로 복귀')">
+            <div class="book-spine-thumb" style="background: linear-gradient(135deg, #2d5a47, #1a3c2e);">
+              <div class="book-spine-line"></div>
+              <span class="spine-genre">인문</span>
+              <span class="spine-title">시간의 모서리</span>
+            </div>
+            <div class="continue-content">
+              <div class="continue-badge-row">
+                <span class="continue-tag reading">최근 독서 · 이어읽기</span>
+                <span class="continue-timestamp">어제 22:45</span>
+              </div>
+              <h3 class="continue-book-name">《시간의 모서리에서》</h3>
+              <p class="continue-chapter-txt">제 5화. 비 내리는 날의 기록 · 독서 진도 78%</p>
+            </div>
+            <button class="continue-action-btn reading" title="뷰어로 이어읽기">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+          </article>
+        </div>
+      </section>
+
+      <!-- =======================================================================
+           4. [수정 6 반영] 하단 서재 선반: 2대 전환 탭 + [우측 사족 제거하고 정렬 셀렉터 배치]
+           ======================================================================= -->
+      <section class="section-block">
+        <div class="shelf-nav-bar">
+          <div class="shelf-tabs">
+            <button class="shelf-tab-btn active" id="tab-writing" onclick="switchShelfTab('writing')">
+              <span>집필 중인 도서</span>
+              <span class="shelf-tab-count" id="count-writing">4</span>
+            </button>
+            <button class="shelf-tab-btn reading-tab" id="tab-reading" onclick="switchShelfTab('reading')">
+              <span>최근 읽은 책</span>
+              <span class="shelf-tab-count" id="count-reading">3</span>
+            </button>
+          </div>
+          
+          <!-- 누적 몇 자 같은 사족 통계 제거 ➔ 실용적인 정렬 셀렉터 -->
+          <div>
+            <select class="shelf-sort-select" onchange="showToast(this.value + ' 정렬 적용')">
+              <option value="최신 작업순">최신 작업순</option>
+              <option value="제목순">제목순</option>
+              <option value="진행률순">진행률순</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- =====================================================================
+             5. [수정 5 반영] 도서 태그 '집필중' & '완결' 딱 2개로 일원화
+                + 샘플 양장본 카드 UI + [우측 상단 연필 ✏️ & 휴지통 🗑️]
+             ===================================================================== -->
+        <!-- 탭 1: 집필 중인 도서 3열 그리드 -->
+        <div class="sample-book-grid-3col" id="grid-writing">
+          
+          <!-- 카드 1 (집필중) -->
+          <article class="book-card">
+            <!-- 좌측: 양장본 북 커버 -->
+            <div class="book-cover" style="background: linear-gradient(135deg, #a67c52, #7a5430);" onclick="showToast('《심야의 문장과 고요한 방》 스튜디오 열기')">
+              <div class="book-cover-line"></div>
+              <span class="book-cover-genre">에세이</span>
+              <h4 class="book-cover-title">심야의 문장과 고요한 방</h4>
+            </div>
+
+            <!-- 우측: 상세 정보 -->
+            <div class="book-details">
+              <div>
+                <!-- 1행: 상태 뱃지 ('집필중') + ★ 우측 상단 연필 & 휴지통 버튼 ★ -->
+                <div class="card-top-header">
+                  <div class="card-badges-left">
+                    <span class="status-pill">집필중</span>
+                    <span class="genre-label">한국 에세이</span>
+                  </div>
+                  <!-- 우측 상단 액션 버튼 -->
+                  <div class="card-actions-top-right">
+                    <button type="button" class="action-icon-top edit-btn" data-tooltip="도서 정보 수정" onclick="event.stopPropagation(); showToast('도서 정보 수정 창 열기')">
+                      <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
+                    <button type="button" class="action-icon-top danger-btn" data-tooltip="도서 삭제" onclick="event.stopPropagation(); confirmDelete('심야의 문장과 고요한 방')">
+                      <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2행: 세리프 제목 -->
+                <h3 class="book-title-text" onclick="showToast('《심야의 문장과 고요한 방》 스튜디오 열기')">심야의 문장과 고요한 방</h3>
+                <!-- 3행: 2줄 로그라인 -->
+                <p class="book-desc-text">밤이 깊어질수록 맑아지는 생각들, 낡은 오크 책상 앞에서 길어 올린 기록.</p>
+              </div>
+
+              <!-- 4행: 푸터 (챕터 수 + 진행률 바) -->
+              <div class="book-card-footer" onclick="showToast('《심야의 문장과 고요한 방》 스튜디오 열기')" style="cursor: pointer;">
+                <span>총 7개 챕터</span>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <div class="progress-bar-thin"><div class="progress-bar-fill" style="width: 65%;"></div></div>
+                  <span style="font-weight: 600; color: var(--color-primary);">65%</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 카드 2 (집필중) -->
+          <article class="book-card">
+            <!-- 좌측: 양장본 북 커버 -->
+            <div class="book-cover" style="background: linear-gradient(135deg, #2b3328, #182015);" onclick="showToast('《오후 세 시의 시계탑》 스튜디오 열기')">
+              <div class="book-cover-line"></div>
+              <span class="book-cover-genre">소설</span>
+              <h4 class="book-cover-title">오후 세 시의 시계탑</h4>
+            </div>
+
+            <!-- 우측: 상세 정보 -->
+            <div class="book-details">
+              <div>
+                <!-- 1행: 상태 뱃지 ('집필중') + ★ 우측 상단 연필 & 휴지통 버튼 ★ -->
+                <div class="card-top-header">
+                  <div class="card-badges-left">
+                    <span class="status-pill">집필중</span>
+                    <span class="genre-label">미스터리 / 드라마</span>
+                  </div>
+                  <!-- 우측 상단 액션 버튼 -->
+                  <div class="card-actions-top-right">
+                    <button type="button" class="action-icon-top edit-btn" data-tooltip="도서 정보 수정" onclick="event.stopPropagation(); showToast('도서 정보 수정 창 열기')">
+                      <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
+                    <button type="button" class="action-icon-top danger-btn" data-tooltip="도서 삭제" onclick="event.stopPropagation(); confirmDelete('오후 세 시의 시계탑')">
+                      <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2행: 세리프 제목 -->
+                <h3 class="book-title-text" onclick="showToast('《오후 세 시의 시계탑》 스튜디오 열기')">오후 세 시의 시계탑</h3>
+                <!-- 3행: 2줄 로그라인 -->
+                <p class="book-desc-text">시간이 멈춘 광장과 그곳에 남겨진 일곱 사람의 오래된 편지.</p>
+              </div>
+
+              <!-- 4행: 푸터 (챕터 수 + 진행률 바) -->
+              <div class="book-card-footer" onclick="showToast('《오후 세 시의 시계탑》 스튜디오 열기')" style="cursor: pointer;">
+                <span>총 12개 챕터</span>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <div class="progress-bar-thin"><div class="progress-bar-fill" style="width: 25%;"></div></div>
+                  <span style="font-weight: 600; color: var(--color-primary);">25%</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 카드 3 (완결) -->
+          <article class="book-card">
+            <!-- 좌측: 양장본 북 커버 -->
+            <div class="book-cover" style="background: linear-gradient(135deg, #372828, #221717);" onclick="showToast('《서가의 숲을 걷다》 스튜디오 열기')">
+              <div class="book-cover-line"></div>
+              <span class="book-cover-genre">인문</span>
+              <h4 class="book-cover-title">서가의 숲을 걷다</h4>
+            </div>
+
+            <!-- 우측: 상세 정보 -->
+            <div class="book-details">
+              <div>
+                <!-- 1행: 상태 뱃지 ('완결') + ★ 우측 상단 연필 & 휴지통 버튼 ★ -->
+                <div class="card-top-header">
+                  <div class="card-badges-left">
+                    <span class="status-pill completed">완결</span>
+                    <span class="genre-label">인문학 교양</span>
+                  </div>
+                  <!-- 우측 상단 액션 버튼 -->
+                  <div class="card-actions-top-right">
+                    <button type="button" class="action-icon-top edit-btn" data-tooltip="도서 정보 수정" onclick="event.stopPropagation(); showToast('도서 정보 수정 창 열기')">
+                      <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
+                    <button type="button" class="action-icon-top danger-btn" data-tooltip="도서 삭제" onclick="event.stopPropagation(); confirmDelete('서가의 숲을 걷다')">
+                      <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2행: 세리프 제목 -->
+                <h3 class="book-title-text" onclick="showToast('《서가의 숲을 걷다》 스튜디오 열기')">서가의 숲을 걷다</h3>
+                <!-- 3행: 2줄 로그라인 -->
+                <p class="book-desc-text">중세 필사본부터 전자책까지, 책이라는 매체가 견뎌낸 시간의 기록.</p>
+              </div>
+
+              <!-- 4행: 푸터 (챕터 수 + 진행률 바) -->
+              <div class="book-card-footer" onclick="showToast('《서가의 숲을 걷다》 스튜디오 열기')" style="cursor: pointer;">
+                <span>총 5개 챕터</span>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <div class="progress-bar-thin"><div class="progress-bar-fill" style="width: 100%; background: #10b981;"></div></div>
+                  <span style="font-weight: 600; color: #10b981;">100%</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 카드 4 (집필중) -->
+          <article class="book-card">
+            <!-- 좌측: 양장본 북 커버 -->
+            <div class="book-cover" style="background: linear-gradient(135deg, #242b3d, #141926);" onclick="showToast('《기억의 건축술》 스튜디오 열기')">
+              <div class="book-cover-line"></div>
+              <span class="book-cover-genre">소설</span>
+              <h4 class="book-cover-title">기억의 건축술</h4>
+            </div>
+
+            <!-- 우측: 상세 정보 -->
+            <div class="book-details">
+              <div>
+                <!-- 1행: 상태 뱃지 ('집필중') + ★ 우측 상단 연필 & 휴지통 버튼 ★ -->
+                <div class="card-top-header">
+                  <div class="card-badges-left">
+                    <span class="status-pill">집필중</span>
+                    <span class="genre-label">현대 소설</span>
+                  </div>
+                  <!-- 우측 상단 액션 버튼 -->
+                  <div class="card-actions-top-right">
+                    <button type="button" class="action-icon-top edit-btn" data-tooltip="도서 정보 수정" onclick="event.stopPropagation(); showToast('도서 정보 수정 창 열기')">
+                      <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
+                    <button type="button" class="action-icon-top danger-btn" data-tooltip="도서 삭제" onclick="event.stopPropagation(); confirmDelete('기억의 건축술')">
+                      <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 2행: 세리프 제목 -->
+                <h3 class="book-title-text" onclick="showToast('《기억의 건축술》 스튜디오 열기')">기억의 건축술</h3>
+                <!-- 3행: 2줄 로그라인 -->
+                <p class="book-desc-text">사라진 건물을 기억으로만 재건하는 은퇴한 건축가의 이야기.</p>
+              </div>
+
+              <!-- 4행: 푸터 (챕터 수 + 진행률 바) -->
+              <div class="book-card-footer" onclick="showToast('《기억의 건축술》 스튜디오 열기')" style="cursor: pointer;">
+                <span>총 8개 챕터</span>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <div class="progress-bar-thin"><div class="progress-bar-fill" style="width: 45%;"></div></div>
+                  <span style="font-weight: 600; color: var(--color-primary);">45%</span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 탭 2: 최근 읽은 책 3열 그리드 (처음에는 숨김) -->
+        <div class="sample-book-grid-3col" id="grid-reading" style="display: none;">
+          <!-- 독서 카드 1 -->
+          <article class="book-card">
+            <div class="book-cover" style="background: linear-gradient(135deg, #2d5a47, #1a3c2e);" onclick="showToast('《시간의 모서리에서》 뷰어 열기')">
+              <div class="book-cover-line"></div>
+              <span class="book-cover-genre">인문 철학</span>
+              <h4 class="book-cover-title">시간의 모서리에서</h4>
+            </div>
+
+            <div class="book-details">
+              <div>
+                <div class="card-top-header">
+                  <div class="card-badges-left">
+                    <span class="status-pill" style="background: var(--color-reading-soft); color: var(--color-reading);">독서중</span>
+                    <span class="genre-label">인문</span>
+                  </div>
+                  <div class="card-actions-top-right">
+                    <button type="button" class="action-icon-top danger-btn" data-tooltip="독서 서재에서 제거" onclick="event.stopPropagation(); confirmDeleteReading('시간의 모서리에서')">
+                      <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <h3 class="book-title-text" onclick="showToast('《시간의 모서리에서》 뷰어 열기')">시간의 모서리에서</h3>
+                <p class="book-desc-text">속도의 시대에 잃어버린 침묵과 기다림의 미학을 성찰하는 철학 에세이.</p>
+              </div>
+
+              <div class="book-card-footer" onclick="showToast('《시간의 모서리에서》 뷰어 열기')" style="cursor: pointer;">
+                <span>최근 제 5화 열람</span>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <div class="progress-bar-thin"><div class="progress-bar-fill reading" style="width: 78%;"></div></div>
+                  <span style="font-weight: 600; color: var(--color-reading);">78%</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 독서 카드 2 -->
+          <article class="book-card">
+            <div class="book-cover" style="background: linear-gradient(135deg, #3d344d, #221c2d);" onclick="showToast('《별빛의 물리학》 뷰어 열기')">
+              <div class="book-cover-line"></div>
+              <span class="book-cover-genre">과학 교양</span>
+              <h4 class="book-cover-title">별빛의 물리학</h4>
+            </div>
+
+            <div class="book-details">
+              <div>
+                <div class="card-top-header">
+                  <div class="card-badges-left">
+                    <span class="status-pill" style="background: var(--color-reading-soft); color: var(--color-reading);">독서중</span>
+                    <span class="genre-label">과학</span>
+                  </div>
+                  <div class="card-actions-top-right">
+                    <button type="button" class="action-icon-top danger-btn" data-tooltip="독서 서재에서 제거" onclick="event.stopPropagation(); confirmDeleteReading('별빛의 물리학')">
+                      <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <h3 class="book-title-text" onclick="showToast('《별빛의 물리학》 뷰어 열기')">별빛의 물리학</h3>
+                <p class="book-desc-text">빛과 중력이 빚어낸 우주의 파노라마, 시적인 언어로 풀어낸 천체물리학.</p>
+              </div>
+
+              <div class="book-card-footer" onclick="showToast('《별빛의 물리학》 뷰어 열기')" style="cursor: pointer;">
+                <span>최근 제 2화 열람</span>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <div class="progress-bar-thin"><div class="progress-bar-fill reading" style="width: 32%;"></div></div>
+                  <span style="font-weight: 600; color: var(--color-reading);">32%</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 독서 카드 3 -->
+          <article class="book-card">
+            <div class="book-cover" style="background: linear-gradient(135deg, #42362b, #261f18);" onclick="showToast('《고전의 탄생과 소멸》 뷰어 열기')">
+              <div class="book-cover-line"></div>
+              <span class="book-cover-genre">문학 비평</span>
+              <h4 class="book-cover-title">고전의 탄생과 소멸</h4>
+            </div>
+
+            <div class="book-details">
+              <div>
+                <div class="card-top-header">
+                  <div class="card-badges-left">
+                    <span class="status-pill completed">완독</span>
+                    <span class="genre-label">문학</span>
+                  </div>
+                  <div class="card-actions-top-right">
+                    <button type="button" class="action-icon-top danger-btn" data-tooltip="독서 서재에서 제거" onclick="event.stopPropagation(); confirmDeleteReading('고전의 탄생과 소멸')">
+                      <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <h3 class="book-title-text" onclick="showToast('《고전의 탄생과 소멸》 뷰어 열기')">고전의 탄생과 소멸</h3>
+                <p class="book-desc-text">어떤 책은 영원이 되고 어떤 책은 망각되는가, 문학사의 수수께끼를 파헤치다.</p>
+              </div>
+
+              <div class="book-card-footer" onclick="showToast('《고전의 탄생과 소멸》 뷰어 열기')" style="cursor: pointer;">
+                <span>총 14화 완독 완료</span>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <div class="progress-bar-thin"><div class="progress-bar-fill" style="width: 100%; background: #10b981;"></div></div>
+                  <span style="font-weight: 600; color: #10b981;">100%</span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 알림 토스트 -->
+  <div class="toast-msg" id="toastMsg">알림 메시지</div>
+
+  <script>
+    // 1. 테마 전환 (라이트 v2 / 다크)
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      document.getElementById('btn-theme-light').classList.toggle('active', theme === 'light');
+      document.getElementById('btn-theme-dark').classList.toggle('active', theme === 'dark');
+      showToast(theme === 'light' ? '라이트 v2 (에디토리얼 페이퍼) 적용' : '다크 (모던 월넛) 적용');
+    }
+
+    // 2. 서재 2대 탭 전환 (집필 중인 도서 ↔ 최근 읽은 책)
+    function switchShelfTab(tab) {
+      const isWriting = tab === 'writing';
+      document.getElementById('tab-writing').classList.toggle('active', isWriting);
+      document.getElementById('tab-reading').classList.toggle('active', !isWriting);
+      
+      document.getElementById('grid-writing').style.display = isWriting ? 'grid' : 'none';
+      document.getElementById('grid-reading').style.display = isWriting ? 'none' : 'grid';
+    }
+
+    // 3. 삭제 확인 다이얼로그
+    function confirmDelete(title) {
+      if (confirm(`'${title}' 도서를 서재에서 영구 삭제하시겠습니까?\n(작성된 원고와 챕터가 모두 삭제됩니다)`)) {
+        showToast(`'${title}' 도서가 삭제되었습니다.`);
+      }
+    }
+
+    function confirmDeleteReading(title) {
+      if (confirm(`'${title}' 도서를 최근 독서 서재에서 제거하시겠습니까?`)) {
+        showToast(`'${title}' 독서 기록이 제거되었습니다.`);
+      }
+    }
+
+    // 4. 토스트 알림 헬퍼
+    let toastTimeout = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toastMsg');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

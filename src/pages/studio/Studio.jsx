@@ -1342,7 +1342,7 @@ export default function Studio() {
                       title="연재 발행하기 (이번화 발행 / 선택하여 발행)"
                     >
                       <Send size={13} />
-                      <span>🚀 연재 발행하기</span>
+                      <span>연재 발행</span>
                     </button>
                   </div>
                 );

@@ -272,8 +272,8 @@ export default function ExploreSerial() {
                     <span className="rank-book-genre">{book.genre || '웹소설'}</span>
                     <strong className="rank-book-title">{book.title}</strong>
                     <div className="rank-meta-row">
-                      <span>👁️ {book.totalViews.toLocaleString()}</span>
-                      <span>❤️ {book.totalLikes}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Eye size={12} /> {book.totalViews.toLocaleString()}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Heart size={12} /> {book.totalLikes}</span>
                     </div>
                   </div>
                 </div>
@@ -324,7 +324,7 @@ export default function ExploreSerial() {
             <div className="serial-empty-card">
               <BookOpen size={42} className="empty-book-icon" />
               <h3>해당 조건의 연재 작품이 없습니다</h3>
-              <p>스튜디오에서 새로운 챕터를 집필하고 '연재 발행 🚀'을 눌러보세요!</p>
+              <p>스튜디오에서 새로운 챕터를 집필하고 '연재 발행'을 진행해 보세요.</p>
               <button className="btn-go-studio" onClick={() => setView('studio')}>
                 집필 스튜디오로 가기 <ArrowRight size={14} />
               </button>
@@ -353,7 +353,7 @@ export default function ExploreSerial() {
                       <div className="serial-card-tags">
                         <span className="badge-cycle-tag">{getCycleBadgeText(book.cycle)}</span>
                         <span className="badge-genre-tag">{book.genre || '일반연재'}</span>
-                        {book.hasPublished && <span className="badge-up-tag">UP 🚀</span>}
+                        {book.hasPublished && <span className="badge-up-tag">UP</span>}
                       </div>
 
                       <h3 
@@ -374,13 +374,13 @@ export default function ExploreSerial() {
                         <span className="meta-sep">·</span>
                         <span className="comment-badge"><MessageSquare size={12} className="meta-comment-icon" /> {book.commentCount}</span>
                         <span className="meta-sep">·</span>
-                        <span className="views-count">👁️ {book.totalViews.toLocaleString()}</span>
+                        <span className="views-count" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Eye size={12} /> {book.totalViews.toLocaleString()}</span>
                         <span className="meta-sep">·</span>
-                        <span className="likes-count">❤️ {book.totalLikes}</span>
+                        <span className="likes-count" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Heart size={12} /> {book.totalLikes}</span>
                       </div>
 
                       <p className="serial-logline">
-                        {book.subtitle || (book.latestChap ? `최신화: ${book.latestChap.title}` : '작가님의 흥미진진한 연재가 시작되었습니다. 첫 회를 지금 만나보세요!')}
+                        {book.subtitle || (book.latestChap ? `최신화: ${book.latestChap.title}` : '연재가 시작된 작품입니다.')}
                       </p>
                     </div>
 

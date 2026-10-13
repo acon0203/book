@@ -728,3 +728,181 @@ kbd {
     justify-content: flex-end;
   }
 }
+
+/* ==========================================================================
+   서재 환경설정 (테마 및 전역 글자 크기)
+   ========================================================================== */
+.settings-appearance-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.appearance-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.appearance-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* 테마 선택 카드 (라이트 / 다크) */
+.theme-select-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .theme-select-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.theme-option-card {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.theme-option-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.theme-option-card.active {
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.05);
+}
+
+.theme-card-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--bg-panel, var(--bg-card));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.theme-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.theme-card-info strong {
+  font-size: 0.92rem;
+  color: var(--text-main);
+}
+
+.theme-card-info span {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.theme-active-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--primary);
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+/* 글자 크기 스케일 버튼 그룹 */
+.font-scale-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+
+@media (max-width: 600px) {
+  .font-scale-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.font-scale-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0.65rem 0.5rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.font-scale-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary);
+}
+
+.font-scale-btn.active {
+  background: var(--bg-card);
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.font-scale-btn .scale-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.font-scale-btn.active .scale-name {
+  color: var(--primary);
+}
+
+.font-scale-btn .scale-val {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* 글자 크기 미리보기 박스 */
+.font-preview-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  margin-top: 0.25rem;
+}
+
+.preview-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.preview-sample {
+  font-size: 0.88rem;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+

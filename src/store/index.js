@@ -11,6 +11,9 @@ export const useStore = create((set, get) => {
     document.body.classList.add('light-mode');
   }
 
+  const initialFontScale = localStorage.getItem('book_font_scale') || 'normal';
+  document.documentElement.setAttribute('data-font-scale', initialFontScale);
+
   return {
     // --- 인증 & 클라우드 동기화 상태 ---
     user: null,
@@ -129,13 +132,24 @@ export const useStore = create((set, get) => {
 
     toggleTheme: () => {
       const nextTheme = get().theme === 'dark' ? 'light' : 'dark';
-      if (nextTheme === 'light') {
+      get().setTheme(nextTheme);
+    },
+
+    setTheme: (newTheme) => {
+      if (newTheme === 'light') {
         document.body.classList.add('light-mode');
       } else {
         document.body.classList.remove('light-mode');
       }
-      localStorage.setItem('book_theme', nextTheme);
-      set({ theme: nextTheme });
+      localStorage.setItem('book_theme', newTheme);
+      set({ theme: newTheme });
+    },
+
+    fontScale: localStorage.getItem('book_font_scale') || 'normal',
+    setFontScale: (scale) => {
+      document.documentElement.setAttribute('data-font-scale', scale);
+      localStorage.setItem('book_font_scale', scale);
+      set({ fontScale: scale });
     },
 
     isNewBookModalOpen: false,

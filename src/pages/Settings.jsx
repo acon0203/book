@@ -31,14 +31,18 @@ import {
   X,
   Compass,
   ArrowLeft,
-  Zap
+  Zap,
+  Sun,
+  Moon,
+  Type
 } from 'lucide-react';
 import ModelQuotasModal from '../components/ai/ModelQuotasModal';
 
 export default function Settings() {
   const { 
     books, loadBooks, loadVault, showToast, user, loginWithGoogle, logout,
-    syncStatus, syncToCloud, restoreFromCloud, lastSyncedAt, setView, activeBook, openConfirm 
+    syncStatus, syncToCloud, restoreFromCloud, lastSyncedAt, setView, activeBook, openConfirm,
+    theme, setTheme, fontScale, setFontScale
   } = useStore();
 
   const [config, setConfig] = useState({
@@ -404,7 +408,7 @@ export default function Settings() {
       <header className="settings-header">
         <div>
           <h1>서재 관리</h1>
-          <p>작가 계정, 원고 백업·동기화, AI 집필 엔진 및 서비스 안내를 통합 관리합니다.</p>
+          <p>계정, 원고 백업 및 동기화 설정을 관리합니다.</p>
         </div>
         <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
           <Save size={16} />
@@ -457,7 +461,7 @@ export default function Settings() {
                 <p>Google 계정으로 로그인하면 기기 간 원고 백업 및 동기화가 활성화됩니다.</p>
                 <button className="btn btn-primary" onClick={loginWithGoogle}>
                   <LogIn size={15} />
-                  <span>Google 계정으로 1초 로그인</span>
+                  <span>Google 계정으로 로그인</span>
                 </button>
               </div>
             )}
@@ -493,7 +497,86 @@ export default function Settings() {
         </section>
 
         {/* =================================================================
-            꼭지 2: 💾 데이터 저장 & 동기화 센터 (클라우드 + 로컬 백업)
+            꼭지 2: 🎨 서재 환경설정 (테마 및 전역 글자 크기)
+            ================================================================= */}
+        <section className="settings-card">
+          <div className="card-header-flex">
+            <div className="card-header-title-group">
+              <Sparkles size={20} className="section-header-icon text-amber" />
+              <div>
+                <h3>서재 환경설정</h3>
+                <p className="card-sub-desc">서재 화면의 테마 모드(라이트/다크) 및 전역 글자 크기를 설정합니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="settings-appearance-grid">
+            {/* 1) 화면 테마 설정 (라이트 / 다크) */}
+            <div className="appearance-group">
+              <label className="appearance-label">화면 테마 모드</label>
+              <div className="theme-select-cards">
+                <div 
+                  className={`theme-option-card light ${theme === 'light' ? 'active' : ''}`}
+                  onClick={() => setTheme('light')}
+                >
+                  <div className="theme-card-icon-wrap">
+                    <Sun size={20} className="text-amber" />
+                  </div>
+                  <div className="theme-card-info">
+                    <strong>라이트 모드</strong>
+                    <span>에디토리얼 페이퍼</span>
+                  </div>
+                  {theme === 'light' && <span className="theme-active-tag">적용 중</span>}
+                </div>
+
+                <div 
+                  className={`theme-option-card dark ${theme === 'dark' ? 'active' : ''}`}
+                  onClick={() => setTheme('dark')}
+                >
+                  <div className="theme-card-icon-wrap">
+                    <Moon size={20} className="text-blue" />
+                  </div>
+                  <div className="theme-card-info">
+                    <strong>다크 모드</strong>
+                    <span>모던 월넛 우드</span>
+                  </div>
+                  {theme === 'dark' && <span className="theme-active-tag">적용 중</span>}
+                </div>
+              </div>
+              <span className="form-hint">클릭 즉시 서재 전체의 색상 테마가 전환됩니다.</span>
+            </div>
+
+            {/* 2) 전역 글자 크기 스케일 */}
+            <div className="appearance-group">
+              <label className="appearance-label">전역 글자 크기</label>
+              <div className="font-scale-buttons">
+                {[
+                  { id: 'small', label: '작게', scale: '90%' },
+                  { id: 'normal', label: '기본', scale: '100%' },
+                  { id: 'large', label: '크게', scale: '110%' },
+                  { id: 'xlarge', label: '아주 크게', scale: '120%' }
+                ].map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    className={`font-scale-btn ${fontScale === opt.id ? 'active' : ''}`}
+                    onClick={() => setFontScale(opt.id)}
+                  >
+                    <span className="scale-name">{opt.label}</span>
+                    <span className="scale-val">{opt.scale}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="font-preview-box">
+                <span className="preview-label">미리보기:</span>
+                <span className="preview-sample">서재의 문장들이 편안한 크기로 읽히는지 확인해보세요.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* =================================================================
+            꼭지 3: 💾 데이터 저장 & 동기화 센터 (클라우드 + 로컬 백업)
             ================================================================= */}
         <section className="settings-card">
           <div className="card-header-flex">

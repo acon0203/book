@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연재서재 (Book Studio) - 우드톤 디자인 & 실시간 색상 튜너</title>
+  <!-- Google Fonts: 클래식 세리프 & 모던 산세리프 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+KR:wght@300;400;600;700&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       1. 디자인 테마 변수 (다크: 모던 월넛 / 라이트: 클래식 오크)
+       ========================================================================= */
+    :root {
+      /* [다크 모드: 모던 월넛 (Modern Nordic Walnut)] */
+      --wood-deep: #1e1916;        /* 깊은 월넛 원목 배경 */
+      --wood-surface: #27211c;     /* 사이드바 & 패널 */
+      --wood-card: #322a24;        /* 카드 및 부유 요소 */
+      --wood-border: rgba(184, 150, 118, 0.12); /* 은은한 원목 결 라인 */
+      --wood-border-hover: rgba(184, 150, 118, 0.3);
+      
+      --wood-accent: #c48a54;      /* 가죽 브라운 & 호박석 골드 */
+      --wood-accent-hover: #d99b64;
+      --wood-accent-glow: rgba(196, 138, 84, 0.2);
+
+      --text-main: #f5efe6;        /* 부드러운 양장지 백색 */
+      --text-sub: #b8aba0;         /* 온화한 베이지 그레이 */
+      --text-dim: #7d7268;         /* 차분한 브라운 그레이 */
+
+      --editor-paper: #221c18;
+      --editor-text: #eae2d7;
+
+      --font-serif: 'Noto Serif KR', Georgia, serif;
+      --font-sans: 'Pretendard', -apple-system, sans-serif;
+      --font-display: 'Cinzel', 'Noto Serif KR', serif;
+
+      --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.25);
+      --shadow-wood: 0 8px 30px rgba(16, 12, 10, 0.4);
+    }
+
+    /* [라이트 모드 ①: 앤틱 클래식 오크 (기존 오리지널)] */
+    [data-theme="oak-classic"], [data-theme="oak"] {
+      --wood-deep: #f5f0e6;        /* 아늑한 앤틱 오크 벽체 */
+      --wood-surface: #ebe3d3;     /* 오크 목재 책상 패널 */
+      --wood-card: #ffffff;
+      --wood-border: rgba(120, 85, 50, 0.12);
+      --wood-border-hover: rgba(120, 85, 50, 0.28);
+
+      --wood-accent: #8b5a2b;      /* 클래식 새들 레더 */
+      --wood-accent-hover: #70441d;
+      --wood-accent-glow: rgba(139, 90, 43, 0.15);
+
+      --text-main: #2b231d;
+      --text-sub: #695b50;
+      --text-dim: #998777;
+
+      --editor-paper: #fcfaf6;
+      --editor-text: #2d2621;
+      --shadow-soft: 0 4px 20px rgba(100, 70, 40, 0.08);
+      --shadow-wood: 0 8px 30px rgba(80, 50, 20, 0.12);
+    }
+
+    /* =========================================================================
+       [신규 옵션] 라이트 ②: 에디토리얼 페이퍼 (골디락스 3% 명도 + 고스트 태그)
+       - 원칙: 맑은 오트밀 바닥(98%) + 순백 카드(100%) + 0.08 투명도 헤어라인 + 고스트 태그
+       ========================================================================= */
+    [data-theme="paper-editorial"] {
+      --wood-deep: #faf8f5;        /* 1. 바닥: 눈이 편안한 맑은 오트밀 페이퍼 (눈부심 없는 98% 명도) */
+      --wood-surface: #f3ede4;     /* 2. 패널/사이드바: 바닥과 3% 차이나는 부드러운 목재 톤 */
+      --wood-card: #ffffff;        /* 3. 카드: 순백색 양장지 */
+      --wood-border: rgba(139, 90, 43, 0.08); /* 0.08 투명도의 극도로 얇은 헤어라인 */
+      --wood-border-hover: rgba(139, 90, 43, 0.22);
+
+      --wood-accent: #8b5a2b;      /* 4. 포인트: 클래식 가죽 브라운 */
+      --wood-accent-hover: #70441d;
+      --wood-accent-glow: rgba(139, 90, 43, 0.12);
+
+      --text-main: #2b231d;        /* 먹물 잉크 블랙 */
+      --text-sub: #63574c;         /* 고서적 브라운 그레이 */
+      --text-dim: #948577;
+
+      --editor-paper: #ffffff;
+      --editor-text: #28211b;
+      --shadow-soft: 0 2px 10px rgba(100, 70, 40, 0.04);
+      --shadow-wood: 0 6px 20px rgba(80, 50, 20, 0.07);
+    }
+
+    /* 에디토리얼 페이퍼 전용 미세 튜닝 (자연스러운 카드와 고스트 태그) */
+    [data-theme="paper-editorial"] .book-card {
+      background: #ffffff;
+      border: 1px solid rgba(139, 90, 43, 0.09);
+      box-shadow: 0 2px 8px rgba(100, 70, 40, 0.03);
+    }
+    [data-theme="paper-editorial"] .book-card:hover {
+      background: #ffffff;
+      border-color: rgba(139, 90, 43, 0.24);
+      box-shadow: 0 6px 18px rgba(100, 70, 40, 0.06);
+    }
+    [data-theme="paper-editorial"] .continue-shelf {
+      background: #ffffff;
+      border: 1px solid rgba(139, 90, 43, 0.09);
+      box-shadow: 0 2px 8px rgba(100, 70, 40, 0.03);
+    }
+    [data-theme="paper-editorial"] .status-pill {
+      background: rgba(139, 90, 43, 0.04);
+      color: #8b5a2b;
+      border: 1px solid rgba(139, 90, 43, 0.2);
+    }
+    [data-theme="paper-editorial"] .book-cover {
+      background: linear-gradient(135deg, #b0875e, #855d36);
+      color: #fff;
+    }
+    /* =========================================================================
+       [신규 옵션] 라이트 v3: 배경-카드 1:1 완전 반전 모델
+       - v2: [바닥 #faf8f5] + [카드 #ffffff]
+       - v3: [바닥 #ffffff] + [카드 #faf8f5 (v2 바닥색 그대로 1:1 교환!)]
+       ========================================================================= */
+    [data-theme="light-v3"] {
+      --wood-deep: #ffffff;        /* 1. 바닥 배경: 순백색 (#ffffff) */
+      --wood-surface: #f5efe6;     /* 2. 패널/사이드바 */
+      --wood-card: #faf8f5;        /* 3. 카드: v2의 바닥색(#faf8f5)을 그대로 1:1 반전! */
+      --wood-border: rgba(139, 90, 43, 0.08);
+      --wood-border-hover: rgba(139, 90, 43, 0.22);
+
+      --wood-accent: #8b5a2b;      /* 4. 포인트: 클래식 가죽 브라운 */
+      --wood-accent-hover: #70441d;
+      --wood-accent-glow: rgba(139, 90, 43, 0.12);
+
+      --text-main: #2b231d;        /* 먹물 잉크 블랙 */
+      --text-sub: #63574c;         /* 고서적 브라운 그레이 */
+      --text-dim: #948577;
+
+      --editor-paper: #ffffff;
+      --editor-text: #28211b;
+      --shadow-soft: 0 2px 10px rgba(100, 70, 40, 0.03);
+      --shadow-wood: 0 6px 20px rgba(80, 50, 20, 0.06);
+    }
+
+    /* 라이트 v3 전용: v2 바닥색과 동일한 카드 블록과 순백 태그 칩 */
+    [data-theme="light-v3"] .book-card {
+      background: #faf8f5;
+      border: 1px solid rgba(139, 90, 43, 0.08);
+      box-shadow: 0 1px 4px rgba(100, 70, 40, 0.02);
+    }
+    [data-theme="light-v3"] .book-card:hover {
+      background: #f3ede4;
+      border-color: rgba(139, 90, 43, 0.24);
+      transform: translateY(-2px);
+    }
+    [data-theme="light-v3"] .continue-shelf {
+      background: #faf8f5;
+      border: 1px solid rgba(139, 90, 43, 0.08);
+    }
+    /* #faf8f5 카드 위에 얹히는 순백 태그 칩 */
+    [data-theme="light-v3"] .status-pill {
+      background: #ffffff;
+      color: #7a461b;
+      border: 1px solid rgba(139, 90, 43, 0.16);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+    [data-theme="light-v3"] .book-cover {
+      background: linear-gradient(135deg, #2b221b, #191410);
+      color: #fff;
+    }
+    [data-theme="light-v3"] .continue-book-spine {
+      background: linear-gradient(135deg, #382c23, #221a15);
+      color: #dfba92;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--wood-deep);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* =========================================================================
+       상단 컨트롤 바 & 실시간 색상 튜너 패널
+       ========================================================================= */
+    .showcase-control-bar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--wood-surface);
+      border-bottom: 1px solid var(--wood-border);
+      padding: 0.75rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    }
+
+    .control-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .control-title {
+      font-family: var(--font-serif);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+
+    .control-tag {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.55rem;
+      background: var(--wood-card);
+      border: 1px solid var(--wood-border);
+      border-radius: 4px;
+      color: var(--wood-accent);
+      font-weight: 500;
+    }
+
+    .control-buttons {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .btn-segmented {
+      display: inline-flex;
+      background: var(--wood-deep);
+      border: 1px solid var(--wood-border);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .segmented-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .segmented-btn.active {
+      background: var(--wood-accent);
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px var(--wood-accent-glow);
+    }
+
+    .btn-tuner-toggle {
+      background: var(--wood-card);
+      border: 1px solid var(--wood-border);
+      color: var(--text-main);
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-tuner-toggle:hover {
+      border-color: var(--wood-accent);
+      color: var(--wood-accent);
+    }
+
+    /* 실시간 컬러 튜너 드롭다운 패널 */
+    .color-tuner-panel {
+      position: absolute;
+      top: 56px;
+      right: 2rem;
+      width: 380px;
+      background: var(--wood-surface);
+      border: 1px solid var(--wood-border-hover);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow-wood);
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+      z-index: 1001;
+      animation: slideDown 0.2s ease-out;
+    }
+
+    .color-tuner-panel.open {
+      display: flex;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tuner-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--wood-border);
+    }
+
+    .tuner-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .tuner-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .tuner-label {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tuner-label-sub {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .tuner-input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tuner-color-picker {
+      -webkit-appearance: none;
+      border: 1px solid var(--wood-border);
+      border-radius: 4px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      background: transparent;
+      padding: 0;
+    }
+
+    .tuner-color-picker::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    .tuner-color-picker::-webkit-color-swatch {
+      border: none;
+      border-radius: 3px;
+    }
+
+    .tuner-code {
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: var(--text-main);
+      background: var(--wood-card);
+      border: 1px solid var(--wood-border);
+      padding: 4px 8px;
+      border-radius: 4px;
+      width: 76px;
+      text-align: center;
+    }
+
+    .tuner-copy-box {
+      margin-top: 0.25rem;
+      background: var(--wood-deep);
+      border: 1px solid var(--wood-border);
+      border-radius: 6px;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-copy-css {
+      background: var(--wood-accent);
+      color: #fff;
+      border: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* 메인 앱 레이아웃 셸 */
+    .app-shell {
+      display: flex;
+      flex: 1;
+      min-height: calc(100vh - 58px);
+    }
+
+    /* =========================================================================
+       사이드바
+       ========================================================================= */
+    .sidebar {
+      width: 250px;
+      background: var(--wood-surface);
+      border-right: 1px solid var(--wood-border);
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1rem;
+      gap: 1.75rem;
+      transition: background-color 0.25s ease;
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0 0.5rem;
+    }
+
+    .brand-emblem {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: var(--wood-card);
+      border: 1px solid var(--wood-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--wood-accent);
+      font-family: var(--font-serif);
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .brand-name {
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .brand-sub {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-top: 1px;
+    }
+
+    .nav-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .nav-header {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.5rem 0.65rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 6px;
+      color: var(--text-sub);
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .nav-item:hover {
+      background: var(--wood-card);
+      color: var(--text-main);
+    }
+
+    .nav-item.active {
+      background: var(--wood-card);
+      color: var(--wood-accent);
+      font-weight: 600;
+      border-left: 3px solid var(--wood-accent);
+    }
+
+    .nav-icon {
+      width: 17px;
+      height: 17px;
+      opacity: 0.85;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      background: var(--wood-deep);
+      border-radius: 10px;
+      color: var(--text-dim);
+    }
+
+    .sidebar-user {
+      margin-top: auto;
+      padding: 0.75rem 0.5rem 0;
+      border-top: 1px solid var(--wood-border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--wood-card);
+      border: 1px solid var(--wood-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      color: var(--wood-accent);
+      font-family: var(--font-serif);
+    }
+
+    .user-meta-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .user-meta-role {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    /* 메인 콘텐츠 영역 */
+    .content-area {
+      flex: 1;
+      padding: 2.5rem 3.5rem;
+      overflow-y: auto;
+      background-color: var(--wood-deep);
+      transition: background-color 0.25s ease;
+    }
+
+    /* =========================================================================
+       화면 1: 내 서재 (Library View)
+       ========================================================================= */
+    .library-view {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2.25rem;
+    }
+
+    .library-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--wood-border);
+    }
+
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      font-size: 0.88rem;
+      color: var(--text-sub);
+      margin-top: 0.4rem;
+      font-weight: 400;
+    }
+
+    .action-group {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-wood {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-wood-primary {
+      background: var(--wood-accent);
+      color: #ffffff;
+      border: 1px solid transparent;
+      box-shadow: 0 2px 10px var(--wood-accent-glow);
+    }
+
+    .btn-wood-primary:hover {
+      background: var(--wood-accent-hover);
+    }
+
+    .btn-wood-outline {
+      background: var(--wood-surface);
+      color: var(--text-main);
+      border: 1px solid var(--wood-border);
+    }
+
+    .btn-wood-outline:hover {
+      border-color: var(--wood-border-hover);
+      background: var(--wood-card);
+    }
+
+    /* 지금 이어쓰기 퀵 밴드 */
+    .continue-shelf {
+      background: var(--wood-surface);
+      border-radius: 10px;
+      border: 1px solid var(--wood-border);
+      padding: 1.25rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .continue-shelf::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--wood-accent);
+    }
+
+    .continue-info {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .continue-book-spine {
+      width: 44px;
+      height: 60px;
+      background: linear-gradient(135deg, #3d2f26, #241a14);
+      border-radius: 3px 6px 6px 3px;
+      border: 1px solid var(--wood-border);
+      border-left: 3px solid var(--wood-accent);
+      box-shadow: 2px 4px 10px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-size: 0.75rem;
+      color: var(--wood-accent);
+      font-weight: 700;
+    }
+
+    [data-theme^="oak"] .continue-book-spine {
+      background: linear-gradient(135deg, #c29b75, #936b47);
+      color: #fff;
+    }
+
+    .continue-meta-label {
+      font-size: 0.72rem;
+      color: var(--wood-accent);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .continue-book-title {
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .continue-chapter-info {
+      font-size: 0.83rem;
+      color: var(--text-sub);
+      margin-top: 0.2rem;
+    }
+
+    /* 서재 선반 / 그리드 헤더 */
+    .shelf-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .shelf-tabs {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .shelf-tab-link {
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      color: var(--text-dim);
+      font-weight: 500;
+      cursor: pointer;
+      position: relative;
+      padding-bottom: 0.5rem;
+      transition: color 0.2s ease;
+    }
+
+    .shelf-tab-link.active {
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .shelf-tab-link.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--wood-accent);
+      border-radius: 2px;
+    }
+
+    .shelf-meta-stat {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    /* 책장 그리드 */
+    .book-shelf-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .book-card {
+      background: var(--wood-surface);
+      border-radius: 8px;
+      border: 1px solid var(--wood-border);
+      padding: 1.25rem;
+      display: flex;
+      gap: 1.2rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .book-card:hover {
+      background: var(--wood-card);
+      border-color: var(--wood-border-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-wood);
+    }
+
+    .book-cover {
+      width: 78px;
+      height: 110px;
+      border-radius: 3px 6px 6px 3px;
+      background: linear-gradient(135deg, #302620, #1f1814);
+      border: 1px solid var(--wood-border);
+      box-shadow: 2px 5px 15px rgba(0,0,0,0.3);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0.6rem;
+      flex-shrink: 0;
+    }
+
+    [data-theme^="oak"] .book-cover {
+      background: linear-gradient(135deg, #a67c52, #7a5430);
+      color: #fff;
+    }
+
+    .book-cover-line {
+      position: absolute;
+      left: 7px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .book-cover-title {
+      font-family: var(--font-serif);
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #ffffff;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+
+    .book-cover-tag {
+      font-size: 0.58rem;
+      letter-spacing: 0.04em;
+      color: var(--wood-accent);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .book-details {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .book-tag-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .status-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--wood-deep);
+      color: var(--wood-accent);
+      border: 1px solid var(--wood-border);
+    }
+
+    .genre-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .book-title-text {
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .book-desc-text {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      margin-top: 0.25rem;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .book-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--wood-border);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .progress-bar-thin {
+      width: 70px;
+      height: 4px;
+      background: var(--wood-deep);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--wood-accent);
+      border-radius: 2px;
+    }
+
+    /* =========================================================================
+       화면 2: 집필 스튜디오 (Studio View)
+       ========================================================================= */
+    .studio-view {
+      display: flex;
+      height: calc(100vh - 120px);
+      background: var(--wood-surface);
+      border-radius: 12px;
+      border: 1px solid var(--wood-border);
+      overflow: hidden;
+      box-shadow: var(--shadow-wood);
+    }
+
+    .studio-binder {
+      width: 260px;
+      background: var(--wood-surface);
+      border-right: 1px solid var(--wood-border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .binder-header {
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid var(--wood-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .binder-title {
+      font-family: var(--font-serif);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .binder-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .chapter-node {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .chapter-node:hover {
+      background: var(--wood-card);
+    }
+
+    .section-node {
+      padding: 0.45rem 0.75rem 0.45rem 1.8rem;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: var(--text-sub);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.15s ease;
+    }
+
+    .section-node:hover {
+      color: var(--text-main);
+      background: var(--wood-card);
+    }
+
+    .section-node.active {
+      color: var(--wood-accent);
+      background: var(--wood-card);
+      font-weight: 600;
+      border-left: 2px solid var(--wood-accent);
+    }
+
+    .studio-editor-pane {
+      flex: 1;
+      background: var(--editor-paper);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .editor-top-meta {
+      padding: 1rem 3rem;
+      border-bottom: 1px solid var(--wood-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .manuscript-container {
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 3.5rem 2rem 6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .chapter-eyebrow {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--wood-accent);
+      font-weight: 600;
+    }
+
+    .manuscript-title-input {
+      font-family: var(--font-serif);
+      font-size: 2.1rem;
+      font-weight: 700;
+      color: var(--editor-text);
+      background: transparent;
+      border: none;
+      outline: none;
+      width: 100%;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+    }
+
+    .manuscript-body {
+      font-family: var(--font-serif);
+      font-size: 1.12rem;
+      line-height: 1.95;
+      color: var(--editor-text);
+      outline: none;
+      min-height: 350px;
+      word-break: keep-all;
+    }
+
+    .manuscript-body p {
+      margin-bottom: 1.4rem;
+      text-indent: 1em;
+    }
+
+    .studio-tools-pane {
+      width: 280px;
+      background: var(--wood-surface);
+      border-left: 1px solid var(--wood-border);
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem;
+      gap: 1.5rem;
+    }
+
+    .tool-widget {
+      background: var(--wood-card);
+      border: 1px solid var(--wood-border);
+      border-radius: 8px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .widget-header {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .word-count-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .word-number {
+      font-family: var(--font-serif);
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: var(--wood-accent);
+    }
+
+    .word-unit {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .memo-textarea {
+      background: var(--wood-deep);
+      border: 1px solid var(--wood-border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      color: var(--text-main);
+      font-size: 0.82rem;
+      font-family: var(--font-sans);
+      resize: none;
+      height: 90px;
+      outline: none;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .icon {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+<body data-theme="light-v3">
+
+  <!-- =========================================================================
+       쇼케이스 컨트롤러
+       ========================================================================= -->
+  <div class="showcase-control-bar">
+    <div class="control-title-group">
+      <span class="control-title">연재서재 (Book Studio)</span>
+      <span class="control-tag">우드톤 쇼케이스 & 실시간 튜너</span>
+    </div>
+
+    <div class="control-buttons">
+      <!-- 1. 테마 모드 선택 (다크 / 라이트 v1 / 라이트 v2 / 라이트 v3) -->
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <div class="btn-segmented">
+          <button class="segmented-btn" id="btn-theme-walnut" onclick="setTheme('walnut', this)">
+            <span>🌙 다크</span>
+          </button>
+          <button class="segmented-btn" id="btn-theme-oak-classic" onclick="setTheme('oak-classic', this)">
+            <span>📜 라이트 v1</span>
+          </button>
+          <button class="segmented-btn" id="btn-theme-paper-editorial" onclick="setTheme('paper-editorial', this)">
+            <span>✨ 라이트 v2</span>
+          </button>
+          <button class="segmented-btn active" id="btn-theme-light-v3" onclick="setTheme('light-v3', this)">
+            <span>🔄 라이트 v3 (반전)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. 화면 뷰 선택 -->
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <div class="btn-segmented">
+          <button class="segmented-btn active" onclick="setViewMode('library', this)">내 서재 (Library)</button>
+          <button class="segmented-btn" onclick="setViewMode('studio', this)">집필실 (Studio)</button>
+        </div>
+      </div>
+
+      <!-- 3. 실시간 색상 튜너 열기 버튼 -->
+      <button class="btn-tuner-toggle" onclick="toggleTuner()">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>색상 직접 조절 튜너</span>
+      </button>
+
+      <!-- 4. 서재 마감 디테일 전용 샘플 열기 링크 -->
+      <a href="sample-library.html" style="text-decoration: none;">
+        <button class="btn-tuner-toggle" style="background: var(--wood-accent); color: #ffffff; border-color: transparent;">
+          <span>🔍 서재 마감 샘플 열기</span>
+        </button>
+      </a>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       실시간 컬러 튜너 드롭다운 창
+       ========================================================================= -->
+  <div class="color-tuner-panel" id="colorTunerPanel">
+    <div class="tuner-header">
+      <span class="tuner-title">🎨 실시간 색상 미세 튜닝</span>
+      <span style="font-size: 0.72rem; color: var(--wood-accent); font-weight: 600;" id="currentThemeLabel">다크(월넛) 튜닝 중</span>
+    </div>
+
+    <!-- 1. 배경 바닥색 -->
+    <div class="tuner-row">
+      <div class="tuner-label">
+        <span>서재 바닥 배경색</span>
+        <span class="tuner-label-sub">--wood-deep</span>
+      </div>
+      <div class="tuner-input-group">
+        <input type="color" class="tuner-color-picker" id="picker-deep" oninput="updateColor('--wood-deep', this.value, 'code-deep')">
+        <span class="tuner-code" id="code-deep">#1e1916</span>
+      </div>
+    </div>
+
+    <!-- 2. 패널/사이드바 색 -->
+    <div class="tuner-row">
+      <div class="tuner-label">
+        <span>패널 / 사이드바</span>
+        <span class="tuner-label-sub">--wood-surface</span>
+      </div>
+      <div class="tuner-input-group">
+        <input type="color" class="tuner-color-picker" id="picker-surface" oninput="updateColor('--wood-surface', this.value, 'code-surface')">
+        <span class="tuner-code" id="code-surface">#27211c</span>
+      </div>
+    </div>
+
+    <!-- 3. 카드/양장본 시트 색 -->
+    <div class="tuner-row">
+      <div class="tuner-label">
+        <span>도서 카드 / 시트</span>
+        <span class="tuner-label-sub">--wood-card</span>
+      </div>
+      <div class="tuner-input-group">
+        <input type="color" class="tuner-color-picker" id="picker-card" oninput="updateColor('--wood-card', this.value, 'code-card')">
+        <span class="tuner-code" id="code-card">#322a24</span>
+      </div>
+    </div>
+
+    <!-- 4. 포인트 색상 -->
+    <div class="tuner-row">
+      <div class="tuner-label">
+        <span>가죽 / 황동 포인트</span>
+        <span class="tuner-label-sub">--wood-accent</span>
+      </div>
+      <div class="tuner-input-group">
+        <input type="color" class="tuner-color-picker" id="picker-accent" oninput="updateColor('--wood-accent', this.value, 'code-accent')">
+        <span class="tuner-code" id="code-accent">#c48a54</span>
+      </div>
+    </div>
+
+    <!-- CSS 복사 박스 -->
+    <div class="tuner-copy-box">
+      <span id="copyResultText">현재 색상을 마음에 들게 맞춘 후 복사하세요</span>
+      <button class="btn-copy-css" onclick="copyCurrentTokens()">CSS 복사</button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       메인 애플리케이션 셸
+       ========================================================================= -->
+  <div class="app-shell">
+    
+    <!-- 1. 사이드바 -->
+    <aside class="sidebar">
+      <div class="brand-mark">
+        <div class="brand-emblem">書</div>
+        <div>
+          <div class="brand-name">연재서재</div>
+          <div class="brand-sub">Atelier & Library</div>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-header">My Space</div>
+        <div class="nav-item active" id="nav-lib" onclick="setViewMode('library')">
+          <svg class="icon nav-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span>내 서재</span>
+          <span class="nav-badge">4</span>
+        </div>
+        <div class="nav-item">
+          <svg class="icon nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <span>집필 리포트</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-header">Creation</div>
+        <div class="nav-item" id="nav-studio" onclick="setViewMode('studio')">
+          <svg class="icon nav-icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          <span>집필 스튜디오</span>
+        </div>
+        <div class="nav-item">
+          <svg class="icon nav-icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <span>창작실 & 보관함</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-header">Archive</div>
+        <div class="nav-item">
+          <svg class="icon nav-icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+          <span>연재 서가</span>
+        </div>
+        <div class="nav-item">
+          <svg class="icon nav-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>완성 서가</span>
+        </div>
+      </div>
+
+      <div class="sidebar-user">
+        <div class="user-avatar">김</div>
+        <div>
+          <div class="user-meta-name">김서경 작가</div>
+          <div class="user-meta-role">Personal Atelier</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 2. 메인 콘텐츠 영역 -->
+    <main class="content-area">
+
+      <!-- =====================================================================
+           화면 1: 내 서재 (Library View)
+           ===================================================================== -->
+      <div class="library-view" id="view-library">
+        <div class="library-top-bar">
+          <div>
+            <h1 class="page-title">내 서재</h1>
+            <p class="page-subtitle">차분한 원목 서재에서 어제의 사유와 문장을 이어갑니다.</p>
+          </div>
+          <div class="action-group">
+            <button class="btn-wood btn-wood-outline">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              <span>원고 가져오기</span>
+            </button>
+            <button class="btn-wood btn-wood-primary">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>새 도서 기획</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 지금 이어쓰기 퀵 밴드 -->
+        <div class="continue-shelf">
+          <div class="continue-info">
+            <div class="continue-book-spine">시선</div>
+            <div>
+              <div class="continue-meta-label">최근 작업 원고 · 이어쓰기</div>
+              <h2 class="continue-book-title">《심야의 문장과 고요한 방》</h2>
+              <p class="continue-chapter-info">제 3장. 낡은 원목 책상과 잉크 냄새 · 3,420자 집필 중</p>
+            </div>
+          </div>
+          <button class="btn-wood btn-wood-primary" onclick="setViewMode('studio')">
+            <span>스튜디오 열기</span>
+            <svg class="icon" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </button>
+        </div>
+
+        <!-- 서재 도서 목록 선반 -->
+        <div>
+          <div class="shelf-nav">
+            <div class="shelf-tabs">
+              <div class="shelf-tab-link active">집필 중인 도서 (4)</div>
+              <div class="shelf-tab-link">완결 보관함 (2)</div>
+              <div class="shelf-tab-link">최근 읽은 책</div>
+            </div>
+            <span class="shelf-meta-stat">전체 원고 누적 42,800자</span>
+          </div>
+
+          <div class="book-shelf-grid">
+            <div class="book-card" onclick="setViewMode('studio')">
+              <div class="book-cover">
+                <div class="book-cover-line"></div>
+                <div class="book-cover-tag">에세이</div>
+                <div class="book-cover-title">심야의 문장과 고요한 방</div>
+              </div>
+              <div class="book-details">
+                <div>
+                  <div class="book-tag-row">
+                    <span class="status-pill">집필중</span>
+                    <span class="genre-label">한국 에세이</span>
+                  </div>
+                  <h3 class="book-title-text">심야의 문장과 고요한 방</h3>
+                  <p class="book-desc-text">밤이 깊어질수록 맑아지는 생각들, 낡은 오크 책상 앞에서 길어 올린 기록.</p>
+                </div>
+                <div class="book-card-footer">
+                  <span>총 7개 챕터</span>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="progress-bar-thin"><div class="progress-bar-fill" style="width: 65%;"></div></div>
+                    <span>65%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="book-card">
+              <div class="book-cover" style="background: linear-gradient(135deg, #2b3328, #182015);">
+                <div class="book-cover-line"></div>
+                <div class="book-cover-tag">소설</div>
+                <div class="book-cover-title">오후 세 시의 시계탑</div>
+              </div>
+              <div class="book-details">
+                <div>
+                  <div class="book-tag-row">
+                    <span class="status-pill">초고 구상</span>
+                    <span class="genre-label">미스터리 / 드라마</span>
+                  </div>
+                  <h3 class="book-title-text">오후 세 시의 시계탑</h3>
+                  <p class="book-desc-text">시간이 멈춘 광장과 그곳에 남겨진 일곱 사람의 오래된 편지.</p>
+                </div>
+                <div class="book-card-footer">
+                  <span>총 12개 챕터</span>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="progress-bar-thin"><div class="progress-bar-fill" style="width: 25%;"></div></div>
+                    <span>25%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="book-card">
+              <div class="book-cover" style="background: linear-gradient(135deg, #372828, #221717);">
+                <div class="book-cover-line"></div>
+                <div class="book-cover-tag">인문</div>
+                <div class="book-cover-title">서가의 숲을 걷다</div>
+              </div>
+              <div class="book-details">
+                <div>
+                  <div class="book-tag-row">
+                    <span class="status-pill">퇴고 완료</span>
+                    <span class="genre-label">인문학 교양</span>
+                  </div>
+                  <h3 class="book-title-text">서가의 숲을 걷다</h3>
+                  <p class="book-desc-text">책과 인간의 역사, 종이 위에 남겨진 불멸의 흔적들에 관한 고찰.</p>
+                </div>
+                <div class="book-card-footer">
+                  <span>총 5개 챕터</span>
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div class="progress-bar-thin"><div class="progress-bar-fill" style="width: 100%;"></div></div>
+                    <span>완성</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =====================================================================
+           화면 2: 집필 스튜디오 (Studio View)
+           ===================================================================== -->
+      <div class="studio-view hidden" id="view-studio">
+        <div class="studio-binder">
+          <div class="binder-header">
+            <span class="binder-title">목차 및 구조</span>
+            <button class="btn-wood btn-wood-outline" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>챕터 추가</span>
+            </button>
+          </div>
+          <div class="binder-list">
+            <div class="chapter-node">
+              <span>제 1장. 시작의 계절</span>
+              <span style="font-size: 0.7rem; color: var(--text-dim);">완료</span>
+            </div>
+            <div class="section-node">1.1 첫 번째 만년필</div>
+            <div class="section-node">1.2 종이가 머금은 온기</div>
+
+            <div class="chapter-node" style="margin-top: 0.5rem;">
+              <span>제 2장. 밤의 서재</span>
+              <span style="font-size: 0.7rem; color: var(--text-dim);">완료</span>
+            </div>
+            <div class="section-node">2.1 고요함이 가르쳐준 것</div>
+
+            <div class="chapter-node" style="margin-top: 0.5rem; color: var(--wood-accent);">
+              <span>제 3장. 낡은 원목 책상</span>
+              <span style="font-size: 0.7rem; color: var(--wood-accent);">집필중</span>
+            </div>
+            <div class="section-node active">3.1 잉크 냄새와 손때</div>
+            <div class="section-node">3.2 서랍 속에 묻어둔 문장</div>
+          </div>
+        </div>
+
+        <div class="studio-editor-pane">
+          <div class="editor-top-meta">
+            <span>제 3장 &gt; 3.1 잉크 냄새와 손때</span>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+              <span>마지막 저장: 방금 전</span>
+              <button class="btn-wood btn-wood-outline" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;">
+                버전 백업
+              </button>
+            </div>
+          </div>
+
+          <div class="manuscript-container">
+            <div class="chapter-eyebrow">Chapter 03 · Section 01</div>
+            <input type="text" class="manuscript-title-input" value="3.1 잉크 냄새와 손때" />
+            
+            <div class="manuscript-body" contenteditable="true">
+              <p>밤 열한 시가 넘으면 집안의 모든 기계 소음이 잦아들고, 오직 서재의 오크 책상만이 고요한 침묵을 지킨다. 손바닥을 대면 낮 동안 머금었던 미지근한 온기가 미세하게 전해져 온다. 나무는 살아있던 시절의 기억을 결 속에 품고 있다가 사람이 손을 얹을 때마다 조금씩 돌려주는 것만 같다.</p>
+              
+              <p>글을 쓰는 일은 어쩌면 이 단단한 나무 표면 위에 보이지 않는 홈을 파는 일인지도 모른다. 빠르게 타이핑하고 지워버리는 디지털 화면 속에서도, 서재의 목재 톤과 차분한 조명이 받쳐줄 때 비로소 문장은 조급함을 버리고 무게를 갖기 시작한다.</p>
+              
+              <p>서랍을 열면 오래된 펠리칸 잉크병이 있고, 뚜껑 주변에는 마른 잉크 찌꺼기가 검푸른 빛으로 굳어 있다. 그 냄새를 맡을 때마다 나는 비로소 안전한 방에 도착했음을 실감한다.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="studio-tools-pane">
+          <div class="tool-widget">
+            <div class="widget-header">
+              <span>원고 분량</span>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">오늘 목표 2,000자</span>
+            </div>
+            <div class="word-count-display">
+              <span class="word-number">1,420</span>
+              <span class="word-unit">자 (공백 포함)</span>
+            </div>
+            <div class="progress-bar-thin" style="width: 100%;">
+              <div class="progress-bar-fill" style="width: 71%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim);">
+              <span>200자 원고지: 7.1매</span>
+              <span>달성률 71%</span>
+            </div>
+          </div>
+
+          <div class="tool-widget">
+            <div class="widget-header">
+              <span>챕터 메모</span>
+              <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            </div>
+            <textarea class="memo-textarea" placeholder="이 챕터에서 반드시 다룰 모티프:
+- 만년필 촉이 종이를 긁는 감촉
+- 어릴 적 할아버지의 서재 분위기"></textarea>
+          </div>
+
+          <div class="tool-widget">
+            <div class="widget-header">
+              <span>문체 조언</span>
+              <span style="font-size: 0.72rem; color: var(--wood-accent);">정밀 교정</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-sub); line-height: 1.45;">
+              현재 문단은 서정적 묘사가 탁월합니다. 2문단의 '조급함을 버리고'를 구체적인 감각 묘사로 치환해보는 것은 어떨까요?
+            </p>
+            <button class="btn-wood btn-wood-outline" style="padding: 0.4rem; font-size: 0.78rem; justify-content: center;">
+              대체 표현 제안 받기
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    // 현재 활성화된 테마 ('walnut' | 'oak-classic' | 'paper-editorial' | 'light-v3')
+    let currentTheme = 'light-v3';
+
+    // 테마 전환 함수
+    function setTheme(themeName, btn) {
+      currentTheme = themeName;
+      // 튜너에서 조작했던 인라인 스타일 클리어하여 테마 CSS가 온전히 적용되도록 함
+      document.documentElement.removeAttribute('style');
+
+      if (themeName === 'walnut') {
+        document.body.removeAttribute('data-theme');
+      } else {
+        document.body.setAttribute('data-theme', themeName);
+      }
+      
+      const group = btn.parentElement;
+      group.querySelectorAll('.segmented-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      syncTunerPickersWithCurrentTheme();
+    }
+
+    // 뷰 전환 함수
+    function setViewMode(viewName, btn) {
+      const libEl = document.getElementById('view-library');
+      const studioEl = document.getElementById('view-studio');
+      const navLib = document.getElementById('nav-lib');
+      const navStudio = document.getElementById('nav-studio');
+
+      if (viewName === 'library') {
+        libEl.classList.remove('hidden');
+        studioEl.classList.add('hidden');
+        if (navLib) {
+          navLib.classList.add('active');
+          navStudio.classList.remove('active');
+        }
+      } else {
+        libEl.classList.add('hidden');
+        studioEl.classList.remove('hidden');
+        if (navStudio) {
+          navStudio.classList.add('active');
+          navLib.classList.remove('active');
+        }
+      }
+
+      if (btn) {
+        const group = btn.parentElement;
+        group.querySelectorAll('.segmented-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+    }
+
+    // 튜너 패널 토글
+    function toggleTuner() {
+      const panel = document.getElementById('colorTunerPanel');
+      panel.classList.toggle('open');
+      if (panel.classList.contains('open')) {
+        syncTunerPickersWithCurrentTheme();
+      }
+    }
+
+    // 실시간 색상 변경 함수
+    function updateColor(cssVar, hexValue, codeElemId) {
+      document.documentElement.style.setProperty(cssVar, hexValue);
+      document.getElementById(codeElemId).innerText = hexValue.toLowerCase();
+      document.getElementById('copyResultText').innerText = `${cssVar} 변경됨`;
+    }
+
+    // 튜너 피커 값 동기화
+    function syncTunerPickersWithCurrentTheme() {
+      const style = getComputedStyle(document.body);
+      let defDeep = '#1e1916', defSurface = '#27211c', defCard = '#322a24', defAccent = '#c48a54', label = '🌙 다크 튜닝';
+      if (currentTheme === 'light-v3') {
+        defDeep = '#ffffff'; defSurface = '#f5efe6'; defCard = '#faf8f5'; defAccent = '#8b5a2b'; label = '🔄 라이트 v3 (반전) 튜닝';
+      } else if (currentTheme === 'paper-editorial') {
+        defDeep = '#faf8f5'; defSurface = '#f3ede4'; defCard = '#ffffff'; defAccent = '#8b5a2b'; label = '✨ 라이트 v2 튜닝';
+      } else if (currentTheme === 'oak-classic') {
+        defDeep = '#f5f0e6'; defSurface = '#ebe3d3'; defCard = '#ffffff'; defAccent = '#8b5a2b'; label = '📜 라이트 v1 튜닝';
+      }
+
+      const deep = rgbToHex(style.getPropertyValue('--wood-deep').trim()) || defDeep;
+      const surface = rgbToHex(style.getPropertyValue('--wood-surface').trim()) || defSurface;
+      const card = rgbToHex(style.getPropertyValue('--wood-card').trim()) || defCard;
+      const accent = rgbToHex(style.getPropertyValue('--wood-accent').trim()) || defAccent;
+
+      document.getElementById('picker-deep').value = deep;
+      document.getElementById('code-deep').innerText = deep;
+
+      document.getElementById('picker-surface').value = surface;
+      document.getElementById('code-surface').innerText = surface;
+
+      document.getElementById('picker-card').value = card;
+      document.getElementById('code-card').innerText = card;
+
+      document.getElementById('picker-accent').value = accent;
+      document.getElementById('code-accent').innerText = accent;
+
+      document.getElementById('currentThemeLabel').innerText = label;
+    }
+
+    function rgbToHex(rgb) {
+      if (!rgb || rgb.startsWith('#')) return rgb;
+      const rgbValues = rgb.match(/\d+/g);
+      if (!rgbValues || rgbValues.length < 3) return rgb;
+      return '#' + rgbValues.slice(0, 3).map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+    }
+
+    function copyCurrentTokens() {
+      const deep = document.getElementById('code-deep').innerText;
+      const surface = document.getElementById('code-surface').innerText;
+      const card = document.getElementById('code-card').innerText;
+      const accent = document.getElementById('code-accent').innerText;
+
+      const cssText = `/* ${currentTheme === 'oak' ? '라이트(오크)' : '다크(월넛)'} 튜닝 색상 */\n--wood-deep: ${deep};\n--wood-surface: ${surface};\n--wood-card: ${card};\n--wood-accent: ${accent};`;
+      navigator.clipboard.writeText(cssText).then(() => {
+        document.getElementById('copyResultText').innerText = '클립보드에 복사 완료!';
+        setTimeout(() => {
+          document.getElementById('copyResultText').innerText = '현재 색상을 마음에 들게 맞춘 후 복사하세요';
+        }, 2500);
+      });
+    }
+
+    // 초기 동기화
+    window.addEventListener('DOMContentLoaded', () => {
+      syncTunerPickersWithCurrentTheme();
+    });
+  </script>
+</body>
+</html>

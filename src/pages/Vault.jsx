@@ -728,7 +728,7 @@ export default function Vault() {
               )}
             </div>
             <p className="canvas-desc">
-              아이디어 낙서부터 정식 출간 기획, 글감 수집, 플롯 뼈대, 스튜디오 방식 드래그 목차 조립까지 완성하는 창작 공방입니다.
+              아이디어 정리부터 기획서, 자료 수집, 플롯 구성까지 집필 준비를 진행합니다.
             </p>
           </div>
 
@@ -1220,7 +1220,7 @@ export default function Vault() {
                       disabled={draftChapters.length === 0}
                     >
                       <Send size={16} />
-                      <span>🚀 스튜디오 본문 목차로 최종 반영</span>
+                      <span>스튜디오 목차로 반영</span>
                     </button>
                   </div>
 
