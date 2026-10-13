@@ -913,6 +913,20 @@ export const useStore = create((set, get) => {
       }
     },
 
+    updateSectionTitle: async (chapterId, sectionId, title) => {
+      const { activeBook } = get();
+      if (!activeBook) return;
+      const trimmed = title.trim();
+      if (!trimmed) return;
+      try {
+        const updatedBook = await bookService.updateSection(activeBook.id, chapterId, sectionId, { title: trimmed });
+        set({ activeBook: updatedBook });
+        get().loadBooks();
+      } catch (err) {
+        get().showToast(`소목차명 수정 실패: ${err.message}`, 'error');
+      }
+    },
+
     deleteSection: async (chapterId, sectionId) => {
       const { activeBook } = get();
       if (!activeBook) return;

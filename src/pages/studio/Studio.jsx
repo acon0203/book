@@ -33,7 +33,7 @@ export default function Studio() {
     activeBook, activeChapterId, activeSectionId,
     setActiveChapterId, setActiveSectionId,
     updateActiveSectionContent, updateActiveSectionTitle, saveActiveSection,
-    addChapter, updateChapterTitle, deleteChapter, addSection, deleteSection,
+    addChapter, updateChapterTitle, deleteChapter, addSection, updateSectionTitle, deleteSection,
     moveChapter, moveSection, reorderChapters, reorderSections, undoChapterOrder, openBook, loadBooks,
     setChapterDeadline, toggleChapterPublish, toggleSectionPublish, toggleChapterPublishAll, toggleBookPublishAll,
     updateBatchPublishSections,
@@ -166,14 +166,15 @@ export default function Studio() {
     today.setHours(0, 0, 0, 0);
     const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return { text: '오늘 마감 D-Day 🔥', status: 'urgent' };
+    if (diffDays === 0) return { text: '오늘 마감 D-Day', status: 'urgent' };
     if (diffDays > 0) return { text: `D-${diffDays}`, status: diffDays <= 3 ? 'urgent' : 'normal' };
-    return { text: `D+${Math.abs(diffDays)} 초과 ⚠️`, status: 'urgent' };
+    return { text: `D+${Math.abs(diffDays)} 초과`, status: 'urgent' };
   };
 
   // 현재 활성 챕터/섹션
   const currentChapterIndex = activeBook?.chapters?.findIndex(c => c.id === activeChapterId) ?? -1;
   const currentChapter = currentChapterIndex >= 0 ? activeBook.chapters[currentChapterIndex] : null;
+  const currentSectionIndex = currentChapter?.sections?.findIndex(s => s.id === activeSectionId) ?? -1;
   const currentSection = currentChapter?.sections?.find(s => s.id === activeSectionId);
 
   // 에디터 로컬 상태
@@ -186,6 +187,38 @@ export default function Studio() {
   // 목차 챕터 인라인 더블클릭 수정 상태
   const [editingChapterId, setEditingChapterId] = useState(null);
   const [editingChapterTitle, setEditingChapterTitle] = useState('');
+
+  // 목차 소제목 인라인 더블클릭 수정 상태
+  const [editingSectionId, setEditingSectionId] = useState(null);
+  const [editingSectionTitle, setEditingSectionTitle] = useState('');
+
+  // 브레드크럼 소제목 인라인 더블클릭 수정 상태
+  const [isEditingBreadcrumbTitle, setIsEditingBreadcrumbTitle] = useState(false);
+  const [editingBreadcrumbValue, setEditingBreadcrumbValue] = useState('');
+
+  // 소제목 이름 변경 확정 핸들러
+  const handleCommitSectionRename = (chapterId, sectionId, newTitle) => {
+    const trimmed = cleanTitle(newTitle?.trim() || '');
+    if (trimmed) {
+      updateSectionTitle(chapterId, sectionId, trimmed);
+      if (sectionId === activeSectionId) {
+        setLocalTitle(trimmed);
+        updateActiveSectionTitle(trimmed);
+      }
+    }
+    setEditingSectionId(null);
+  };
+
+  // 브레드크럼 소제목 이름 변경 확정 핸들러
+  const handleCommitBreadcrumbRename = () => {
+    const trimmed = cleanTitle(editingBreadcrumbValue?.trim() || '');
+    if (trimmed && currentChapter && currentSection) {
+      updateSectionTitle(currentChapter.id, currentSection.id, trimmed);
+      setLocalTitle(trimmed);
+      updateActiveSectionTitle(trimmed);
+    }
+    setIsEditingBreadcrumbTitle(false);
+  };
 
   // 에디터 듀얼 모드 ('doc': 본문 모드 | 'block': 문단 블록 모드)
   const [editorMode, setEditorMode] = useState('doc');
@@ -240,6 +273,7 @@ export default function Studio() {
 
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const saveMenuRef = useRef(null);
+  const dateInputRef = useRef(null);
 
   // 저장 드롭다운 외부 클릭 감지
   useEffect(() => {
@@ -935,560 +969,523 @@ export default function Studio() {
     setIsSaving(false);
   };
 
-  // 도서 완결/연재중 전환 확인 팝업 (openConfirm 기반 재확인)
+  // 도서 완결/연재중 드롭다운 및 토글 핸들러
+  const handleStatusChange = async (e) => {
+    const val = e.target.value;
+    if (!activeBook) return;
+    const isCompleted = val === 'completed';
+    if (isCompleted && !activeBook.isCompleted) {
+      const ok = await openConfirm({
+        title: '도서 완결(완성작) 등록',
+        message: `${activeBook.title} 도서의 집필을 마치고 [완성 작품]으로 등록하시겠습니까?\n\n• 독자 공간의 '완성 서가'에 완결 도서로 전시됩니다.\n• 언제든 다시 연재중으로 되돌릴 수 있습니다.`,
+        confirmText: '완결 등록'
+      });
+      if (ok) toggleBookCompleted(activeBook.id);
+    } else if (!isCompleted && activeBook.isCompleted) {
+      const ok = await openConfirm({
+        title: '연재중으로 전환',
+        message: `${activeBook.title} 도서를 다시 [연재중] 상태로 전환하시겠습니까?\n\n• 완성 서가에서 연재 공간으로 변경됩니다.`,
+        confirmText: '연재중 전환'
+      });
+      if (ok) toggleBookCompleted(activeBook.id);
+    }
+  };
+
   const handleToggleComplete = async () => {
     if (!activeBook) return;
     if (!activeBook.isCompleted) {
       const ok = await openConfirm({
         title: '도서 완결(완성작) 등록',
-        message: `《${activeBook.title}》 도서의 집필을 마치고 [완성 작품]으로 등록하시겠습니까?\n\n• 독자 공간의 '완성 서가'에 완결 도서로 전시됩니다.\n• 언제든 다시 연재중으로 되돌릴 수 있습니다.`,
-        confirmText: '완결 등록 🏆'
+        message: `${activeBook.title} 도서의 집필을 마치고 [완성 작품]으로 등록하시겠습니까?\n\n• 독자 공간의 '완성 서가'에 완결 도서로 전시됩니다.\n• 언제든 다시 연재중으로 되돌릴 수 있습니다.`,
+        confirmText: '완결 등록'
       });
-      if (!ok) return;
+      if (ok) toggleBookCompleted(activeBook.id);
     } else {
       const ok = await openConfirm({
         title: '연재중으로 전환',
-        message: `《${activeBook.title}》 도서를 다시 [연재중] 상태로 전환하시겠습니까?\n\n• 완성 서가에서 연재 공간으로 변경됩니다.`,
-        confirmText: '연재중 전환 ✍️'
+        message: `${activeBook.title} 도서를 다시 [연재중] 상태로 전환하시겠습니까?\n\n• 완성 서가에서 연재 공간으로 변경됩니다.`,
+        confirmText: '연재중 전환'
       });
-      if (!ok) return;
+      if (ok) toggleBookCompleted(activeBook.id);
     }
-    toggleBookCompleted(activeBook.id);
   };
 
   return (
     <div className="studio-container">
-      {/* 1열: 목차 패널 */}
-      <aside className="toc-panel">
-        <div className="toc-header">
-          {/* 1행: 상단 유틸리티 바 (좌: 내 서재로, 우: 저장 드롭다운 & 버전 히스토리) */}
-          <div className="toc-top-bar">
-            <button className="back-btn" onClick={() => setView('library')}>
-              <ArrowLeft size={14} />
-              <span>내 서재로</span>
-            </button>
-            <div className="toc-header-icon-group">
-              {/* 도서 기본 정보 수정 (연필 아이콘) - 저장 왼쪽 */}
-              <button
-                type="button"
-                className="btn-toc-action-icon"
-                onClick={() => setIsBookInfoModalOpen(true)}
-                title="도서 정보 수정 (제목, 필명, 장르, 표지 등)"
-              >
-                <Edit2 size={14} />
-              </button>
+      {/* 🌟 전역 최상단 탑바: < 내 서재로 | 도서명 (좌측) | 연재중/완결 드롭다운 | ✏️ 💾 🕒 | 📅 마감 D-Day (우측 끝) */}
+      <header className="studio-top-bar">
+        <div className="top-bar-left">
+          <button className="preview-back-btn" onClick={() => setView('library')}>
+            <ArrowLeft size={13} />
+            <span>내 서재로</span>
+          </button>
 
-              {/* 책 전체 저장 드롭다운 (전체 저장 / 새 버전으로 저장) */}
-              <div className="save-dropdown-wrapper" ref={saveMenuRef}>
-                <button
-                  type="button"
-                  className={`btn-toc-action-icon ${isSaveMenuOpen ? 'active' : ''}`}
-                  onClick={() => setIsSaveMenuOpen(prev => !prev)}
-                  title="책 전체 저장 및 새 버전 생성"
-                  disabled={isSaving}
-                >
-                  <Save size={14} />
-                </button>
-                {isSaveMenuOpen && (
-                  <div className="save-dropdown-menu">
-                    <button
-                      type="button"
-                      className="save-dropdown-item"
-                      onClick={async () => {
-                        setIsSaveMenuOpen(false);
-                        await handleSave();
-                      }}
-                    >
-                      <Save size={14} />
-                      <span>책 전체 저장</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="save-dropdown-item"
-                      onClick={triggerCreateVersionPrompt}
-                    >
-                      <History size={14} />
-                      <span>새 버전으로 저장</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+          <div className="top-divider"></div>
 
-              <button
-                type="button"
-                className="btn-toc-action-icon"
-                onClick={() => setIsVersionModalOpen(true)}
-                title="버전 관리 (히스토리)"
-              >
-                <History size={14} />
-              </button>
-            </div>
+          <div
+            className="top-book-title-wrap"
+            onClick={() => setIsBookInfoModalOpen(true)}
+            title="도서 기본 정보 수정 (클릭하여 수정)"
+          >
+            <span className="top-book-title">{activeBook?.title}</span>
+          </div>
+        </div>
+
+        <div className="top-bar-right">
+          <div className="top-status-dropdown-wrap">
+            <select
+              className="top-status-select"
+              value={activeBook?.isCompleted ? 'completed' : 'ongoing'}
+              onChange={handleStatusChange}
+              title="연재 상태 변경"
+            >
+              <option value="ongoing">연재중</option>
+              <option value="completed">완결</option>
+            </select>
           </div>
 
-          {/* 2행: 도서 프로필 바 (좌: 책 제목 및 수정 연필, 우: 연재중/완결 확인 팝업 토글 뱃지) */}
-          <div className="toc-book-title-row">
-            <div 
-              className="toc-book-title-wrapper"
-              onClick={() => setIsBookInfoModalOpen(true)}
-              title="클릭하여 도서 기본 정보 수정"
-            >
-              <span className="toc-book-title">{activeBook.title}</span>
-              <Edit2 size={12} className="toc-title-edit-icon" />
-            </div>
+          <div className="top-icon-btn-group">
             <button
               type="button"
-              className={`btn-book-status-badge ${activeBook.isCompleted ? 'completed' : 'ongoing'}`}
-              onClick={handleToggleComplete}
-              title={activeBook.isCompleted ? '클릭 시 연재중으로 전환' : '클릭 시 완결(완성작)로 등록'}
+              className="top-icon-btn"
+              onClick={() => setIsBookInfoModalOpen(true)}
+              title="도서 기본 정보 수정 (제목, 필명, 장르, 표지 등)"
             >
-              {activeBook.isCompleted ? '🏆 완결' : '✍️ 연재중'}
+              <Edit2 size={13} />
+            </button>
+            <button
+              type="button"
+              className="top-icon-btn"
+              onClick={handleSave}
+              disabled={isSaving}
+              title="책 전체 저장"
+            >
+              <Save size={13} />
+            </button>
+            <button
+              type="button"
+              className="top-icon-btn"
+              onClick={() => setIsVersionModalOpen(true)}
+              title="버전 관리 (히스토리)"
+            >
+              <History size={13} />
             </button>
           </div>
-          <div className="toc-actions">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', width: '100%' }}>
-              <button className="btn btn-secondary" onClick={async () => {
-                const t = await openPrompt({
-                  title: '새 챕터 추가',
-                  placeholder: '추가할 챕터명을 입력하세요 (예: 1장. 시작의 순간)'
-                });
-                if (t?.trim()) addChapter(cleanTitle(t.trim()));
-              }}>
-                <Plus size={13} />
-                <span>챕터 추가</span>
-              </button>
-              <button className="btn btn-secondary" onClick={() => setIsOutlineModalOpen(true)}>
-                <Sparkles size={13} />
+
+          <div className="top-deadline-group">
+            <button
+              type="button"
+              className={`top-deadline-badge ${currentChapter?.deadline ? 'active' : ''}`}
+              onClick={() => {
+                if (!currentChapter) {
+                  showToast('마감일을 설정할 챕터를 먼저 선택해주세요.', 'info');
+                  return;
+                }
+                if (dateInputRef.current) {
+                  if (typeof dateInputRef.current.showPicker === 'function') {
+                    dateInputRef.current.showPicker();
+                  } else {
+                    dateInputRef.current.focus();
+                  }
+                }
+              }}
+              title={currentChapter?.deadline ? `마감 목표일: ${currentChapter.deadline} (클릭하여 변경)` : '챕터 마감 목표일 설정 (클릭하여 달력 열기)'}
+            >
+              <Calendar size={13} />
+              <span>{calculateDDay(currentChapter?.deadline).text}</span>
+            </button>
+            <input
+              ref={dateInputRef}
+              type="date"
+              className="top-deadline-hidden-input"
+              value={currentChapter?.deadline || ''}
+              onChange={(e) => {
+                if (currentChapter) {
+                  setChapterDeadline(currentChapter.id, e.target.value);
+                }
+              }}
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* 🌟 스튜디오 메인 3열 바디 (좌: 목차, 중: 에디터, 우: AI 어시스턴트) */}
+      {/* 🌟 스튜디오 메인 바디 (패딩과 갭으로 좌우/상하 띄워짐) */}
+      <div className="studio-main-body">
+        {/* 🌟 좌측 대형 통합 카드 윈도우 (목차 컬럼 + 에디터 캔버스 컬럼 일체화) */}
+        <div className="v4-main-window">
+          {/* [내부 좌측: 목차 컬럼] */}
+          <aside className="v4-toc-col">
+            <div className="v4-toc-header">
+              <span className="v4-toc-header-title">목차 및 구조</span>
+              <button
+                type="button"
+                className="v4-btn-outline-plan"
+                onClick={() => setIsOutlineModalOpen(true)}
+                title="AI 목차 기획 마법사"
+              >
                 <span>목차 기획</span>
               </button>
             </div>
 
-            {/* AI 총괄 편집장(Editor-in-Chief) 전역 에이전트 호출 배너 */}
-            <button
-              type="button"
-              className="btn-editor-chief-banner"
-              onClick={() => setIsChiefModalOpen(true)}
-              title="도서 총괄 코칭 및 목차 지능형 재구성/진단"
-            >
-              <div className="chief-banner-icon">🏛️</div>
-              <div className="chief-banner-text">
-                <strong>AI 총괄 편집장</strong>
-                <span>목차 진단 · 병합 · 코칭</span>
-              </div>
-              <span className="chief-badge-pill">Agent</span>
-            </button>
+            <div className="v4-toc-scroll" onDragEnd={handleDragEnd}>
+              {activeBook.chapters?.map((chap, cIdx) => {
+                const isCollapsed = collapsedChapterIds.has(chap.id);
+                const isChapterDragging = draggedItem?.type === 'chapter' && draggedItem?.chapterId === chap.id;
+                const isChapterOver = dragOverTarget?.type === 'chapter' && dragOverTarget?.id === chap.id;
+                const isChapterDropTarget = dragOverTarget?.type === 'chapter-drop-target' && dragOverTarget?.id === chap.id;
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem', marginTop: '0.4rem' }}>
-              <button className="btn btn-secondary btn-sm" onClick={() => setIsImportModalOpen(true)} title="외부 원고 파일(.txt, .md, .docx) 불러오기">
-                <UploadCloud size={13} />
-                <span>원고 가져오기</span>
-              </button>
-              <button className="btn btn-primary btn-sm" onClick={() => setIsExportModalOpen(true)} title="전체 원고 텍스트/마크다운 내보내기">
-                <Download size={13} />
-                <span>원고 내보내기</span>
-              </button>
-            </div>
-          </div>
-        </div>
+                const isAllDone = chap.sections?.length > 0 && chap.sections.every(s => (s.content || '').replace(/<[^>]*>/g, '').trim().length > 0);
+                const isAnyWriting = chap.sections?.some(s => (s.content || '').replace(/<[^>]*>/g, '').trim().length > 0);
 
-        <div className="toc-list" onDragEnd={handleDragEnd}>
-          {activeBook.chapters?.map((chap, cIdx) => {
-            const isCollapsed = collapsedChapterIds.has(chap.id);
-            const isChapterDragging = draggedItem?.type === 'chapter' && draggedItem?.chapterId === chap.id;
-            const isChapterOver = dragOverTarget?.type === 'chapter' && dragOverTarget?.id === chap.id;
-
-            const isChapterDropTarget = dragOverTarget?.type === 'chapter-drop-target' && dragOverTarget?.id === chap.id;
-
-            return (
-              <div key={chap.id || cIdx} className="chapter-group">
-                <div
-                  className={`chapter-header ${isChapterDragging ? 'is-dragging' : ''} ${isChapterOver ? `drag-over-${dragOverTarget.position}` : ''} ${isChapterDropTarget ? 'drag-target-hover' : ''}`}
-                  draggable={editingChapterId !== chap.id}
-                  onDragStart={(e) => handleChapterDragStart(e, chap.id, cIdx)}
-                  onDragOver={(e) => handleChapterDragOver(e, chap.id, cIdx)}
-                  onDrop={(e) => handleChapterDrop(e, chap.id, cIdx)}
-                >
-                  {/* 접기/펼치기 토글 버튼 */}
-                  <button
-                    type="button"
-                    className="btn-collapse-toggle"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleChapterCollapse(chap.id, e);
-                    }}
-                    title={isCollapsed ? '소목차 펼치기' : '소목차 접기'}
-                  >
-                    <ChevronRight size={13} className={`collapse-chevron ${isCollapsed ? '' : 'open'}`} />
-                  </button>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', overflow: 'hidden', flex: 1 }}>
-                    {editingChapterId === chap.id ? (
-                      <input
-                        type="text"
-                        className="chapter-inline-edit-input"
-                        value={editingChapterTitle}
-                        autoFocus
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => setEditingChapterTitle(e.target.value)}
-                        onBlur={() => {
-                          if (editingChapterTitle.trim() && editingChapterTitle.trim() !== cleanTitle(chap.title)) {
-                            updateChapterTitle(chap.id, cleanTitle(editingChapterTitle.trim()));
-                          }
-                          setEditingChapterId(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            if (editingChapterTitle.trim() && editingChapterTitle.trim() !== cleanTitle(chap.title)) {
-                              updateChapterTitle(chap.id, cleanTitle(editingChapterTitle.trim()));
-                            }
-                            setEditingChapterId(null);
-                          } else if (e.key === 'Escape') {
-                            setEditingChapterId(null);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <span
-                        title="더블클릭하여 챕터명 수정"
-                        style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}
-                        onDoubleClick={() => {
-                          setEditingChapterId(chap.id);
-                          setEditingChapterTitle(cleanTitle(chap.title));
-                        }}
-                      >
-                        {cIdx + 1}장. {cleanTitle(chap.title)}
-                      </span>
-                    )}
-
-                    <span className={`chapter-badge-mini ${chap.status === 'published' ? 'published' : 'draft'}`}>
-                      {chap.status === 'published' ? '연재중' : '초고'}
-                    </span>
-                  </div>
-
-                  <div className="chapter-header-actions">
-                    <button
-                      type="button"
-                      className="btn-add-section"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        const t = await openPrompt({
-                          title: '새 소목차 추가',
-                          placeholder: '추가할 소목차명을 입력하세요 (예: 1.1 새로운 여정)'
-                        });
-                        if (t?.trim()) addSection(chap.id, cleanTitle(t.trim()));
-                      }}
-                      title="소목차 추가"
+                return (
+                  <div key={chap.id || cIdx} className="v4-chap-block">
+                    <div
+                      className={`v4-chap-row ${isChapterDragging ? 'is-dragging' : ''} ${isChapterOver ? `drag-over-${dragOverTarget.position}` : ''} ${isChapterDropTarget ? 'drag-target-hover' : ''}`}
+                      draggable={editingChapterId !== chap.id}
+                      onDragStart={(e) => handleChapterDragStart(e, chap.id, cIdx)}
+                      onDragOver={(e) => handleChapterDragOver(e, chap.id, cIdx)}
+                      onDrop={(e) => handleChapterDrop(e, chap.id, cIdx)}
+                      onClick={(e) => toggleChapterCollapse(chap.id, e)}
                     >
-                      <Plus size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-delete-chapter"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        const ok = await openConfirm({
-                          title: '챕터 삭제',
-                          message: `'${cleanTitle(chap.title)}' 챕터를 삭제하시겠습니까?\n포함된 모든 소목차와 본문도 함께 삭제됩니다.`,
-                          danger: true,
-                          confirmText: '삭제'
-                        });
-                        if (ok) {
-                          deleteChapter(chap.id);
-                        }
-                      }}
-                      title="챕터 삭제"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 소목차 목록 (접혔을 때는 숨김) */}
-                {!isCollapsed && (
-                  <div
-                    className="section-list"
-                    onDragOver={(e) => {
-                      if (draggedItem?.type === 'section' && (!chap.sections || chap.sections.length === 0)) {
-                        e.preventDefault();
-                      }
-                    }}
-                    onDrop={(e) => {
-                      if (draggedItem?.type === 'section' && (!chap.sections || chap.sections.length === 0)) {
-                        e.preventDefault();
-                         reorderSections(draggedItem.chapterId, chap.id, draggedItem.sIdx, 0);
-                        setDraggedItem(null);
-                        setDragOverTarget(null);
-                      }
-                    }}
-                  >
-                    {chap.sections?.map((sec, sIdx) => {
-                      const isActive = chap.id === activeChapterId && sec.id === activeSectionId;
-                      const isSecDragging = draggedItem?.type === 'section' && draggedItem?.sectionId === sec.id;
-                      const isSecOver = dragOverTarget?.type === 'section' && dragOverTarget?.id === sec.id;
-                      const rawText = (sec.content || '').replace(/<[^>]*>/g, '').trim();
-                      const isDone = rawText.length > 0;
-
-                      return (
-                        <div
-                          key={sec.id || sIdx}
-                          className={`section-item ${isActive ? 'active' : ''} ${isSecDragging ? 'is-dragging' : ''} ${isSecOver ? `drag-over-${dragOverTarget.position}` : ''}`}
-                          draggable={true}
-                          onDragStart={(e) => handleSectionDragStart(e, chap.id, sec.id, cIdx, sIdx)}
-                          onDragOver={(e) => handleSectionDragOver(e, sec.id, cIdx, sIdx)}
-                          onDrop={(e) => handleSectionDrop(e, chap.id, sIdx)}
-                          onClick={() => {
-                            setActiveChapterId(chap.id);
-                            setActiveSectionId(sec.id);
-                          }}
-                        >
-                          <span className="section-item-title">{cIdx + 1}.{sIdx + 1} {cleanTitle(sec.title)}</span>
-                          <div className="section-item-meta">
-                            {sec.status === 'published' && (
-                              <span className="section-pub-badge" title="독자에게 공개 연재 중인 소목차">연재</span>
-                            )}
-                            <div
-                              className={`status-dot ${isDone ? 'completed' : ''}`}
-                              title={isDone ? `집필 완료 (${rawText.length.toLocaleString()}자)` : '미작성 (빈 원고)'}
-                            />
-                            <button
-                              type="button"
-                              className="btn-delete-section"
-                              title="소목차 삭제"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const ok = await openConfirm({
-                                  title: '소목차 삭제',
-                                  message: `'${cleanTitle(sec.title)}' 소목차를 삭제하시겠습니까?\n작성된 원고 내용도 함께 삭제됩니다.`,
-                                  danger: true,
-                                  confirmText: '삭제'
-                                });
-                                if (ok) {
-                                  deleteSection(chap.id, sec.id);
+                      <div className="v4-chap-left">
+                        <span className={`v4-fold-arrow ${isCollapsed ? '' : 'open'}`}>›</span>
+                        {editingChapterId === chap.id ? (
+                          <input
+                            type="text"
+                            className="v4-chap-input"
+                            value={editingChapterTitle}
+                            autoFocus
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => setEditingChapterTitle(e.target.value)}
+                            onBlur={() => {
+                              if (editingChapterTitle.trim() && editingChapterTitle.trim() !== cleanTitle(chap.title)) {
+                                updateChapterTitle(chap.id, cleanTitle(editingChapterTitle.trim()));
+                              }
+                              setEditingChapterId(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (editingChapterTitle.trim() && editingChapterTitle.trim() !== cleanTitle(chap.title)) {
+                                  updateChapterTitle(chap.id, cleanTitle(editingChapterTitle.trim()));
                                 }
+                                setEditingChapterId(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingChapterId(null);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span
+                            className="v4-chap-name"
+                            title="더블클릭하여 챕터명 수정"
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setEditingChapterId(chap.id);
+                              setEditingChapterTitle(cleanTitle(chap.title));
+                            }}
+                          >
+                            제 {cIdx + 1}장. {cleanTitle(chap.title)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="v4-chap-right">
+                        <span className={`v4-status-txt ${!isAllDone && isAnyWriting ? 'writing' : ''}`}>
+                          {chap.status === 'published' ? '연재중' : (isAllDone ? '완료' : (isAnyWriting ? '집필중' : '초고'))}
+                        </span>
+
+                        <div className="v4-hover-actions">
+                          <button
+                            type="button"
+                            className="v4-mini-btn"
+                            title="소목차 추가"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const t = await openPrompt({
+                                title: '새 소목차 추가',
+                                placeholder: '추가할 소목차명을 입력하세요 (예: 1.1 새로운 여정)'
+                              });
+                              if (t?.trim()) addSection(chap.id, cleanTitle(t.trim()));
+                            }}
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            className="v4-mini-btn delete"
+                            title="챕터 삭제"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const ok = await openConfirm({
+                                title: '챕터 삭제',
+                                message: `'${cleanTitle(chap.title)}' 챕터를 삭제하시겠습니까?\n포함된 모든 소목차와 본문도 함께 삭제됩니다.`,
+                                danger: true,
+                                confirmText: '삭제'
+                              });
+                              if (ok) deleteChapter(chap.id);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 소목차 목록 */}
+                    {!isCollapsed && (
+                      <div className="v4-sec-list">
+                        {chap.sections?.map((sec, sIdx) => {
+                          const isActive = chap.id === activeChapterId && sec.id === activeSectionId;
+                          const isSecDragging = draggedItem?.type === 'section' && draggedItem?.sectionId === sec.id;
+                          const isSecOver = dragOverTarget?.type === 'section' && dragOverTarget?.id === sec.id;
+                          const rawText = (sec.content || '').replace(/<[^>]*>/g, '').trim();
+                          const isDone = rawText.length > 0;
+
+                          return (
+                            <div
+                              key={sec.id || sIdx}
+                              className={`v4-sec-row ${isActive ? 'active' : ''} ${isSecDragging ? 'is-dragging' : ''} ${isSecOver ? `drag-over-${dragOverTarget.position}` : ''}`}
+                              draggable={editingSectionId !== sec.id}
+                              onDragStart={(e) => handleSectionDragStart(e, chap.id, sec.id, cIdx, sIdx)}
+                              onDragOver={(e) => handleSectionDragOver(e, sec.id, cIdx, sIdx)}
+                              onDrop={(e) => handleSectionDrop(e, chap.id, sIdx)}
+                              onClick={() => {
+                                setActiveChapterId(chap.id);
+                                setActiveSectionId(sec.id);
                               }}
                             >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                              <span className={`v4-dot ${isDone ? 'filled' : 'empty'}`} title={isDone ? `집필 완료 (${rawText.length.toLocaleString()}자)` : '미작성'} />
+                              {editingSectionId === sec.id ? (
+                                <input
+                                  type="text"
+                                  className="v4-sec-input"
+                                  value={editingSectionTitle}
+                                  autoFocus
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={(e) => setEditingSectionTitle(e.target.value)}
+                                  onBlur={() => handleCommitSectionRename(chap.id, sec.id, editingSectionTitle)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleCommitSectionRename(chap.id, sec.id, editingSectionTitle);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingSectionId(null);
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span
+                                  className="v4-sec-name"
+                                  title="더블클릭하여 소제목 수정"
+                                  onDoubleClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingSectionId(sec.id);
+                                    setEditingSectionTitle(cleanTitle(sec.title));
+                                  }}
+                                >
+                                  {cIdx + 1}.{sIdx + 1} {cleanTitle(sec.title)}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
+                );
+              })}
+            </div>
+
+            {/* 목차 패널 하단 새 챕터 추가 & 원고 가져오기/내보내기 */}
+            <div className="v4-bottom-add-chap">
+              <button
+                type="button"
+                className="v4-btn-chap-bottom"
+                onClick={async () => {
+                  const t = await openPrompt({
+                    title: '새 챕터 추가',
+                    placeholder: '추가할 챕터명을 입력하세요 (예: 1장. 시작의 순간)'
+                  });
+                  if (t?.trim()) addChapter(cleanTitle(t.trim()));
+                }}
+              >
+                + 새 챕터 추가
+              </button>
+              <div className="v4-bottom-import-export-row">
+                <button
+                  type="button"
+                  className="v4-btn-import-export"
+                  onClick={() => setIsImportModalOpen(true)}
+                  title="외부 원고 파일(.txt, .md, .docx) 불러오기"
+                >
+                  <UploadCloud size={13} />
+                  <span>원고 가져오기</span>
+                </button>
+                <button
+                  type="button"
+                  className="v4-btn-import-export primary"
+                  onClick={() => setIsExportModalOpen(true)}
+                  title="전체 원고 텍스트/마크다운 내보내기"
+                >
+                  <Download size={13} />
+                  <span>원고 내보내기</span>
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          {/* [내부 중앙: 에디터 캔버스 컬럼] */}
+          <main className="v4-editor-col">
+            {/* 🌟 1번 사진 스타일: 챕터와 소제목이 브레드크럼으로 한 줄로 합쳐진 에디터 상단 바 */}
+            <div className="v4-editor-top-bar">
+              <div className="v4-breadcrumb">
+                <span className="v4-bread-chap">제 {currentChapterIndex >= 0 ? currentChapterIndex + 1 : 1}장</span>
+                <span className="v4-bread-sep">&gt;</span>
+                {isEditingBreadcrumbTitle ? (
+                  <input
+                    type="text"
+                    className="v4-bread-sec-input"
+                    value={editingBreadcrumbValue}
+                    autoFocus
+                    onChange={(e) => setEditingBreadcrumbValue(e.target.value)}
+                    onBlur={handleCommitBreadcrumbRename}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCommitBreadcrumbRename();
+                      else if (e.key === 'Escape') setIsEditingBreadcrumbTitle(false);
+                    }}
+                  />
+                ) : (
+                  <span
+                    className="v4-bread-sec"
+                    title="더블클릭하여 소제목 수정"
+                    onDoubleClick={() => {
+                      if (currentSection) {
+                        setIsEditingBreadcrumbTitle(true);
+                        setEditingBreadcrumbValue(cleanTitle(localTitle || currentSection.title || ''));
+                      }
+                    }}
+                  >
+                    {currentChapterIndex >= 0 ? `${currentChapterIndex + 1}.${currentSectionIndex >= 0 ? currentSectionIndex + 1 : 1} ` : ''}
+                    {cleanTitle(localTitle || currentSection?.title || '소목차')}
+                  </span>
                 )}
               </div>
-            );
-          })}
-        </div>
-      </aside>
 
-      {/* 2열: 에디터 작업 영역 */}
-      <main className="editor-workspace">
-        {/* 1행: 상위 챕터 정보 바 (챕터명 + 주간 마감 D-Day + 연재 발행) */}
-        {currentChapter && (
-          <div className="editor-sprint-bar">
-            <div className="sprint-left-group">
-              <div className="chapter-title-header-wrapper">
-                <span className="chapter-num-prefix">
-                  {currentChapterIndex >= 0 ? `제 ${currentChapterIndex + 1}장.` : ''}
-                </span>
-                <input
-                  type="text"
-                  className="chapter-title-header-input"
-                  value={cleanTitle(currentChapter.title)}
-                  placeholder="챕터명을 입력하세요"
-                  title="클릭하여 챕터명 직접 수정"
-                  onChange={(e) => updateChapterTitle(currentChapter.id, e.target.value)}
-                />
-              </div>
-              {(() => {
-                const dday = calculateDDay(currentChapter.deadline);
-                return (
-                  <span className={`dday-badge ${dday.status}`}>
-                    <Calendar size={12} />
-                    <span>{dday.text}</span>
-                  </span>
-                );
-              })()}
-              <input
-                type="date"
-                className="deadline-picker"
-                title="주간 마감 목표일 설정"
-                value={currentChapter.deadline || ''}
-                onChange={(e) => setChapterDeadline(currentChapter.id, e.target.value)}
-              />
-            </div>
-
-            <div className="publish-group">
-              {(() => {
-                const isSecPub = currentSection?.status === 'published';
-                const isChapPub = currentChapter?.status === 'published';
-                const isBookPub = activeBook?.status === 'completed';
-
-                return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                    {isBookPub ? (
-                      <span className="publish-status-pill book-pub">🎊 완결 출간됨</span>
-                    ) : isSecPub ? (
-                      <span className="publish-status-pill sec-pub">✓ 소목차(1화) 연재중</span>
-                    ) : isChapPub ? (
-                      <span className="publish-status-pill chap-pub">✓ 챕터 연재중</span>
-                    ) : (
-                      <span className="publish-status-pill draft">초고 (미발행)</span>
-                    )}
-
-                    <button
-                      type="button"
-                      className="btn-publish-manage"
-                      onClick={() => setIsPublishModalOpen(true)}
-                      title="연재 발행하기 (이번화 발행 / 선택하여 발행)"
-                    >
-                      <Send size={13} />
-                      <span>연재 발행</span>
-                    </button>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        )}
-
-        {/* 2행: 하위 소목차(절) 작업 툴바 (소목차 제목 인풋 + 글자수 + 저장/AI 도구) */}
-        <header className="editor-toolbar">
-          <input
-            type="text"
-            className="section-title-input"
-            placeholder="소목차 제목을 입력하세요"
-            value={localTitle}
-            onChange={handleTitleChange}
-          />
-          <div className="editor-tools">
-            <span className="word-count-badge">{(editor?.getText()?.trim()?.length || 0).toLocaleString()} 자</span>
-
-            {/* 표준 뷰어 미리보기 */}
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                if (activeBook) {
-                  openReader(activeBook.id, activeChapterId);
-                }
-              }}
-              title="문피아·네이버 스타일 표준 웹 뷰어로 즉시 열람합니다"
-            >
-              <BookOpen size={15} style={{ color: 'var(--primary)' }} />
-              <span>미리보기</span>
-            </button>
-
-            {/* 단일 토글 모드 전환 버튼 (본문 모드 ↔ 문단 모드) */}
-            <button
-              type="button"
-              className={`btn btn-secondary btn-mode-toggle-single ${editorMode === 'block' ? 'active-block-mode' : ''}`}
-              onClick={() => switchEditorMode(editorMode === 'doc' ? 'block' : 'doc')}
-              title={editorMode === 'doc' ? '문단을 블록별로 순서 이동/개별 퇴고하는 문단 모드로 전환' : '한 편의 글을 끊김 없이 이어 쓰는 통합 본문 모드로 전환'}
-            >
-              {editorMode === 'doc' ? (
-                <>
-                  <Layers size={14} style={{ color: 'var(--primary)' }} />
-                  <span>문단 모드 ({paragraphs.length})</span>
-                </>
-              ) : (
-                <>
-                  <FileText size={14} style={{ color: 'var(--primary)' }} />
-                  <span>본문 모드</span>
-                </>
-              )}
-            </button>
-
-            {/* 현재 소목차 임시저장 & 상태 아래 표시 & 임시저장 목록 팝오버 */}
-            <div className="draft-save-wrapper" ref={draftMenuRef}>
-              <div className="draft-btn-group">
+              <div className="v4-actions-group">
+                {/* 표준 뷰어 미리보기 */}
                 <button
                   type="button"
-                  className="btn btn-secondary btn-draft-save"
-                  onClick={() => handleSaveDraft(false)}
-                  title="현재 작성 중인 원고를 즉시 임시저장합니다"
+                  className="v4-btn-action"
+                  onClick={() => {
+                    if (activeBook) {
+                      openReader(activeBook.id, activeChapterId);
+                    }
+                  }}
+                  title="문피아·네이버 스타일 표준 웹 뷰어로 즉시 열람합니다"
                 >
-                  <span>임시저장</span>
+                  <BookOpen size={13} />
+                  <span>미리보기</span>
                 </button>
+
+                {/* 단일 토글 모드 전환 버튼 (본문 모드 ↔ 문단 모드) */}
                 <button
                   type="button"
-                  className={`btn btn-secondary btn-draft-list-toggle ${isDraftMenuOpen ? 'active' : ''}`}
-                  onClick={() => setIsDraftMenuOpen(prev => !prev)}
-                  title="임시저장 목록 조회 및 복원"
+                  className={`v4-btn-action ${editorMode === 'block' ? 'active' : ''}`}
+                  onClick={() => switchEditorMode(editorMode === 'doc' ? 'block' : 'doc')}
+                  title={editorMode === 'doc' ? '문단 모드로 전환' : '본문 모드로 전환'}
                 >
-                  <span className="draft-count-badge">{draftList.length}</span>
-                  <ChevronDown size={13} />
+                  <Layers size={13} />
+                  <span>{editorMode === 'doc' ? '본문모드' : `문단모드 (${paragraphs.length})`}</span>
                 </button>
-              </div>
 
-              {/* 버튼 아래에 상대 시간 표시 (구분선 잘림 없이 여유 배치) */}
-              <span className="draft-saved-time-caption">
-                {timeAgoText}
-              </span>
+                {/* 현재 소목차 임시저장 버튼 및 팝오버 래퍼 */}
+                <div className="draft-save-wrapper" ref={draftMenuRef} style={{ display: 'inline-flex' }}>
+                  <button
+                    type="button"
+                    className="v4-btn-action"
+                    onClick={() => handleSaveDraft(false)}
+                    title="현재 작성 중인 원고를 즉시 임시저장합니다"
+                  >
+                    <Save size={13} />
+                    <span>임시저장</span>
+                  </button>
 
-              {/* 임시저장 목록 팝오버 (조회 및 복원 창) */}
-              {isDraftMenuOpen && (
-                <div className="draft-popover-menu">
-                  <div className="draft-popover-header">
-                    <div className="draft-popover-title">
-                      <Clock size={13} />
-                      <span>임시 보관함 ({draftList.length})</span>
-                    </div>
-                    <span className="draft-popover-subtitle">원고 복원 및 스냅샷 내역</span>
-                  </div>
-
-                  <div className="draft-popover-list">
-                    {draftList.length === 0 ? (
-                      <div className="draft-popover-empty">
-                        임시 저장된 내역이 없습니다.<br />
-                        [임시저장]을 누르면 스냅샷이 보관됩니다.
-                      </div>
-                    ) : (
-                      draftList.map((d) => (
-                        <div key={d.id} className="draft-popover-item" onClick={() => handleRestoreDraft(d)}>
-                          <div className="draft-item-info">
-                            <div className="draft-item-time-row">
-                              <span className="draft-item-time">
-                                {new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                              </span>
-                              <span className="draft-item-chars">{d.charCount.toLocaleString()}자</span>
-                            </div>
-                            <div className="draft-item-preview" title={d.preview}>
-                              {d.preview || '(빈 원고)'}
-                            </div>
-                          </div>
-                          <div className="draft-item-actions">
-                            <button
-                              type="button"
-                              className="btn-draft-restore"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRestoreDraft(d);
-                              }}
-                              title="이 시점의 원고로 복원"
-                            >
-                              복원
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-draft-delete"
-                              onClick={(e) => handleDeleteDraft(e, d.id)}
-                              title="삭제"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
+                  {/* 임시저장 목록 팝오버 (조회 및 복원 창) */}
+                  {isDraftMenuOpen && (
+                    <div className="draft-popover-menu">
+                      <div className="draft-popover-header">
+                        <div className="draft-popover-title">
+                          <Clock size={13} />
+                          <span>임시 보관함 ({draftList.length})</span>
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </header>
+                        <span className="draft-popover-subtitle">원고 복원 및 스냅샷 내역</span>
+                      </div>
 
-        <div className="editor-body-split">
-          <div className="main-textarea-pane">
+                      <div className="draft-popover-list">
+                        {draftList.length === 0 ? (
+                          <div className="draft-popover-empty">
+                            임시 저장된 내역이 없습니다.<br />
+                            [임시저장]을 누르면 스냅샷이 보관됩니다.
+                          </div>
+                        ) : (
+                          draftList.map((d) => (
+                            <div key={d.id} className="draft-popover-item" onClick={() => handleRestoreDraft(d)}>
+                              <div className="draft-item-info">
+                                <div className="draft-item-time-row">
+                                  <span className="draft-item-time">
+                                    {new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                  </span>
+                                  <span className="draft-item-chars">{d.charCount.toLocaleString()}자</span>
+                                </div>
+                                <div className="draft-item-preview" title={d.preview}>
+                                  {d.preview || '(빈 원고)'}
+                                </div>
+                              </div>
+                              <div className="draft-item-actions">
+                                <button
+                                  type="button"
+                                  className="btn-draft-restore"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRestoreDraft(d);
+                                  }}
+                                  title="이 시점의 원고로 복원"
+                                >
+                                  복원
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-draft-delete"
+                                  onClick={(e) => handleDeleteDraft(e, d.id)}
+                                  title="삭제"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 연재 발행 버튼 */}
+                <button
+                  type="button"
+                  className="v4-btn-action primary"
+                  onClick={() => setIsPublishModalOpen(true)}
+                  title="연재 발행하기 (이번화 발행 / 선택하여 발행)"
+                >
+                  <Send size={13} />
+                  <span>연재발행</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="v4-editor-canvas">
             {/* 본문 검색 및 찾아바꾸기 인라인 바 (Ctrl+F) */}
             {isFindBarOpen && (
               <div className="editor-find-bar">
@@ -1588,6 +1585,14 @@ export default function Studio() {
               <TiptapEditor
                 ref={editorRef}
                 content={localContent}
+                chapterIndex={currentChapterIndex}
+                sectionIndex={currentSectionIndex}
+                sectionTitle={cleanTitle(localTitle || currentSection?.title || '')}
+                onUpdateSectionTitle={(newTitle) => {
+                  if (currentChapter && currentSection) {
+                    handleCommitSectionRename(currentChapter.id, currentSection.id, newTitle);
+                  }
+                }}
                 onChange={(html) => {
                   setLocalContent(html);
                   updateActiveSectionContent(html);
@@ -1858,30 +1863,31 @@ export default function Studio() {
               </div>
             </>
           )}
+            </div>
+          </main>
         </div>
 
-          {/* 3열: AI 집필 도우미 사이드바 (AI 초고 집필 + 문장 교정 + 쿼터 캡슐) */}
-          <AIAssistant
-            activeBook={activeBook}
-            currentChapter={currentChapter}
-            currentSection={currentSection}
-            localTitle={localTitle}
-            localContent={localContent}
-            editor={editor}
-            vault={vault}
-            selectedVaultIds={selectedVaultIds}
-            loadVault={loadVault}
-            setIsVaultModalOpen={setIsVaultModalOpen}
-            setIsQuotaModalOpen={setIsQuotaModalOpen}
-            setLocalContent={setLocalContent}
-            updateActiveSectionContent={updateActiveSectionContent}
-            saveActiveSection={saveActiveSection}
-            setView={setView}
-            showToast={showToast}
-            showActionToast={showActionToast}
-          />
-        </div>
-      </main>
+        {/* 🌟 우측 독립 카드: AI 집필 에이전트 */}
+        <AIAssistant
+          activeBook={activeBook}
+          currentChapter={currentChapter}
+          currentSection={currentSection}
+          localTitle={localTitle}
+          localContent={localContent}
+          editor={editor}
+          vault={vault}
+          selectedVaultIds={selectedVaultIds}
+          loadVault={loadVault}
+          setIsVaultModalOpen={setIsVaultModalOpen}
+          setIsQuotaModalOpen={setIsQuotaModalOpen}
+          setLocalContent={setLocalContent}
+          updateActiveSectionContent={updateActiveSectionContent}
+          saveActiveSection={saveActiveSection}
+          setView={setView}
+          showToast={showToast}
+          showActionToast={showActionToast}
+        />
+      </div>
 
       {/* AI 총괄 편집장 드로어 (src/components/ai/AIEditor.jsx) */}
       <AIEditor

@@ -1,4 +1,4 @@
-import React, { useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -14,6 +14,10 @@ import './TiptapEditor.css';
  * @param {boolean} editable - 편집 가능 여부 (기본: true)
  * @param {boolean} showToolbar - 상단 서식 툴바 표시 여부 (기본: true)
  * @param {React.ReactNode} extraToolbarItems - 툴바 우측에 추가할 사용자 정의 요소 (예: 활성 블록 정보 등)
+ * @param {number} chapterIndex - 현재 챕터 인덱스
+ * @param {number} sectionIndex - 현재 소목차 인덱스
+ * @param {string} sectionTitle - 현재 소목차 제목
+ * @param {function} onUpdateSectionTitle - 소목차 제목 수정 콜백 (newTitle) => void
  */
 const TiptapEditor = forwardRef(function TiptapEditor(
   {
@@ -24,12 +28,18 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     editable = true,
     showToolbar = true,
     extraToolbarItems = null,
+    chapterIndex = 0,
+    sectionIndex = 0,
+    sectionTitle = '',
+    onUpdateSectionTitle = null,
     className = ''
   },
   ref
 ) {
   const debounceRef = useRef(null);
   const lastHtmlRef = useRef(content || '');
+  const [isEditingHeading, setIsEditingHeading] = useState(false);
+  const [tempHeading, setTempHeading] = useState('');
 
   // extensions 배열 (StarterKit v3에 Underline이 이미 기본 내장되어 있음)
   const extensions = React.useMemo(() => [
@@ -234,7 +244,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
               onClick={() => editor?.chain().focus().toggleItalic().run()}
               title="기울임 (Ctrl+I)"
             >
-              <i>I</i>
+              <i>/</i>
             </button>
             <button
               type="button"
@@ -307,6 +317,51 @@ const TiptapEditor = forwardRef(function TiptapEditor(
       {/* 본문 에디터 뷰포트 (화이트 시트) */}
       <div className="rich-editor-viewport">
         <div className="rich-editor-body">
+          {sectionTitle !== undefined && sectionTitle !== '' && (
+            <div className="editor-doc-header">
+              <div className="v4-sec-caption">
+                CHAPTER {String((chapterIndex ?? 0) + 1).padStart(2, '0')} · SECTION {String((sectionIndex ?? 0) + 1).padStart(2, '0')}
+              </div>
+              {isEditingHeading ? (
+                <input
+                  type="text"
+                  className="v4-heading-input"
+                  value={tempHeading}
+                  autoFocus
+                  onChange={(e) => setTempHeading(e.target.value)}
+                  onBlur={() => {
+                    const trimmed = tempHeading.trim();
+                    if (trimmed && trimmed !== sectionTitle) {
+                      onUpdateSectionTitle?.(trimmed);
+                    }
+                    setIsEditingHeading(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const trimmed = tempHeading.trim();
+                      if (trimmed && trimmed !== sectionTitle) {
+                        onUpdateSectionTitle?.(trimmed);
+                      }
+                      setIsEditingHeading(false);
+                    } else if (e.key === 'Escape') {
+                      setIsEditingHeading(false);
+                    }
+                  }}
+                />
+              ) : (
+                <h1
+                  className="v4-heading-title"
+                  title="더블클릭하여 소제목 수정"
+                  onDoubleClick={() => {
+                    setTempHeading(sectionTitle);
+                    setIsEditingHeading(true);
+                  }}
+                >
+                  {(chapterIndex ?? 0) + 1}.{(sectionIndex ?? 0) + 1} {sectionTitle}
+                </h1>
+              )}
+            </div>
+          )}
           <EditorContent editor={editor} />
         </div>
       </div>

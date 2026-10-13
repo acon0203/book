@@ -28,7 +28,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     ├── pages/                   # 주요 화면 단위 (JSX + 1:1 일반 CSS 매칭)
     │   ├── Library.jsx / .css   # 내 서재 (2줄 슬림 작가 통계 & 명언 바 + 새 책 만들기 모달)
     │   ├── studio/              # [스튜디오 패키지] 집필 스튜디오 메인 화면 및 전용 모달 (Zero-Lag 성능 격리)
-    │   │   ├── Studio.jsx / .css # 집필 스튜디오 메인 (목차 트리 + 에디터 + 3열 허브)
+    │   │   ├── Studio.jsx / .css # 집필 스튜디오 메인 (전역 상단 탑바 + 목차 트리 + 에디터 캔버스 + 3열 통합 AI 어시스턴트)
     │   │   ├── PublishModal.jsx / .css # 연재 발행 모달 (이번화 연재 + 전체 목차 일괄 선택 발행 대형 모달, 1:1 CSS 분리)
     │   │   └── StudioModals.jsx / .css # 스튜디오 3대 보조 모달 통합 모음 (ExportModal, VaultModal, VersionModal, 1:1 CSS 분리)
     │   ├── Vault.jsx / .css     # 창작실 (좌측 작품 서가 바인더 + 상단 가로 5대 파이프라인: 아이디어 노트 ➔ 출간 기획서 ➔ 글감 취재 ➔ 인물/뼈대 ➔ 목차 조립대)
@@ -95,10 +95,10 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 | **`src/components/BookInfoModal.jsx`** | [통합 모달] 도서 신규 기획 및 기본 정보(제목, 부제, 8대 장르, 필명, 타깃 독자층, 6종 표지 테마 색상) 생성/수정 겸용 모달 (`BookInfoModal.css`와 1:1 매칭) |
 | **`src/pages/Library.jsx`** | [내 서재 전면 개편] 1. 상단 ⚡ 지금 이어하기 Quick Band(최근 집필 ➔ 스튜디오 / 최근 독서 ➔ 뷰어 2분할 퀵 직통) + 2. 좌우 분류 시트 탭(✍️ 집필 서재 vs 📖 독서 서재) + 3. 시트 연동 스마트 2줄 요약 밴드 & 도서/독서 카드 그리드 |
 | **`src/components/ai/AIEditor.jsx`** | [4대 AI] AI 총괄 편집장 드로어: 실시간 채팅 상담, 세션 히스토리 보관, 6대 추천 액션, 목차 개편안 원클릭 반영 (`AIEditor.css`와 1:1 매칭) |
-| **`src/components/ai/AIAssistant.jsx`** | [4대 AI] AI 집필 도우미 우측 사이드바: AI 초고 집필 에이전트, AI 문장 교정, 실시간 쿼터 바닥 캡슐 독립 관리 (`AIAssistant.css`와 1:1 매칭) |
+| **`src/components/ai/AIAssistant.jsx`** | [4대 AI] AI 어시스턴트 통합 패널: 3대 탭(초고 집필 \| 문장 교정 \| 총괄 편집장), 라이브 힌트 박스, 실시간 쿼터 바닥 캡슐, 초고 반영 팝업 모달 (`AIAssistant.css`와 1:1 매칭) |
 | **`src/components/ai/OutlineModal.jsx`** | [4대 AI] AI 목차 자동 기획 모달: 25권 베스트셀러 장르 DB 템플릿, 단행본/A4 분량 실시간 계산, Gemini 프롬프트 생성 (OutlineModal.css와 1:1 매칭) |
 | **`src/components/ai/ModelQuotasModal.jsx`** | [4대 AI] 실시간 AI 모델 일일 쿼터(Quota) 잔여량 현황 및 PST/KST 리셋 타이머 팝오버 (`ModelQuotasModal.css`와 1:1 매칭) |
-| **`src/pages/studio/Studio.jsx`** | [스튜디오 메인] 3열 집필 환경 허브 + 목차 트리 + 버전 관리 모달 + Zero-Lag 경량화 (`Studio.css` 1,000여 줄 다이어트 달성) |
+| **`src/pages/studio/Studio.jsx`** | [스튜디오 메인] 전역 상단 탑바(도서명/연재상태/도서수정/저장/버전/마감) + 목차 트리 및 하단 가져오기·내보내기 + Zero-Lag 에디터 + 3열 AI 어시스턴트 (`Studio.css`와 1:1 매칭) |
 | **`src/pages/studio/PublishModal.jsx`** | [분리 격리] 연재 발행 모달: 이번화 즉시 발행 + 전체 목차 일괄 체크박스 동시 연재 통합 관리 (`PublishModal.css`와 1:1 매칭) |
 | **`src/pages/studio/StudioModals.jsx`** | [통합 모달] 스튜디오 3대 보조 모달 번들: 내보내기(Export) + 자료금고(Vault) + 버전관리(Version) 모달 멀티 Export (`StudioModals.css`와 1:1 매칭) |
 | **`src/pages/Vault.jsx`** | 아이디어 메모, 웹 스크랩 보관 및 태그 필터링, AI 집필 프롬프트 주입용 레퍼런스 관리 |

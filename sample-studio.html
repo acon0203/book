@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>연재서재 - 스튜디오 UI 버전 비교 (v2 / v3 / v4 일체형 창)</title>
+  <title>연재서재 - 스튜디오 UI 버전 비교 (v2 / v3 / v4 / v5 집필 에이전트 통합)</title>
   <!-- Google Fonts: 클래식 세리프 & 프리텐다드 산세리프 & 영문 Cinzel -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -137,24 +137,159 @@
       background: var(--bg-hover);
     }
 
-    .preview-logo {
+    .top-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border-divider);
+      margin: 0 0.2rem;
+    }
+
+    .top-book-title-wrap {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      padding: 0.2rem 0.45rem;
+      border-radius: 6px;
+      transition: background 0.15s ease;
+    }
+    .top-book-title-wrap:hover {
+      background: var(--bg-hover);
+    }
+
+    .top-book-title {
       font-family: var(--font-serif);
       font-size: 0.95rem;
       font-weight: 700;
-      color: var(--color-primary);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      color: var(--text-main);
+      white-space: nowrap;
+      letter-spacing: -0.01em;
     }
 
-    .preview-tag {
-      font-size: 0.7rem;
-      padding: 2px 7px;
-      border-radius: 4px;
-      background: var(--color-primary-soft);
-      color: var(--color-primary);
+    /* 원래 있던 연재중, 완료 드롭다운 태그 */
+    .top-status-dropdown-wrap {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .top-status-select {
+      background: var(--bg-card);
+      border: 1px solid rgba(139, 90, 43, 0.18);
+      border-radius: 6px;
+      padding: 0.26rem 0.55rem;
+      font-size: 0.78rem;
       font-weight: 600;
-      border: 1px solid var(--border-subtle);
+      color: var(--color-primary);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      box-shadow: 0 1px 3px rgba(70, 50, 30, 0.03);
+    }
+    .top-status-select:hover,
+    .top-status-select:focus {
+      border-color: var(--color-primary);
+      background: var(--bg-hover);
+    }
+    [data-theme="dark"] .top-status-select {
+      background: #2a231d;
+      border-color: var(--border-divider);
+      color: var(--color-accent-gold);
+    }
+
+    /* 🌟 사진 2의 3개 버튼 (도서 수정 ✏️, 전체 저장 💾, 버전 히스토리 🕒) */
+    .top-icon-btn-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .top-icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid rgba(139, 90, 43, 0.16);
+      color: var(--text-sub);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 3px rgba(70, 50, 30, 0.04);
+    }
+    .top-icon-btn:hover {
+      background: var(--bg-hover);
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+      transform: translateY(-1px);
+    }
+    .top-icon-btn:active {
+      transform: translateY(0);
+      background: var(--bg-active);
+    }
+    [data-theme="dark"] .top-icon-btn {
+      background: #2a231d;
+      border-color: var(--border-divider);
+    }
+
+    /* 🌟 사진 3 마감 라인: [📅 마감 미정] + [연도-월-일 📅] */
+    .top-deadline-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .top-deadline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.28rem 0.65rem;
+      border-radius: 6px;
+      background: rgba(196, 138, 84, 0.12);
+      border: 1px solid #c48a54;
+      color: #8b5a2b;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(70, 50, 30, 0.03);
+    }
+    .top-deadline-badge:hover {
+      background: rgba(196, 138, 84, 0.18);
+    }
+    .top-deadline-badge.active {
+      background: rgba(196, 138, 84, 0.22);
+      font-weight: 700;
+    }
+    [data-theme="dark"] .top-deadline-badge {
+      background: rgba(196, 138, 84, 0.2);
+      border-color: #c48a54;
+      color: #e5b382;
+    }
+
+    .top-deadline-input {
+      background: var(--bg-card);
+      border: 1px solid rgba(139, 90, 43, 0.16);
+      border-radius: 6px;
+      padding: 0.25rem 0.55rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-sub);
+      outline: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(70, 50, 30, 0.02);
+    }
+    .top-deadline-input:hover,
+    .top-deadline-input:focus {
+      border-color: var(--color-primary);
+    }
+    [data-theme="dark"] .top-deadline-input {
+      background: #2a231d;
+      border-color: var(--border-divider);
+      color: var(--text-main);
     }
 
     .preview-right {
@@ -237,10 +372,22 @@
     }
 
     /* =========================================================================
+       [VIEW: v5] 일체형 창 + 통합 AI 집필 에이전트 레이아웃 (기본 활성)
+       ========================================================================= */
+    #studio-view-v5 {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 46px);
+      padding: 1.25rem 1.5rem 1.5rem;
+      gap: 1.5rem;
+      overflow: hidden;
+    }
+
+    /* =========================================================================
        [VIEW: v4] 스튜디오 전체 일체형 독립창 레이아웃
        ========================================================================= */
     #studio-view-v4 {
-      display: flex;
+      display: none;
       flex: 1;
       height: calc(100vh - 46px);
       padding: 1.25rem 1.5rem 1.5rem;
@@ -497,6 +644,48 @@
       border-color: var(--color-primary);
     }
 
+    .v4-bottom-import-export-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4rem;
+      margin-top: 0.45rem;
+    }
+
+    .v4-btn-import-export {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.42rem 0.3rem;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .v4-btn-import-export:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+      border-color: var(--border-divider);
+    }
+
+    .v4-btn-import-export.primary {
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      border-color: rgba(139, 90, 43, 0.2);
+    }
+
+    .v4-btn-import-export.primary:hover {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+    }
+
     .v4-editor-col {
       flex: 1;
       display: flex;
@@ -563,31 +752,98 @@
     }
 
     .v4-format-toolbar {
-      background: var(--bg-surface);
+      background: #faf8f5;
       border-bottom: 1px solid var(--border-subtle);
-      padding: 0.4rem 2rem;
+      padding: 0.5rem 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
     }
 
+    [data-theme="dark"] .v4-format-toolbar {
+      background: #241f1a;
+      border-bottom-color: var(--border-subtle);
+    }
+
+    /* 🌟 사진 2 스타일: 연한 색(#faf8f5) 바닥 위 끝이 둥근 독립 서식 툴바 알약 바 */
+    .v4-pill-toolbar {
+      background: #ffffff;
+      border: 1px solid rgba(139, 90, 43, 0.14);
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(70, 50, 30, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+      padding: 0.32rem 0.65rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+    }
+
+    [data-theme="dark"] .v4-pill-toolbar {
+      background: #2a231d;
+      border-color: var(--border-divider);
+    }
+
+    .v4-select-fmt {
+      background: #ffffff;
+      border: 1px solid rgba(139, 90, 43, 0.14);
+      border-radius: 6px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      outline: none;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      transition: all 0.15s ease;
+    }
+
+    [data-theme="dark"] .v4-select-fmt {
+      background: #241f1a;
+      border-color: var(--border-divider);
+    }
+
+    .v4-select-fmt:hover,
+    .v4-select-fmt:focus {
+      border-color: var(--color-primary);
+    }
+
     .v4-btn-fmt {
       background: transparent;
       border: none;
-      padding: 4px 7px;
-      border-radius: 4px;
-      font-size: 0.8rem;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 0.32rem;
+      border-radius: 5px;
+      font-size: 0.84rem;
       font-weight: 600;
       color: var(--text-sub);
       cursor: pointer;
+      transition: all 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .v4-btn-fmt:hover {
+      background: var(--bg-hover);
+      color: var(--color-primary);
+    }
+
+    .v4-btn-fmt:active {
+      background: var(--bg-active);
     }
 
     .v4-fmt-divider {
       width: 1px;
-      height: 15px;
+      height: 16px;
+      background: rgba(139, 90, 43, 0.14);
+      margin: 0 0.35rem;
+    }
+
+    [data-theme="dark"] .v4-fmt-divider {
       background: var(--border-divider);
-      margin: 0 0.4rem;
     }
 
     .v4-prose-scroll {
@@ -740,6 +996,861 @@
     }
 
     /* =========================================================================
+       [VIEW: v5] 우측 AI 집필 에이전트 (단일 카드 & 분류 탭 형태) 전용 스타일
+       ========================================================================= */
+    .v5-right-col {
+      width: 340px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      overflow: hidden;
+      padding-right: 2px;
+    }
+
+    .v5-right-col::-webkit-scrollbar {
+      width: 5px;
+    }
+    .v5-right-col::-webkit-scrollbar-thumb {
+      background: var(--border-divider);
+      border-radius: 4px;
+    }
+
+    /* 🌟 단일 카드 연결 래퍼 (하단 쿼터 바까지 자연스럽게 확장하여 스크롤 불필요) */
+    .v5-unified-card {
+      background: var(--bg-card);
+      border-radius: 11px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* 소제목 헤더 (소제목 밑에 구분선만 긋기) */
+    .v5-card-header {
+      padding: 0.85rem 1rem 0.75rem;
+      border-bottom: 1px solid var(--border-divider);
+      background: var(--bg-card);
+      flex-shrink: 0;
+    }
+
+    .v5-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+
+    /* 🌟 분류 탭 네비게이션 (서식 툴바처럼 한 단계 옅은 연한 크림톤 #faf8f5) */
+    .v5-folder-tabs-nav {
+      display: flex;
+      background: #faf8f5;
+      padding: 0.4rem 0.75rem 0;
+      border-bottom: 1px solid var(--border-divider);
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    [data-theme="dark"] .v5-folder-tabs-nav {
+      background: #241f1a;
+      border-bottom-color: var(--border-divider);
+    }
+
+    .v5-folder-tab {
+      flex: 1;
+      padding: 0.5rem 0.2rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      background: transparent;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+      position: relative;
+      margin-bottom: -1px;
+    }
+
+    .v5-folder-tab:hover {
+      color: var(--color-primary);
+      background: rgba(139, 90, 43, 0.04);
+    }
+
+    .v5-folder-tab.active {
+      color: var(--color-primary);
+      font-weight: 700;
+      background: var(--bg-card);
+      border: 1px solid var(--border-divider);
+      border-bottom: 1px solid var(--bg-card);
+      z-index: 2;
+    }
+
+    /* 탭 내부 본문 컨테이너 (고정 520px 해제하고 남은 높이 전체 활용) */
+    .v5-card-body {
+      background: var(--bg-card);
+      padding: 1.15rem 1.15rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* 탭 페인 (섹터 간 시원하고 여유 있는 1.15rem 간격 부여) */
+    .v5-tab-pane {
+      display: none;
+      flex-direction: column;
+      gap: 1.15rem;
+      height: 100%;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 2px;
+      animation: v5TabFadeIn 0.18s ease;
+    }
+
+    .v5-tab-pane::-webkit-scrollbar {
+      width: 4px;
+    }
+    .v5-tab-pane::-webkit-scrollbar-thumb {
+      background: var(--border-divider);
+      border-radius: 4px;
+    }
+
+    .v5-tab-pane.active {
+      display: flex;
+    }
+
+    /* 라인 픽토그램 공통 스타일 */
+    .v5-picto {
+      display: inline-block;
+      vertical-align: middle;
+      stroke: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    @keyframes v5TabFadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 상단 창작실 연동 풀 너비 박스 (사진 1 스타일: 💡 창작실 연동 (0)) */
+    .v5-btn-vault-full {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-divider);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-bottom: 0.15rem;
+    }
+
+    .v5-btn-vault-full:hover {
+      background: var(--bg-hover);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    /* 입력 필드 & 레이블 (섹터 내부 여유 확보) */
+    .v5-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.42rem;
+    }
+
+    .v5-field-label {
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+
+    .v5-input {
+      width: 100%;
+      padding: 0.48rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-divider);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.78rem;
+      outline: none;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .v5-input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 1px var(--color-primary-soft);
+    }
+
+    .v5-textarea {
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-divider);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      min-height: 52px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .v5-textarea:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 1px var(--color-primary-soft);
+    }
+
+    /* 옵션 그룹 & 칩 (아이콘 없이 텍스트 전용) */
+    .v5-option-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.6rem;
+      border-radius: 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .v5-opt-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .v5-opt-tag {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      min-width: 26px;
+      flex-shrink: 0;
+    }
+
+    .v5-chips-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      flex: 1;
+    }
+
+    .v5-chip-opt {
+      padding: 0.22rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.69rem;
+      font-weight: 500;
+      background: var(--bg-card);
+      color: var(--text-sub);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .v5-chip-opt:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .v5-chip-opt.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .v5-chip-hint-box {
+      margin-top: 0.45rem;
+      padding: 0.5rem 0.65rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      font-size: 0.74rem;
+      transition: all 0.15s ease;
+    }
+
+    .v5-hint-title {
+      font-size: 0.69rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      display: block;
+      margin-bottom: 0.2rem;
+      letter-spacing: 0.02em;
+    }
+
+    .v5-hint-desc {
+      color: var(--text-main);
+      font-size: 0.73rem;
+      line-height: 1.45;
+      margin: 0 0 0.3rem 0;
+    }
+
+    .v5-hint-quote {
+      color: var(--text-sub);
+      font-size: 0.71rem;
+      font-style: italic;
+      line-height: 1.4;
+      padding-left: 0.45rem;
+      border-left: 2px solid var(--border-divider);
+    }
+
+    .v5-vault-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.71rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin-top: 0.15rem;
+    }
+
+    .v5-vault-checkbox input {
+      accent-color: var(--color-primary);
+      cursor: pointer;
+    }
+
+    /* 버튼 스타일 (아이콘 없이 깔끔한 텍스트 중심) */
+    .v5-btn-primary {
+      width: 100%;
+      padding: 0.52rem;
+      border-radius: 6px;
+      background: var(--color-primary);
+      color: #ffffff;
+      font-size: 0.79rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease;
+    }
+
+    .v5-btn-primary:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .v5-btn-secondary {
+      width: 100%;
+      padding: 0.52rem;
+      border-radius: 6px;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      border: 1px solid var(--border-focus);
+      font-size: 0.79rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .v5-btn-secondary:hover {
+      background: var(--color-primary);
+      color: #ffffff;
+    }
+
+    .v5-btn-apply {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 6px;
+      background: var(--color-primary);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease;
+    }
+
+    .v5-btn-apply:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .v5-btn-outline {
+      width: 100%;
+      padding: 0.42rem;
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text-sub);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .v5-btn-outline:hover {
+      background: var(--bg-hover);
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    /* 결과 박스 (우리 테마의 흰색 상자 & 구분 테두리) */
+    .v5-result-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-divider);
+      border-radius: 8px;
+      padding: 0.7rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      animation: v5FadeIn 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    @keyframes v5FadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .v5-result-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.71rem;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .v5-btn-mini {
+      padding: 0.18rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    .v5-btn-mini:hover {
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .v5-btn-text {
+      background: none;
+      border: none;
+      color: var(--color-primary);
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .v5-btn-text:hover {
+      text-decoration: underline;
+    }
+
+    /* [탭 3] 총괄 편집장 실시간 대화창 (동일 높이 100% 일체화) */
+    .v5-chief-chat-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-divider);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .v5-chief-chat-header {
+      padding: 0.55rem 0.85rem;
+      border-bottom: 1px solid var(--border-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+    }
+
+    .v5-chief-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* 사진 2 스타일의 3개 헤더 액션 버튼 */
+    .v5-chief-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .v5-chief-head-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-divider);
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+
+    .v5-chief-head-btn:hover {
+      background: var(--bg-hover);
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .v5-chief-head-btn.close:hover {
+      color: var(--color-danger);
+      border-color: var(--color-danger);
+    }
+
+    .v5-chief-messages-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      background: var(--bg-base);
+    }
+
+    .v5-chief-messages-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .v5-chief-messages-list::-webkit-scrollbar-thumb {
+      background: var(--border-divider);
+      border-radius: 4px;
+    }
+
+    .v5-chief-msg-row {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+    }
+
+    .v5-chief-msg-row.user {
+      justify-content: flex-end;
+    }
+
+    .v5-chief-avatar {
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      background: var(--color-primary-soft);
+      border: 1px solid var(--border-subtle);
+      color: var(--color-primary);
+      font-size: 0.68rem;
+      font-weight: 700;
+      height: fit-content;
+      flex-shrink: 0;
+    }
+
+    .v5-chief-bubble-wrap {
+      max-width: 84%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .v5-chief-msg-row.user .v5-chief-bubble-wrap {
+      align-items: flex-end;
+    }
+
+    .v5-chief-bubble {
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.77rem;
+      line-height: 1.55;
+      word-break: keep-all;
+    }
+
+    .v5-chief-msg-row.assistant .v5-chief-bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      border-top-left-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .v5-chief-msg-row.user .v5-chief-bubble {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-top-right-radius: 2px;
+      box-shadow: 0 1px 4px rgba(139, 90, 43, 0.2);
+    }
+
+    .v5-chief-time {
+      font-size: 0.64rem;
+      color: var(--text-muted);
+      padding: 0 0.15rem;
+    }
+
+    .v5-chief-suggestions-bar {
+      padding: 0.45rem 0.75rem;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-divider);
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .v5-chief-suggest-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .v5-chief-suggest-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+    }
+
+    .v5-chief-suggest-chip {
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 500;
+      background: var(--bg-surface);
+      color: var(--text-sub);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .v5-chief-suggest-chip:hover {
+      background: var(--color-primary-soft);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .v5-chief-input-form {
+      padding: 0.45rem 0.75rem 0.55rem;
+      background: var(--bg-card);
+      display: flex;
+      gap: 0.4rem;
+      align-items: flex-end;
+    }
+
+    .v5-chief-textarea {
+      flex: 1;
+      padding: 0.48rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-divider);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-size: 0.77rem;
+      resize: none;
+      outline: none;
+      height: 44px;
+      font-family: inherit;
+      transition: all 0.15s ease;
+    }
+
+    .v5-chief-textarea:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 1px var(--color-primary-soft);
+    }
+
+    .v5-chief-textarea:focus {
+      border-color: var(--color-primary);
+    }
+
+    .v5-btn-chief-send {
+      padding: 0.45rem 0.75rem;
+      height: 44px;
+      border-radius: 6px;
+      background: var(--color-primary);
+      color: #ffffff;
+      border: none;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .v5-btn-chief-send:hover {
+      background: var(--color-primary-hover);
+    }
+
+    /* AI 쿼터 필 바 (사진 2 스타일: ⚡ Gemini 3.5 Flash Lite [100%]) */
+    .v5-quota-pill-bar {
+      background: var(--bg-card);
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-card);
+      padding: 0.65rem 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .v5-quota-pill-bar:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-hover);
+    }
+
+    .v5-quota-pill-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .v5-quota-pill-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(42, 111, 85, 0.12);
+      color: var(--color-reading);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    /* 초고 입력 확인 팝업 모달 (다른 여백 클릭 시 닫히지 않음) */
+    .v5-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.48);
+      backdrop-filter: blur(2px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .v5-modal-dialog {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border-divider);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+      width: 460px;
+      max-width: 90vw;
+      padding: 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      animation: v5ModalPop 0.18s ease-out;
+    }
+
+    @keyframes v5ModalPop {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .v5-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 0.2rem;
+    }
+
+    .v5-modal-title {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0;
+    }
+
+    .v5-modal-close {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.2rem 0.45rem;
+      line-height: 1;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .v5-modal-close:hover {
+      color: var(--color-danger);
+      background: var(--bg-hover);
+    }
+
+    .v5-modal-preview {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.95rem;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: var(--text-sub);
+      max-height: 170px;
+      overflow-y: auto;
+      word-break: keep-all;
+    }
+
+    .v5-modal-actions {
+      display: flex;
+      gap: 0.65rem;
+      padding-top: 0.2rem;
+    }
+
+    .v5-btn-modal-replace {
+      flex: 1;
+      padding: 0.62rem;
+      border-radius: 6px;
+      background: var(--color-primary);
+      color: #ffffff;
+      border: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .v5-btn-modal-replace:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .v5-btn-modal-append {
+      flex: 1;
+      padding: 0.62rem;
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border-divider);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .v5-btn-modal-append:hover {
+      background: var(--bg-hover);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    /* =========================================================================
        [VIEW: v3] 3단 분리형 레이아웃 스타일
        ========================================================================= */
     #studio-view-v3 {
@@ -850,18 +1961,66 @@
        ========================================================================= -->
   <header class="preview-header-bar">
     <div class="preview-left">
-      <a href="sample-library.html" class="preview-back-btn" title="서재 화면 샘플로 돌아가기">
+      <!-- 1. 내 서재로 버튼 -->
+      <a href="sample-library.html" class="preview-back-btn" title="내 서재로 돌아가기">
         <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
         <span>내 서재로</span>
       </a>
-      <div class="preview-logo">
-        <span>연재서재</span>
-        <span class="preview-tag" id="currentVerTag">스튜디오 v4 (일체형 창 · 추천)</span>
+
+      <!-- 2. 책 제목 -->
+      <div class="top-book-title-wrap" title="클릭하여 도서 제목 및 정보 수정" onclick="showToast('도서 기본 정보 수정 창을 엽니다')">
+        <span class="top-book-title" id="topBookTitle">심야의 문장과 고요한 방</span>
+      </div>
+
+      <!-- 3. 원래 있던 연재중, 완료 드롭다운 태그 -->
+      <div class="top-status-dropdown-wrap">
+        <select class="top-status-select" id="topBookStatusSelect" onchange="handleTopStatusChange(this.value)" title="도서 상태 선택 (연재중 / 완결)">
+          <option value="ongoing">연재중</option>
+          <option value="completed">완결</option>
+        </select>
+      </div>
+
+      <!-- 4. 사진 2의 3개 버튼 (도서 정보 수정 ✏️ / 임시저장 💾 / 버전 히스토리 🕒) -->
+      <div class="top-icon-btn-group">
+        <button type="button" class="top-icon-btn" title="도서 기본 정보 수정 (제목, 필명, 장르)" onclick="showToast('도서 기본 정보 수정 창을 엽니다')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+            <path d="m15 5 4 4"></path>
+          </svg>
+        </button>
+        <button type="button" class="top-icon-btn" title="전체 원고 임시저장" onclick="showToast('전체 원고가 안전하게 임시저장되었습니다')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+        </button>
+        <button type="button" class="top-icon-btn" title="버전 관리 및 히스토리" onclick="showToast('버전 히스토리 기록 보관소를 호출합니다')">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+            <path d="M12 7v5l4 2"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 5. 사진 3 마감 라인: [📅 마감 미정] + [연도-월-일 📅] -->
+      <div class="top-deadline-group">
+        <button type="button" class="top-deadline-badge" id="topDeadlineBadge" onclick="document.getElementById('topDeadlineInput').showPicker ? document.getElementById('topDeadlineInput').showPicker() : document.getElementById('topDeadlineInput').focus()" title="마감 일정 현황">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span id="topDeadlineText">마감 미정</span>
+        </button>
+        <input type="date" class="top-deadline-input" id="topDeadlineInput" title="주간 마감 목표일 설정" onchange="handleTopDeadlineChange(this.value)">
       </div>
     </div>
 
     <div class="preview-right">
-      <!-- 🌟 스튜디오 버전 스위처 (v2 패널형 ↔ v3 3단분리 ↔ v4 일체형 창) -->
+      <!-- 🌟 스튜디오 버전 스위처 (v2 패널형 ↔ v3 3단분리 ↔ v4 일체형 창 ↔ v5 집필 에이전트) -->
       <div class="version-switch-group">
         <span class="version-switch-label">STUDIO UI</span>
         <button type="button" class="btn-ver-switch" id="btn-ver-v2" onclick="setStudioVersion('v2')">
@@ -870,8 +2029,11 @@
         <button type="button" class="btn-ver-switch" id="btn-ver-v3" onclick="setStudioVersion('v3')">
           v3 (3단분리)
         </button>
-        <button type="button" class="btn-ver-switch active" id="btn-ver-v4" onclick="setStudioVersion('v4')">
-          v4 (일체형 창 · 추천)
+        <button type="button" class="btn-ver-switch" id="btn-ver-v4" onclick="setStudioVersion('v4')">
+          v4 (일체형 창)
+        </button>
+        <button type="button" class="btn-ver-switch active" id="btn-ver-v5" onclick="setStudioVersion('v5')">
+          v5 (집필 에이전트)
         </button>
       </div>
 
@@ -888,9 +2050,472 @@
   </header>
 
   <!-- =========================================================================
-       2. [VIEW: v4] 스튜디오 전체 일체형 독립창 레이아웃 (기본 활성)
+       2. [VIEW: v5] 스튜디오 일체형 창 + 통합 AI 집필 에이전트 (신규 · 기본 활성)
        ========================================================================= -->
-  <div id="studio-view-v4">
+  <div id="studio-view-v5">
+    <!-- 🌟 목차 및 구조 + 중앙 에디터 전체 일체형 창 -->
+    <div class="v4-main-window">
+      <!-- [내부 좌측: 목차 컬럼] -->
+      <aside class="v4-toc-col">
+        <div class="v4-toc-header">
+          <span style="font-size: 0.88rem; font-weight: 700; color: var(--text-main);">목차 및 구조</span>
+          <button type="button" class="v4-btn-outline-plan" onclick="showToast('AI 목차 기획 마법사를 실행합니다')">
+            <span>목차 기획</span>
+          </button>
+        </div>
+
+        <div class="v4-toc-scroll">
+          <div>
+            <div class="v4-chap-row" onclick="toggleV5Fold(1)">
+              <div class="v4-chap-left">
+                <span class="v4-fold-arrow open" id="v5-arrow-1">›</span>
+                <span class="v4-chap-name">제 1장. 시작의 계절</span>
+              </div>
+              <div class="v4-chap-right">
+                <span class="v4-status-txt">완료</span>
+                <div class="v4-hover-actions">
+                  <button type="button" class="v4-mini-btn" title="소목차 추가" onclick="event.stopPropagation(); showToast('소목차 추가')">+</button>
+                  <button type="button" class="v4-mini-btn" style="color: var(--color-danger);" title="챕터 삭제" onclick="event.stopPropagation(); showToast('챕터 삭제')">✕</button>
+                </div>
+              </div>
+            </div>
+            <div class="v4-sec-list" id="v5-sec-1">
+              <div class="v4-sec-row" onclick="selectV5Section(1, 1, '1.1 첫 번째 만년필')">
+                <span class="v4-dot filled" title="완료"></span>
+                <span>1.1 첫 번째 만년필</span>
+              </div>
+              <div class="v4-sec-row" onclick="selectV5Section(1, 2, '1.2 종이가 머금은 온기')">
+                <span class="v4-dot filled" title="완료"></span>
+                <span>1.2 종이가 머금은 온기</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="v4-chap-row" onclick="toggleV5Fold(2)">
+              <div class="v4-chap-left">
+                <span class="v4-fold-arrow open" id="v5-arrow-2">›</span>
+                <span class="v4-chap-name">제 2장. 밤의 서재</span>
+              </div>
+              <div class="v4-chap-right">
+                <span class="v4-status-txt">완료</span>
+                <div class="v4-hover-actions">
+                  <button type="button" class="v4-mini-btn" title="소목차 추가" onclick="event.stopPropagation(); showToast('소목차 추가')">+</button>
+                  <button type="button" class="v4-mini-btn" style="color: var(--color-danger);" title="챕터 삭제" onclick="event.stopPropagation(); showToast('챕터 삭제')">✕</button>
+                </div>
+              </div>
+            </div>
+            <div class="v4-sec-list" id="v5-sec-2">
+              <div class="v4-sec-row" onclick="selectV5Section(2, 1, '2.1 고요함이 가르쳐준 것')">
+                <span class="v4-dot filled" title="완료"></span>
+                <span>2.1 고요함이 가르쳐준 것</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="v4-chap-row" onclick="toggleV5Fold(3)">
+              <div class="v4-chap-left">
+                <span class="v4-fold-arrow open" id="v5-arrow-3">›</span>
+                <span class="v4-chap-name">제 3장. 낡은 원목 책상</span>
+              </div>
+              <div class="v4-chap-right">
+                <span class="v4-status-txt writing">집필중</span>
+                <div class="v4-hover-actions">
+                  <button type="button" class="v4-mini-btn" title="소목차 추가" onclick="event.stopPropagation(); showToast('소목차 추가')">+</button>
+                  <button type="button" class="v4-mini-btn" style="color: var(--color-danger);" title="챕터 삭제" onclick="event.stopPropagation(); showToast('챕터 삭제')">✕</button>
+                </div>
+              </div>
+            </div>
+            <div class="v4-sec-list" id="v5-sec-3">
+              <div class="v4-sec-row active" onclick="selectV5Section(3, 1, '3.1 잉크 냄새와 손때')">
+                <span class="v4-dot filled" title="완료"></span>
+                <span>3.1 잉크 냄새와 손때</span>
+              </div>
+              <div class="v4-sec-row" onclick="selectV5Section(3, 2, '3.2 서랍 속에 묻어둔 문장')">
+                <span class="v4-dot empty" title="미완료"></span>
+                <span>3.2 서랍 속에 묻어둔 문장</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v4-bottom-add-chap">
+          <button type="button" class="v4-btn-chap-bottom" onclick="showToast('새 챕터가 추가되었습니다')">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>새 챕터 추가</span>
+          </button>
+          <div class="v4-bottom-import-export-row">
+            <button type="button" class="v4-btn-import-export" onclick="showToast('외부 원고 파일(.txt, .md, .docx) 불러오기 창을 엽니다')" title="외부 원고 파일 불러오기">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                <path d="M12 12v9"></path>
+                <path d="m16 16-4-4-4 4"></path>
+              </svg>
+              <span>원고 가져오기</span>
+            </button>
+            <button type="button" class="v4-btn-import-export primary" onclick="showToast('전체 원고를 텍스트/마크다운 파일로 내보냅니다')" title="전체 원고 내보내기">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>원고 내보내기</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- [내부 중앙: 집필 캔버스 컬럼] -->
+      <main class="v4-editor-col">
+        <div class="v4-editor-top-bar">
+          <div class="v4-breadcrumb">
+            <span id="v5BreadChap" style="color: var(--text-sub);">제 3장</span>
+            <span style="color: var(--border-divider);">&gt;</span>
+            <span id="v5BreadSec" style="color: var(--text-main); font-weight: 700;">3.1 잉크 냄새와 손때</span>
+          </div>
+
+          <div class="v4-actions-group">
+            <button type="button" class="v4-btn-action" onclick="showToast('표준 독서 뷰어로 열람합니다')">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+              <span>미리보기</span>
+            </button>
+            <button type="button" class="v4-btn-action" onclick="showToast('본문 모드 ↔ 문단 모드 전환')">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>
+              <span>본문모드</span>
+            </button>
+            <button type="button" class="v4-btn-action" onclick="showToast('원고가 로컬 스냅샷에 임시저장되었습니다')">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path></svg>
+              <span>임시저장</span>
+            </button>
+            <button type="button" class="v4-btn-action primary" onclick="showToast('3.1 소목차가 독자 공간에 연재 발행되었습니다.')">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              <span>연재발행</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="v4-format-toolbar">
+          <!-- 🌟 사진 2 스타일: 연한 색 & 끝이 둥근 독립 서식 툴바 바 -->
+          <div class="v4-pill-toolbar">
+            <!-- 실행 취소 / 다시 실행 -->
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('undo')" title="실행 취소 (Ctrl+Z)">↶</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('redo')" title="다시 실행 (Ctrl+Y)">↷</button>
+
+            <div class="v4-fmt-divider"></div>
+
+            <!-- 단락 서식 드롭다운 (Normal (본문)) -->
+            <select class="v4-select-fmt" onchange="formatDoc('formatBlock', this.value)" title="단락 서식">
+              <option value="<p>">Normal (본문)</option>
+              <option value="<h1>">대제목 (H1)</option>
+              <option value="<h2>">중제목 (H2)</option>
+              <option value="<h3>">소제목 (H3)</option>
+              <option value="<blockquote>">인용문 (Quote)</option>
+            </select>
+
+            <div class="v4-fmt-divider"></div>
+
+            <!-- 인라인 서식 (B, /, U, S) -->
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('bold')" title="굵게 (Ctrl+B)"><b>B</b></button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('italic')" title="기울임 (Ctrl+I)"><i>/</i></button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('underline')" title="밑줄 (Ctrl+U)"><u>U</u></button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('strikeThrough')" title="취소선"><s>S</s></button>
+
+            <div class="v4-fmt-divider"></div>
+
+            <!-- 블록 서식 및 기타 (목록, 인용구, 코드, 서식 지우기) -->
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('insertUnorderedList')" title="글머리 기호 목록">•≡</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('insertOrderedList')" title="번호 매기기 목록">1≡</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('formatBlock', '<blockquote>')" title="인용 블록">”</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('formatBlock', '<pre>')" title="코드 블록">&lt;/&gt;</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('removeFormat')" title="서식 지우기">Tx</button>
+          </div>
+
+          <div style="font-size: 0.76rem; color: var(--text-muted);">
+            글자 수: <strong id="v5CharTotal">1,420자</strong> (원고지 7.1매)
+          </div>
+        </div>
+
+        <div class="v4-prose-scroll">
+          <div class="v4-sec-caption">CHAPTER 03 · SECTION 01</div>
+          <h1 class="v4-heading-title" id="v5HeadingTitle" contenteditable="true" spellcheck="false">3.1 잉크 냄새와 손때</h1>
+          <div class="v4-prose-content" id="v5EditorContent" contenteditable="true" spellcheck="false" oninput="handleV5Input()">
+            <p>
+              밤 열한 시가 넘으면 집안의 모든 기계 소음이 잦아들고, 오직 서재의 <span class="proof-wave" title="맞춤법 제안: '오크' 원목">오크</span> 책상만이 고요한 침묵을 지킨다. 손바닥을 대면 낮 동안 머금었던 미지근한 온기가 미세하게 전해져 온다. 나무는 살아있던 시절의 기억을 결 속에 품고 있다가 사람이 손을 얹을 때마다 조금씩 돌려주는 것만 같다.
+            </p>
+            <p>
+              글을 쓰는 일은 어쩌면 이 단단한 나무 표면 위에 보이지 않는 홈을 파는 일인지도 모른다. 빠르게 타이핑하고 지워버리는 디지털 화면 속에서도, 서재의 목재 톤과 차분한 조명이 받쳐줄 때 비로소 문장은 조급함을 버리고 무게를 갖기 시작한다.
+            </p>
+            <p>
+              서랍을 열면 오래된 <span class="proof-wave" title="표현 제안: '펠리칸 만년필 잉크병'">펠리칸 잉크병</span>이 있고, 뚜껑 주변에는 마른 잉크 찌꺼기가 검푸른 빛으로 굳어 있다. 그 냄새를 맡을 때마다 나는 비로소 안전한 방에 도착했음을 실감한다.
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- [🌟 v5 우측: AI 집필 에이전트 컬럼 (단일 카드 & 분류 탭 일체화 구조)] -->
+    <aside class="v5-right-col">
+      <!-- 🌟 AI 집필 에이전트 단일 통합 카드 -->
+      <div class="v5-unified-card">
+        <!-- 1. 소제목 (밑에 구분선만 긋기 & 로봇 픽토그램) -->
+        <div class="v5-card-header">
+          <h3 class="v5-card-title" style="display: flex; align-items: center; gap: 0.45rem;">
+            <svg class="v5-picto" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 8V4H8"></path>
+              <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+              <path d="M2 14h2"></path>
+              <path d="M20 14h2"></path>
+              <path d="M15 13v2"></path>
+              <path d="M9 13v2"></path>
+            </svg>
+            <span>AI 초고 집필 에이전트</span>
+          </h3>
+        </div>
+
+        <!-- 2. 분류 탭 네비게이션 (아래 내용 영역과 한 면으로 이어지는 폴더 색인 탭) -->
+        <div class="v5-folder-tabs-nav">
+          <button type="button" class="v5-folder-tab active" id="v5-tab-btn-draft" onclick="switchV5Tab('draft')">
+            초고 집필
+          </button>
+          <button type="button" class="v5-folder-tab" id="v5-tab-btn-polish" onclick="switchV5Tab('polish')">
+            문장 교정
+          </button>
+          <button type="button" class="v5-folder-tab" id="v5-tab-btn-chief" onclick="switchV5Tab('chief')">
+            총괄 편집장
+          </button>
+        </div>
+
+        <!-- 3. 카드 내부 본문 (선택된 탭과 매끄럽게 연결) -->
+        <div class="v5-card-body">
+          <!-- [탭 1] 초고 집필 -->
+          <div class="v5-tab-pane active" id="v5-tab-pane-draft">
+            <!-- 상단 창작실 연동 풀 너비 박스 (사진 1 스타일: 💡 전구 픽토그램 + 창작실 연동 (0)) -->
+            <button type="button" class="v5-btn-vault-full" onclick="showToast('창작실 소재 연동 모달을 엽니다 (선택된 메모: 0건)')" title="창작실 소재 연동">
+              <svg class="v5-picto" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+                <path d="M9 18h6"></path>
+                <path d="M10 22h4"></path>
+              </svg>
+              <span>창작실 연동 (0)</span>
+            </button>
+
+            <!-- 핵심 키워드 & 소재 -->
+            <div class="v5-field-group">
+              <label class="v5-field-label">핵심 키워드 &amp; 소재</label>
+              <input type="text" class="v5-input" id="v5DraftKeywords" placeholder="예: 사모펀드 실사, 숨은 부채, 현장 체크리스트" value="오크 책상, 펠리칸 잉크병, 심야 서재">
+            </div>
+
+            <!-- 작가 지시어 (명령어) -->
+            <div class="v5-field-group">
+              <label class="v5-field-label">작가 지시어 (명령어)</label>
+              <textarea class="v5-textarea" id="v5DraftInstruction" rows="2" placeholder="집필 방향 지시 (예: 고요한 심야 분위기를 생생한 감각 묘사로 풀어줘)">고요한 심야 분위기를 생생한 감각 묘사로 풀어주고, 책상의 온기를 강조해줘</textarea>
+            </div>
+
+            <!-- 어조 설정 섹션 (독립 분리) -->
+            <div class="v5-field-group">
+              <label class="v5-field-label">집필 어조</label>
+              <div class="v5-chips-wrap">
+                <button type="button" class="v5-chip-opt" onclick="setV5Tone(this, 'guide')">가이드형</button>
+                <button type="button" class="v5-chip-opt active" onclick="setV5Tone(this, 'story')">스토리텔링</button>
+                <button type="button" class="v5-chip-opt" onclick="setV5Tone(this, 'talk')">대화형</button>
+                <button type="button" class="v5-chip-opt" onclick="setV5Tone(this, 'explain')">해설형</button>
+              </div>
+              <!-- 어조 실시간 예시 안내 박스 -->
+              <div class="v5-chip-hint-box" id="v5ToneHint">
+                <span class="v5-hint-title" id="v5ToneTitle">스토리텔링 어조</span>
+                <p class="v5-hint-desc" id="v5ToneDesc">
+                  감각적인 정경 묘사와 서사적 흐름을 살려 장면과 감정을 생생하게 그리는 문체입니다.
+                </p>
+                <div class="v5-hint-quote" id="v5ToneQuote">
+                  "밤 열한 시가 넘으면 오직 낡은 책상만이 고요한 침묵을 지킨 채, 낮 동안 머금은 온기를 은은하게 내어준다."
+                </div>
+              </div>
+            </div>
+
+            <!-- 분량 설정 섹션 (독립 분리) -->
+            <div class="v5-field-group">
+              <label class="v5-field-label">목표 분량</label>
+              <div class="v5-chips-wrap">
+                <button type="button" class="v5-chip-opt" onclick="setV5Length(this, 'compact')">간결</button>
+                <button type="button" class="v5-chip-opt active" onclick="setV5Length(this, 'standard')">표준</button>
+                <button type="button" class="v5-chip-opt" onclick="setV5Length(this, 'deep')">상세</button>
+              </div>
+              <!-- 분량 구간 실시간 안내 박스 -->
+              <div class="v5-chip-hint-box" id="v5LengthHint">
+                <span class="v5-hint-title" id="v5LengthTitle">표준 분량</span>
+                <p class="v5-hint-desc" id="v5LengthDesc">
+                  <strong>약 1,300자 ~ 1,800자</strong> (200자 원고지 6.5 ~ 9매 내외)
+                </p>
+                <div class="v5-hint-quote" id="v5LengthQuote">
+                  한 꼭지의 서사 전개와 감정선이 가장 안정적으로 완결되는 정규 1화 연재 권장 분량입니다.
+                </div>
+              </div>
+            </div>
+
+            <!-- 초고 집필 시작 버튼 -->
+            <button type="button" class="v5-btn-primary" id="btnRunV5Draft" onclick="generateV5Draft()">
+              초고 집필 시작
+            </button>
+          </div>
+
+          <!-- [탭 2] 문장 교정 -->
+          <div class="v5-tab-pane" id="v5-tab-pane-polish">
+            <!-- 수정 전 원문 + 가져오기 -->
+            <div class="v5-field-group">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label class="v5-field-label">수정 전 원문</label>
+                <button type="button" class="v5-btn-text" onclick="fetchV5Selection()" title="에디터에서 드래그한 문장을 가져옵니다">
+                  선택 가져오기
+                </button>
+              </div>
+              <textarea class="v5-textarea" id="v5PolishInput" rows="3" placeholder="교정할 문장을 입력하거나 본문에서 '선택 가져오기'를 누르세요...">손바닥을 대면 낮 동안 머금었던 미지근한 온기가 미세하게 전해져 온다.</textarea>
+            </div>
+
+            <!-- 교정 스타일 칩 & 실시간 예시 안내 -->
+            <div class="v5-field-group">
+              <label class="v5-field-label">교정 스타일</label>
+              <div class="v5-chips-wrap">
+                <button type="button" class="v5-chip-opt" onclick="setV5PolishStyle(this, 'expand')">풍부하게</button>
+                <button type="button" class="v5-chip-opt active" onclick="setV5PolishStyle(this, 'clear')">윤문/다듬기</button>
+                <button type="button" class="v5-chip-opt" onclick="setV5PolishStyle(this, 'grammar')">맞춤법</button>
+                <button type="button" class="v5-chip-opt" onclick="setV5PolishStyle(this, 'concise')">명료하게</button>
+                <button type="button" class="v5-chip-opt" onclick="setV5PolishStyle(this, 'friendly')">대화체</button>
+              </div>
+              <!-- 교정 스타일 실시간 예시 안내 박스 -->
+              <div class="v5-chip-hint-box" id="v5PolishHint">
+                <span class="v5-hint-title" id="v5PolishTitle">윤문/다듬기 스타일</span>
+                <p class="v5-hint-desc" id="v5PolishDesc">
+                  원문의 핵심 의미와 서사 톤을 그대로 유지하면서 어색한 문장 구조와 조사를 매끄럽게 가다듬습니다.
+                </p>
+                <div class="v5-hint-quote" id="v5PolishQuote">
+                  "단단한 나무 결에 가만히 손을 얹자, 낮 동안 머금었던 미지근한 온기가 손끝을 타고 은은하게 스며들었다."
+                </div>
+              </div>
+            </div>
+
+            <!-- 추가 지침 -->
+            <div class="v5-field-group">
+              <label class="v5-field-label">추가 지침</label>
+              <input type="text" class="v5-input" id="v5PolishCustom" placeholder="예: 은유적 깊이와 심야 서정성 강화">
+            </div>
+
+            <!-- 교정 실행 버튼 (텍스트 중심) -->
+            <button type="button" class="v5-btn-secondary" id="btnRunV5Polish" onclick="runV5Polish()">
+              문장 교정 실행
+            </button>
+
+            <!-- 교정 결과 박스 & 반영 -->
+            <div class="v5-result-box" id="v5PolishResultBox">
+              <div class="v5-result-meta">
+                <span>수정 제안 결과</span>
+                <button type="button" class="v5-btn-mini" onclick="copyV5Polish()">복사</button>
+              </div>
+              <textarea class="v5-textarea" id="v5PolishOutput" rows="3" style="min-height: 60px;">단단한 나무 결에 가만히 손을 얹자, 낮 동안 햇살을 머금었던 미지근한 온기가 손끝을 타고 은은하게 스며들었다.</textarea>
+              <button type="button" class="v5-btn-apply" onclick="applyV5Polish()">
+                본문에 즉시 반영하기
+              </button>
+            </div>
+          </div>
+
+          <!-- [탭 3] 총괄 편집장 실시간 대화창 (기존 서비스 연동) -->
+          <div class="v5-tab-pane" id="v5-tab-pane-chief">
+            <div class="v5-chief-chat-container">
+              <!-- 채팅 헤더 (2개 액션 버튼: 히스토리, 새대화) -->
+              <div class="v5-chief-chat-header">
+                <span class="v5-chief-title">책임 편집장 코칭</span>
+                <div class="v5-chief-head-actions">
+                  <button type="button" class="v5-chief-head-btn" onclick="showToast('대화 기록 보관소를 호출합니다')" title="대화 기록 보관소">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                      <path d="M3 3v5h5"></path>
+                      <path d="M12 7v5l4 2"></path>
+                    </svg>
+                  </button>
+                  <button type="button" class="v5-chief-head-btn" onclick="resetV5ChiefChat()" title="새 대화 시작">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                      <path d="M3 3v5h5"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 실시간 대화 메시지 목록 -->
+              <div class="v5-chief-messages-list" id="v5ChiefChatList">
+                <!-- 웰컴 메시지 (이모지 없이 단정한 편집장 배지) -->
+                <div class="v5-chief-msg-row assistant">
+                  <div class="v5-chief-avatar">편집장</div>
+                  <div class="v5-chief-bubble-wrap">
+                    <div class="v5-chief-bubble">
+                      반갑습니다, 작가님. 《심야의 문장과 고요한 방》의 총괄 책임 편집장입니다.<br><br>
+                      도서 제목 추천, 목차 진단, 베스트셀러 요건 비교, 전체 서사 및 논리 점검, 문체 감수 등 집필 전반을 든든하게 총괄해 드립니다. 하단의 <strong>추천 질문</strong>을 누르시거나 궁금한 점을 질문해 주세요.
+                    </div>
+                    <span class="v5-chief-time">방금 전</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 추천 질문 칩 바 (아이콘 없이 텍스트 전용) -->
+              <div class="v5-chief-suggestions-bar">
+                <span class="v5-chief-suggest-label">추천 질문:</span>
+                <div class="v5-chief-suggest-chips">
+                  <button type="button" class="v5-chief-suggest-chip" onclick="sendV5ChiefPrompt('현재 목차를 바탕으로 출판용 메인 제목 5세트를 제안해줘')">도서 제목 제안</button>
+                  <button type="button" class="v5-chief-suggest-chip" onclick="sendV5ChiefPrompt('현재 목차 구조의 완결성과 보강점을 진단해줘')">목차 구조 진단</button>
+                  <button type="button" class="v5-chief-suggest-chip" onclick="sendV5ChiefPrompt('이 분야 베스트셀러 성공 요건과 우리 책을 비교해줘')">베스트셀러 비교</button>
+                  <button type="button" class="v5-chief-suggest-chip" onclick="sendV5ChiefPrompt('1~3장의 서사 기승전결과 인과관계를 점검해줘')">서사·논리 점검</button>
+                  <button type="button" class="v5-chief-suggest-chip" onclick="sendV5ChiefPrompt('타깃 독자 눈높이에 맞춰 문체 톤앤매너를 감수해줘')">문체 톤앤매너</button>
+                </div>
+              </div>
+
+              <!-- 메시지 입력창 -->
+              <form class="v5-chief-input-form" onsubmit="handleV5ChiefSubmit(event)">
+                <textarea class="v5-chief-textarea" id="v5ChiefInput" placeholder="편집장에게 지시하거나 질문하세요 (엔터로 전송)" onkeydown="handleV5ChiefKeyDown(event)"></textarea>
+                <button type="submit" class="v5-btn-chief-send">전송</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI 쿼터 바 (사진 2 스타일: ⚡ 번개 픽토그램 + Gemini 3.5 Flash Lite [100%]) -->
+      <div class="v5-quota-pill-bar" onclick="showToast('Gemini 3.5 Flash Lite 쿼터: 잔여 100%')">
+        <div class="v5-quota-pill-left">
+          <svg class="v5-picto" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span>Gemini 3.5 Flash Lite</span>
+        </div>
+        <span class="v5-quota-pill-badge">100%</span>
+      </div>
+    </aside>
+  </div>
+
+  <!-- [v5 전용] 초고 반영 확인 팝업 모달 (다른 여백 클릭 시 꺼지지 않음) -->
+  <div id="v5DraftModal" class="v5-modal-backdrop">
+    <div class="v5-modal-dialog">
+      <div class="v5-modal-header">
+        <h4 class="v5-modal-title">생성된 초고를 입력하시겠습니까?</h4>
+        <button type="button" class="v5-modal-close" onclick="closeV5DraftModal()" title="닫기 (입력 취소)">✕</button>
+      </div>
+      <div class="v5-modal-preview" id="v5DraftModalPreview">
+        <!-- 생성된 초고 텍스트 미리보기 -->
+      </div>
+      <div class="v5-modal-actions">
+        <button type="button" class="v5-btn-modal-replace" onclick="applyV5DraftReplaceFromModal()">
+          본문 전체 반영
+        </button>
+        <button type="button" class="v5-btn-modal-append" onclick="applyV5DraftAppendFromModal()">
+          끝에 이어붙이기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       3. [VIEW: v4] 스튜디오 전체 일체형 독립창 레이아웃
+       ========================================================================= -->
+  <div id="studio-view-v4" style="display: none;">
     <!-- 🌟 목차 및 구조 + 중앙 에디터 전체가 하나의 거대한 백색 둥근 창으로 통합 -->
     <div class="v4-main-window">
       <!-- [내부 좌측: 목차 컬럼] -->
@@ -983,6 +2608,24 @@
             <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             <span>새 챕터 추가</span>
           </button>
+          <div class="v4-bottom-import-export-row">
+            <button type="button" class="v4-btn-import-export" onclick="showToast('외부 원고 파일(.txt, .md, .docx) 불러오기 창을 엽니다')" title="외부 원고 파일 불러오기">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                <path d="M12 12v9"></path>
+                <path d="m16 16-4-4-4 4"></path>
+              </svg>
+              <span>원고 가져오기</span>
+            </button>
+            <button type="button" class="v4-btn-import-export primary" onclick="showToast('전체 원고를 텍스트/마크다운 파일로 내보냅니다')" title="전체 원고 내보내기">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>원고 내보내기</span>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -1016,19 +2659,41 @@
         </div>
 
         <div class="v4-format-toolbar">
-          <div style="display: flex; align-items: center; gap: 0.25rem;">
-            <button type="button" class="v4-btn-fmt" onclick="formatDoc('bold')"><b>B</b></button>
-            <button type="button" class="v4-btn-fmt" onclick="formatDoc('italic')"><i>I</i></button>
-            <button type="button" class="v4-btn-fmt" onclick="formatDoc('underline')"><u>U</u></button>
-            <button type="button" class="v4-btn-fmt" onclick="formatDoc('strikeThrough')"><s>S</s></button>
+          <!-- 🌟 사진 2 스타일: 연한 색 & 끝이 둥근 독립 서식 툴바 바 -->
+          <div class="v4-pill-toolbar">
+            <!-- 실행 취소 / 다시 실행 -->
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('undo')" title="실행 취소 (Ctrl+Z)">↶</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('redo')" title="다시 실행 (Ctrl+Y)">↷</button>
+
             <div class="v4-fmt-divider"></div>
-            <button type="button" class="v4-btn-fmt" onclick="formatDoc('formatBlock', '<h2>')">H2</button>
-            <button type="button" class="v4-btn-fmt" onclick="formatDoc('formatBlock', '<h3>')">H3</button>
-            <button type="button" class="v4-btn-fmt" onclick="formatDoc('formatBlock', '<blockquote>')">Quote</button>
+
+            <!-- 단락 서식 드롭다운 (Normal (본문)) -->
+            <select class="v4-select-fmt" onchange="formatDoc('formatBlock', this.value)" title="단락 서식">
+              <option value="<p>">Normal (본문)</option>
+              <option value="<h1>">대제목 (H1)</option>
+              <option value="<h2>">중제목 (H2)</option>
+              <option value="<h3>">소제목 (H3)</option>
+              <option value="<blockquote>">인용문 (Quote)</option>
+            </select>
+
             <div class="v4-fmt-divider"></div>
-            <button type="button" class="v4-btn-fmt" onclick="formatDoc('justifyLeft')">좌측</button>
-            <button type="button" class="v4-btn-fmt" onclick="formatDoc('justifyCenter')">가운데</button>
+
+            <!-- 인라인 서식 (B, /, U, S) -->
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('bold')" title="굵게 (Ctrl+B)"><b>B</b></button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('italic')" title="기울임 (Ctrl+I)"><i>/</i></button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('underline')" title="밑줄 (Ctrl+U)"><u>U</u></button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('strikeThrough')" title="취소선"><s>S</s></button>
+
+            <div class="v4-fmt-divider"></div>
+
+            <!-- 블록 서식 및 기타 (목록, 인용구, 코드, 서식 지우기) -->
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('insertUnorderedList')" title="글머리 기호 목록">•≡</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('insertOrderedList')" title="번호 매기기 목록">1≡</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('formatBlock', '<blockquote>')" title="인용 블록">”</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('formatBlock', '<pre>')" title="코드 블록">&lt;/&gt;</button>
+            <button type="button" class="v4-btn-fmt" onclick="formatDoc('removeFormat')" title="서식 지우기">Tx</button>
           </div>
+
           <div style="font-size: 0.76rem; color: var(--text-muted);">
             글자 수: <strong id="v4CharTotal">1,420자</strong> (원고지 7.1매)
           </div>
@@ -1273,22 +2938,31 @@
        스크립트 (버전 전환 & 인터랙션)
        ========================================================================= -->
   <script>
-    // 🌟 스튜디오 버전 실시간 스위처 (v2, v3, v4 완전 작동)
+    // 🌟 스튜디오 버전 실시간 스위처 (v2, v3, v4, v5 완전 작동)
     function setStudioVersion(ver) {
+      const v5 = document.getElementById('studio-view-v5');
       const v4 = document.getElementById('studio-view-v4');
       const v3 = document.getElementById('studio-view-v3');
       const v2 = document.getElementById('studio-view-v2');
 
+      if (v5) v5.style.display = ver === 'v5' ? 'flex' : 'none';
       if (v4) v4.style.display = ver === 'v4' ? 'flex' : 'none';
       if (v3) v3.style.display = ver === 'v3' ? 'flex' : 'none';
       if (v2) v2.style.display = ver === 'v2' ? 'flex' : 'none';
 
-      document.getElementById('btn-ver-v4').classList.toggle('active', ver === 'v4');
-      document.getElementById('btn-ver-v3').classList.toggle('active', ver === 'v3');
-      document.getElementById('btn-ver-v2').classList.toggle('active', ver === 'v2');
+      const btnV5 = document.getElementById('btn-ver-v5');
+      const btnV4 = document.getElementById('btn-ver-v4');
+      const btnV3 = document.getElementById('btn-ver-v3');
+      const btnV2 = document.getElementById('btn-ver-v2');
+
+      if (btnV5) btnV5.classList.toggle('active', ver === 'v5');
+      if (btnV4) btnV4.classList.toggle('active', ver === 'v4');
+      if (btnV3) btnV3.classList.toggle('active', ver === 'v3');
+      if (btnV2) btnV2.classList.toggle('active', ver === 'v2');
 
       const tagMap = {
-        v4: '스튜디오 v4 (일체형 창 · 추천)',
+        v5: '스튜디오 v5 (집필 에이전트 통합 · 신규)',
+        v4: '스튜디오 v4 (일체형 창)',
         v3: '스튜디오 v3 (3단분리)',
         v2: '스튜디오 v2 (패널형)'
       };
@@ -1310,9 +2984,40 @@
       document.execCommand(cmd, false, val);
     }
 
-    // 4. v4 소목차 선택
+    // 4. v5 소목차 선택 & 인터랙션
+    function selectV5Section(cNum, sNum, fullTitle) {
+      document.querySelectorAll('#studio-view-v5 .v4-sec-row').forEach(r => r.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      document.getElementById('v5BreadChap').textContent = `제 ${cNum}장`;
+      document.getElementById('v5BreadSec').textContent = fullTitle;
+      document.getElementById('v5HeadingTitle').textContent = fullTitle;
+
+      showToast(`'${fullTitle}' 원고로 전환되었습니다.`);
+    }
+
+    function toggleV5Fold(cNum) {
+      const list = document.getElementById(`v5-sec-${cNum}`);
+      const arrow = document.getElementById(`v5-arrow-${cNum}`);
+      if (list.style.display === 'none') {
+        list.style.display = 'flex';
+        arrow.classList.add('open');
+      } else {
+        list.style.display = 'none';
+        arrow.classList.remove('open');
+      }
+    }
+
+    function handleV5Input() {
+      const editor = document.getElementById('v5EditorContent');
+      const text = editor ? editor.innerText || '' : '';
+      const totalChars = text.length;
+      document.getElementById('v5CharTotal').textContent = totalChars.toLocaleString() + '자';
+    }
+
+    // 5. v4 소목차 선택
     function selectV4Section(cNum, sNum, fullTitle) {
-      document.querySelectorAll('.v4-sec-row').forEach(r => r.classList.remove('active'));
+      document.querySelectorAll('#studio-view-v4 .v4-sec-row').forEach(r => r.classList.remove('active'));
       event.currentTarget.classList.add('active');
 
       document.getElementById('v4BreadChap').textContent = `제 ${cNum}장`;
@@ -1334,12 +3039,366 @@
       }
     }
 
-    // 5. v4 글자수 실시간 계산
     function handleV4Input() {
-      const editor = document.querySelector('.v4-prose-content');
+      const editor = document.querySelector('#studio-view-v4 .v4-prose-content');
       const text = editor ? editor.innerText || '' : '';
       const totalChars = text.length;
       document.getElementById('v4CharTotal').textContent = totalChars.toLocaleString() + '자';
+    }
+
+    // 6. [v5 전용] AI 집필 에이전트 인터랙션 로직
+    const V5_TONE_DATA = {
+      guide: {
+        title: '가이드형 어조',
+        desc: '명확한 실행 단계와 핵심 요령을 독자에게 친절하게 전달하는 실용 가이드 문체입니다.',
+        quote: '"원목 책상을 오래 관리하려면 먼저 부드러운 면포로 결을 따라 가볍게 닦아내는 단계부터 시작해야 합니다."'
+      },
+      story: {
+        title: '스토리텔링 어조',
+        desc: '감각적인 정경 묘사와 서사적 흐름을 살려 장면과 감정을 생생하게 그리는 문체입니다.',
+        quote: '"밤 열한 시가 넘으면 오직 낡은 책상만이 고요한 침묵을 지킨 채, 낮 동안 머금은 온기를 은은하게 내어준다."'
+      },
+      talk: {
+        title: '대화형 어조',
+        desc: '작가가 바로 옆에서 조곤조곤 말을 건네듯 친근하고 편안한 담화형 구어체 문체입니다.',
+        quote: '"혹시 늦은 밤 책상 앞에 가만히 앉아본 적 있으신가요? 조용한 방 안에서는 작은 만년필 소리마저 특별하게 들리거든요."'
+      },
+      explain: {
+        title: '해설형 어조',
+        desc: '논리적 분석과 깊이 있는 배경 지식을 균형 있게 전달하는 전문 해설 문체입니다.',
+        quote: '"목재 가구가 심리적 안정감에 미치는 영향은 촉각적 온도 수용체의 자극과 서재 공간의 음향 흡수율 분석을 통해 입증됩니다."'
+      }
+    };
+
+    const V5_LENGTH_DATA = {
+      compact: {
+        title: '간결 분량',
+        desc: '예상 구간: 약 600자 ~ 900자 (200자 원고지 3 ~ 4.5매)',
+        quote: '핵심 요점 중심의 빠른 도입부나 콤팩트한 단락 꼭지 집필에 적합한 분량입니다.'
+      },
+      standard: {
+        title: '표준 분량',
+        desc: '예상 구간: 약 1,300자 ~ 1,800자 (200자 원고지 6.5 ~ 9매)',
+        quote: '1개 소목차 정규 연재에 가장 권장되는 표준 분량으로 읽기 호흡과 서사 밀도가 가장 안정적입니다.'
+      },
+      deep: {
+        title: '상세 분량',
+        desc: '예상 구간: 약 2,200자 ~ 2,800자 (200자 원고지 11 ~ 14매)',
+        quote: '장면의 디테일한 묘사와 복합적인 인과 논증을 깊이 있게 담아내는 심층 집필에 적합합니다.'
+      }
+    };
+
+    function setV5Tone(btn, toneKey) {
+      btn.parentElement.querySelectorAll('.v5-chip-opt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const data = V5_TONE_DATA[toneKey];
+      if (data) {
+        document.getElementById('v5ToneTitle').textContent = data.title;
+        document.getElementById('v5ToneDesc').textContent = data.desc;
+        document.getElementById('v5ToneQuote').textContent = data.quote;
+        showToast(`${data.title}로 변경되었습니다.`);
+      }
+    }
+
+    function setV5Length(btn, lenKey) {
+      btn.parentElement.querySelectorAll('.v5-chip-opt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const data = V5_LENGTH_DATA[lenKey];
+      if (data) {
+        document.getElementById('v5LengthTitle').textContent = data.title;
+        document.getElementById('v5LengthDesc').innerHTML = `<strong>${data.desc}</strong>`;
+        document.getElementById('v5LengthQuote').textContent = data.quote;
+        showToast(`${data.title}로 변경되었습니다.`);
+      }
+    }
+
+    let v5LatestDraft = '';
+
+    function generateV5Draft() {
+      const btn = document.getElementById('btnRunV5Draft');
+      const kw = document.getElementById('v5DraftKeywords').value;
+      btn.innerHTML = '<span>초고 집필 중...</span>';
+      btn.style.opacity = '0.7';
+
+      setTimeout(() => {
+        btn.innerHTML = '<span>초고 집필 시작</span>';
+        btn.style.opacity = '1';
+
+        const sample = `밤 열한 시가 넘으면 집안의 모든 기계 소음이 잦아들고, 오직 서재의 오크 책상만이 고요한 침묵을 지킨다. 손바닥을 대면 낮 동안 머금었던 미지근한 온기가 미세하게 전해져 온다. 나무는 살아있던 시절의 기억을 결 속에 품고 있다가 사람이 손을 얹을 때마다 조금씩 돌려주는 것만 같다. 서랍을 열면 오래된 펠리칸 잉크병이 있고, 뚜껑 주변에는 마른 잉크 찌꺼기가 검푸른 빛으로 굳어 있다. 그 냄새를 맡을 때마다 나는 비로소 안전한 방에 도착했음을 실감한다.`;
+        v5LatestDraft = sample;
+
+        // 결과 박스 대신 입력 확인 팝업 모달 호출
+        const preview = document.getElementById('v5DraftModalPreview');
+        if (preview) preview.textContent = sample;
+        const modal = document.getElementById('v5DraftModal');
+        if (modal) modal.style.display = 'flex';
+
+        showToast('초고 집필이 완료되었습니다. 반영 방식을 선택해주세요.');
+      }, 600);
+    }
+
+    function closeV5DraftModal() {
+      const modal = document.getElementById('v5DraftModal');
+      if (modal) modal.style.display = 'none';
+      showToast('초고 입력이 취소되었습니다.');
+    }
+
+    function applyV5DraftReplaceFromModal() {
+      if (!v5LatestDraft) return;
+      const editor = document.getElementById('v5EditorContent');
+      if (editor) {
+        editor.innerHTML = `<p>${v5LatestDraft}</p>`;
+        handleV5Input();
+      }
+      const modal = document.getElementById('v5DraftModal');
+      if (modal) modal.style.display = 'none';
+      showToast('초고가 본문에 전체 반영(덮어쓰기)되었습니다.');
+    }
+
+    function applyV5DraftAppendFromModal() {
+      if (!v5LatestDraft) return;
+      const editor = document.getElementById('v5EditorContent');
+      if (editor) {
+        editor.innerHTML += `<p>${v5LatestDraft}</p>`;
+        handleV5Input();
+      }
+      const modal = document.getElementById('v5DraftModal');
+      if (modal) modal.style.display = 'none';
+      showToast('초고가 본문 끝에 이어서 추가되었습니다.');
+    }
+
+    function fetchV5Selection() {
+      const sel = window.getSelection().toString().trim();
+      if (sel) {
+        document.getElementById('v5PolishInput').value = sel;
+        showToast('선택한 본문 문장을 가져왔습니다.');
+      } else {
+        const editor = document.getElementById('v5EditorContent');
+        const firstP = editor ? editor.querySelector('p')?.innerText || '' : '';
+        if (firstP) {
+          document.getElementById('v5PolishInput').value = firstP.slice(0, 80) + '...';
+          showToast('본문 문장을 교정창으로 가져왔습니다.');
+        } else {
+          showToast('교정할 문장을 에디터에서 드래그하여 선택해주세요.');
+        }
+      }
+    }
+
+    const V5_POLISH_DATA = {
+      expand: {
+        title: '풍부하게 스타일',
+        desc: '감각적인 형용사와 배경 정경 묘사를 풍성하게 더해 장면의 깊이와 분위기를 입체적으로 확장합니다.',
+        quote: '"세월의 깊이를 품은 짙은 오크 책상의 결에 가만히 손을 얹자, 낮 동안 햇살이 남겨둔 아련한 온기가 손끝을 따라 은은한 맥박처럼 번져왔다."'
+      },
+      clear: {
+        title: '윤문/다듬기 스타일',
+        desc: '원문의 핵심 의미와 서사 톤을 그대로 유지하면서 어색한 문장 구조와 조사를 매끄럽게 가다듬습니다.',
+        quote: '"단단한 나무 결에 가만히 손을 얹자, 낮 동안 머금었던 미지근한 온기가 손끝을 타고 은은하게 스며들었다."'
+      },
+      grammar: {
+        title: '맞춤법 스타일',
+        desc: '국립국어원 표준 어문 규정에 맞춰 띄어쓰기, 맞춤법, 외래어 표기법을 정밀하게 교정합니다.',
+        quote: '"손바닥을 대면 낮 동안 머금었던 미지근한 온기가 미세하게 전해져 온다. (오탈자 및 띄어쓰기 규정 완벽 준수)"'
+      },
+      concise: {
+        title: '명료하게 스타일',
+        desc: '군더더기 수식어와 중복 표현을 걷어내어 핵심 메시지가 또렷하게 읽히도록 간결화합니다.',
+        quote: '"나무 결에 손을 얹자 낮의 온기가 손끝에 스며들었다."'
+      },
+      friendly: {
+        title: '대화체 스타일',
+        desc: '독자에게 직접 이야기를 들려주듯 친절하고 부드러운 담화형 구어체로 전환합니다.',
+        quote: '"가만히 손을 대어보니, 나무가 낮 동안 품었던 온기가 손끝으로 조용히 전해지더라고요."'
+      }
+    };
+
+    function setV5PolishStyle(btn, styleKey) {
+      btn.parentElement.querySelectorAll('.v5-chip-opt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const data = V5_POLISH_DATA[styleKey];
+      if (data) {
+        document.getElementById('v5PolishTitle').textContent = data.title;
+        document.getElementById('v5PolishDesc').textContent = data.desc;
+        document.getElementById('v5PolishQuote').textContent = data.quote;
+        showToast(`${data.title}로 변경되었습니다.`);
+      }
+    }
+
+    function runV5Polish() {
+      const btn = document.getElementById('btnRunV5Polish');
+      const input = document.getElementById('v5PolishInput').value;
+      if (!input.trim()) {
+        showToast('교정할 원문 문장을 먼저 입력해주세요.');
+        return;
+      }
+      btn.innerHTML = '<span>문장 교정 중...</span>';
+      btn.style.opacity = '0.7';
+
+      setTimeout(() => {
+        btn.innerHTML = '<span>문장 교정 실행</span>';
+        btn.style.opacity = '1';
+
+        const polished = `단단한 나무 결에 가만히 손을 얹자, 낮 동안 햇살을 머금었던 미지근한 온기가 손끝을 타고 은은하게 스며들었다.`;
+        document.getElementById('v5PolishOutput').value = polished;
+        document.getElementById('v5PolishResultBox').style.display = 'flex';
+        showToast('문장 교정이 완료되었습니다. 본문에 적용해보세요.');
+      }, 500);
+    }
+
+    function copyV5Polish() {
+      const text = document.getElementById('v5PolishOutput').value;
+      navigator.clipboard.writeText(text);
+      showToast('교정문이 클립보드에 복사되었습니다.');
+    }
+
+    function applyV5Polish() {
+      const polished = document.getElementById('v5PolishOutput').value;
+      const editor = document.getElementById('v5EditorContent');
+      const firstP = editor.querySelector('p');
+      if (firstP) {
+        firstP.innerHTML = `${polished} 글을 쓰는 일은 어쩌면 이 단단한 나무 표면 위에 보이지 않는 홈을 파는 일인지도 모른다.`;
+      }
+      handleV5Input();
+      showToast('교정된 문장이 에디터 본문에 즉시 반영되었습니다.');
+    }
+
+    // 7. [v5 전용] 3단 분류 탭 전환
+    function switchV5Tab(tab) {
+      document.querySelectorAll('#studio-view-v5 .v5-folder-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#studio-view-v5 .v5-tab-pane').forEach(p => p.classList.remove('active'));
+
+      const targetBtn = document.getElementById(`v5-tab-btn-${tab}`);
+      const targetPane = document.getElementById(`v5-tab-pane-${tab}`);
+      if (targetBtn) targetBtn.classList.add('active');
+      if (targetPane) targetPane.classList.add('active');
+
+      const tabTitles = {
+        draft: '초고 집필',
+        polish: '문장 교정',
+        chief: '총괄 편집장'
+      };
+      showToast(`${tabTitles[tab] || tab} 탭으로 전환되었습니다.`);
+    }
+
+    // 8. [v5 전용] 총괄 편집장 대화 인터랙션
+    function appendV5ChiefMessage(role, text) {
+      const list = document.getElementById('v5ChiefChatList');
+      if (!list) return;
+      const row = document.createElement('div');
+      row.className = `v5-chief-msg-row ${role}`;
+      const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      if (role === 'assistant') {
+        row.innerHTML = `
+          <div class="v5-chief-avatar">편집장</div>
+          <div class="v5-chief-bubble-wrap">
+            <div class="v5-chief-bubble">${text}</div>
+            <span class="v5-chief-time">${now}</span>
+          </div>
+        `;
+      } else {
+        row.innerHTML = `
+          <div class="v5-chief-bubble-wrap">
+            <div class="v5-chief-bubble">${text}</div>
+            <span class="v5-chief-time">${now}</span>
+          </div>
+        `;
+      }
+      list.appendChild(row);
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function sendV5ChiefPrompt(prompt) {
+      appendV5ChiefMessage('user', prompt);
+      showToast('편집장에게 지시를 전달했습니다.');
+
+      setTimeout(() => {
+        let reply = '';
+        if (prompt.includes('제목')) {
+          reply = `<strong>[편집장 추천 도서 제목 &amp; 킬러 부제]</strong><br><br>
+1. <strong>《심야의 문장과 고요한 방》</strong> - 침묵이 머무는 밤, 낡은 오크 책상에서 건져 올린 생각들<br>
+2. <strong>《밤 열한 시의 서재》</strong> - 기계 소음이 잦아들 때 비로소 시작되는 고유한 기록<br>
+3. <strong>《단단한 나무 위의 홈》</strong> - 조급함을 지우고 단정한 무게를 채우는 에세이<br>
+4. <strong>《잉크 냄새와 손때》</strong> - 마르지 않는 기억을 쓰는 사람을 위한 밤의 고백<br>
+5. <strong>《침묵을 지키는 책상》</strong> - 고요 속에서 손끝으로 만나는 온기의 문장들`;
+        } else if (prompt.includes('목차')) {
+          reply = `<strong>[목차 구조 진단 리포트]</strong><br><br>
+• <strong>완결성 (88점):</strong> '시작의 계절'에서 '밤의 서재'를 거쳐 '낡은 원목 책상'으로 이어지는 공간적·심리적 흐름이 매우 자연스럽습니다.<br>
+• <strong>보강 추천:</strong> 3.2절 뒤에 <em>'3.3 만년필 촉이 종이를 긁는 순간'</em> 꼭지를 추가하면 에세이 특유의 촉각적 몰입감이 배가될 것으로 보입니다.`;
+        } else if (prompt.includes('베스트셀러')) {
+          reply = `<strong>[베스트셀러 요건 비교 분석]</strong><br><br>
+최근 인문·에세이 베스트셀러의 핵심 트렌드는 <strong>'압도적 일상의 디테일'</strong>과 <strong>'조용한 위로'</strong>입니다. 작가님의 1~3장은 감각적 묘사가 탁월하므로, 독자가 자신의 책상을 떠올릴 수 있도록 여백을 유지하는 것이 유리합니다.`;
+        } else {
+          reply = `작가님의 말씀에 맞춰 본문 서사 맥락과 톤앤매너를 정밀하게 분석했습니다.<br><br>
+현재 3.1절의 문장들은 밀도가 높고 감각적입니다. 계속해서 이 고유한 리듬감을 유지하며 집필을 진행해주세요.`;
+        }
+        appendV5ChiefMessage('assistant', reply);
+      }, 700);
+    }
+
+    function handleV5ChiefSubmit(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('v5ChiefInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      sendV5ChiefPrompt(text);
+    }
+
+    function handleV5ChiefKeyDown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleV5ChiefSubmit();
+      }
+    }
+
+    function resetV5ChiefChat() {
+      const list = document.getElementById('v5ChiefChatList');
+      if (list) {
+        list.innerHTML = `
+          <div class="v5-chief-msg-row assistant">
+            <div class="v5-chief-avatar">편집장</div>
+            <div class="v5-chief-bubble-wrap">
+              <div class="v5-chief-bubble">
+                새 상담 세션이 시작되었습니다, 작가님.<br><br>
+                궁금하신 점이나 출판 기획, 목차 진단, 문체 감수가 필요하시면 질문해 주세요.
+              </div>
+              <span class="v5-chief-time">방금 전</span>
+            </div>
+          </div>
+        `;
+      }
+      showToast('총괄 편집장 대화가 새 세션으로 초기화되었습니다.');
+    }
+
+    // 9. [최상단 헤더 인터랙션] 도서 발행 상태 & 마감 목표일
+    function handleTopStatusChange(val) {
+      if (val === 'completed') {
+        showToast('심야의 문장과 고요한 방 도서가 [완결] 상태로 변경되었습니다.');
+      } else {
+        showToast('심야의 문장과 고요한 방 도서가 [연재중] 상태로 변경되었습니다.');
+      }
+    }
+
+    function handleTopDeadlineChange(val) {
+      const badge = document.getElementById('topDeadlineBadge');
+      const text = document.getElementById('topDeadlineText');
+      if (!val) {
+        text.textContent = '마감 미정';
+        badge.classList.remove('active');
+        showToast('마감 목표일 설정이 해제되었습니다.');
+        return;
+      }
+      const target = new Date(val);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      target.setHours(0, 0, 0, 0);
+      const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+      if (diff === 0) text.textContent = '오늘 마감 (D-Day)';
+      else if (diff > 0) text.textContent = `D-${diff}`;
+      else text.textContent = `마감 경과 (${Math.abs(diff)}일)`;
+      badge.classList.add('active');
+      showToast(`주간 마감 목표일이 [${val}] (${text.textContent})로 설정되었습니다.`);
     }
 
     // 토스트 알림 헬퍼
