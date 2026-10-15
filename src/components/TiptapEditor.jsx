@@ -2,6 +2,18 @@ import React, { useState, useEffect, useImperativeHandle, forwardRef, useRef } f
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
+import {
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Indent as IndentIcon,
+  Outdent as OutdentIcon,
+  Palette,
+  Highlighter,
+  Check
+} from 'lucide-react';
+import { TextColor, Highlight, TextAlign, Indent, LineHeight } from './tiptapExtensions';
 import './TiptapEditor.css';
 
 /**
@@ -41,7 +53,30 @@ const TiptapEditor = forwardRef(function TiptapEditor(
   const [isEditingHeading, setIsEditingHeading] = useState(false);
   const [tempHeading, setTempHeading] = useState('');
 
-  // extensions 배열 (StarterKit v3에 Underline이 이미 기본 내장되어 있음)
+  // 툴바 팝오버 상태
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [isHighlightPickerOpen, setIsHighlightPickerOpen] = useState(false);
+  const colorPickerRef = useRef(null);
+  const highlightPickerRef = useRef(null);
+
+  // 실시간 글자수 상태
+  const [liveCharCount, setLiveCharCount] = useState(0);
+
+  // 팝오버 외부 클릭 감지
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target)) {
+        setIsColorPickerOpen(false);
+      }
+      if (highlightPickerRef.current && !highlightPickerRef.current.contains(e.target)) {
+        setIsHighlightPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  // extensions 배열 (StarterKit + 글자색 + 형광펜 + 정렬 + 들여쓰기 + 줄간격)
   const extensions = React.useMemo(() => [
     StarterKit.configure({
       heading: {
@@ -50,7 +85,12 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     }),
     Placeholder.configure({
       placeholder
-    })
+    }),
+    TextColor,
+    Highlight,
+    TextAlign,
+    Indent,
+    LineHeight
   ], [placeholder]);
 
   const editor = useEditor(
@@ -61,6 +101,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
       onUpdate: ({ editor }) => {
         const html = editor.getHTML();
         lastHtmlRef.current = html;
+        setLiveCharCount(editor.getText().length);
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
           if (onChange) onChange(html);
@@ -80,10 +121,10 @@ const TiptapEditor = forwardRef(function TiptapEditor(
   // 외부에서 content prop이 바뀔 때 (다른 섹션 선택 등)만 안전하게 동기화
   useEffect(() => {
     if (!editor) return;
-    // 부모가 전달한 content가 에디터의 현재 내용과 다를 때만 setContent (내부 타이핑 루프 차단)
     if (content !== lastHtmlRef.current && content !== editor.getHTML()) {
       lastHtmlRef.current = content || '';
       editor.commands.setContent(content || '');
+      setLiveCharCount(editor.getText().length);
     }
   }, [content, editor]);
 
@@ -310,6 +351,184 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             </button>
           </div>
 
+          <div className="toolbar-divider" />
+
+          {/* 문단 정렬 (좌측, 가운데, 우측, 양쪽 정렬) */}
+          <div className="toolbar-group">
+            <button
+              type="button"
+              className={`tool-btn ${editor?.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
+              onClick={() => editor?.chain().focus().setTextAlign('left').run()}
+              title="왼쪽 정렬"
+            >
+              <AlignLeft size={14} />
+            </button>
+            <button
+              type="button"
+              className={`tool-btn ${editor?.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
+              onClick={() => editor?.chain().focus().setTextAlign('center').run()}
+              title="가운데 정렬"
+            >
+              <AlignCenter size={14} />
+            </button>
+            <button
+              type="button"
+              className={`tool-btn ${editor?.isActive({ textAlign: 'right' }) ? 'active' : ''}`}
+              onClick={() => editor?.chain().focus().setTextAlign('right').run()}
+              title="오른쪽 정렬"
+            >
+              <AlignRight size={14} />
+            </button>
+            <button
+              type="button"
+              className={`tool-btn ${editor?.isActive({ textAlign: 'justify' }) ? 'active' : ''}`}
+              onClick={() => editor?.chain().focus().setTextAlign('justify').run()}
+              title="양쪽 맞춤"
+            >
+              <AlignJustify size={14} />
+            </button>
+          </div>
+
+          <div className="toolbar-divider" />
+
+          {/* 들여쓰기 / 내어쓰기 */}
+          <div className="toolbar-group">
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={() => editor?.chain().focus().outdent().run()}
+              title="내어쓰기 (Shift+Tab)"
+            >
+              <OutdentIcon size={14} />
+            </button>
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={() => editor?.chain().focus().indent().run()}
+              title="들여쓰기 (Tab)"
+            >
+              <IndentIcon size={14} />
+            </button>
+          </div>
+
+          <div className="toolbar-divider" />
+
+          {/* 글자 색상 & 형광펜 하이라이트 (미니 팝오버 팔레트) */}
+          <div className="toolbar-group">
+            {/* 글자 색상 팔레트 */}
+            <div className="toolbar-popover-wrap" ref={colorPickerRef}>
+              <button
+                type="button"
+                className={`tool-btn ${isColorPickerOpen ? 'active' : ''}`}
+                onClick={() => {
+                  setIsColorPickerOpen((prev) => !prev);
+                  setIsHighlightPickerOpen(false);
+                }}
+                title="글자 색상"
+              >
+                <Palette size={14} />
+              </button>
+              {isColorPickerOpen && (
+                <div className="toolbar-palette-popover">
+                  {[
+                    { label: '기본 먹색', color: 'inherit', bg: '#2b231d' },
+                    { label: '챠콜', color: '#1f2937', bg: '#1f2937' },
+                    { label: '고서적 브라운', color: '#8b5a2b', bg: '#8b5a2b' },
+                    { label: '와인 버건디', color: '#991b1b', bg: '#991b1b' },
+                    { label: '번트 오렌지', color: '#c2410c', bg: '#c2410c' },
+                    { label: '딥 포레스트', color: '#15803d', bg: '#15803d' },
+                    { label: '네이비 블루', color: '#1d4ed8', bg: '#1d4ed8' },
+                    { label: '로열 퍼플', color: '#6b21a8', bg: '#6b21a8' },
+                  ].map((item) => (
+                    <button
+                      key={item.color}
+                      type="button"
+                      className="palette-color-btn"
+                      style={{ backgroundColor: item.bg }}
+                      title={item.label}
+                      onClick={() => {
+                        if (item.color === 'inherit') {
+                          editor?.chain().focus().unsetTextColor().run();
+                        } else {
+                          editor?.chain().focus().setTextColor(item.color).run();
+                        }
+                        setIsColorPickerOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 형광펜 하이라이트 팔레트 */}
+            <div className="toolbar-popover-wrap" ref={highlightPickerRef}>
+              <button
+                type="button"
+                className={`tool-btn ${isHighlightPickerOpen ? 'active' : ''}`}
+                onClick={() => {
+                  setIsHighlightPickerOpen((prev) => !prev);
+                  setIsColorPickerOpen(false);
+                }}
+                title="형광펜 하이라이트"
+              >
+                <Highlighter size={14} />
+              </button>
+              {isHighlightPickerOpen && (
+                <div className="toolbar-palette-popover">
+                  {[
+                    { label: '하이라이트 해제', color: null, bg: '#ffffff' },
+                    { label: '레몬 옐로우', color: '#fef08a', bg: '#fef08a' },
+                    { label: '페일 민트', color: '#bbf7d0', bg: '#bbf7d0' },
+                    { label: '스카이 블루', color: '#bae6fd', bg: '#bae6fd' },
+                    { label: '소프트 라벤더', color: '#e9d5ff', bg: '#e9d5ff' },
+                    { label: '피치 로즈', color: '#fecdd3', bg: '#fecdd3' },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      className="palette-color-btn"
+                      style={{ backgroundColor: item.bg }}
+                      title={item.label}
+                      onClick={() => {
+                        if (!item.color) {
+                          editor?.chain().focus().unsetHighlight().run();
+                        } else {
+                          editor?.chain().focus().setHighlight(item.color).run();
+                        }
+                        setIsHighlightPickerOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="toolbar-divider" />
+
+          {/* 줄 간격 (행간 조절) */}
+          <div className="toolbar-group">
+            <select
+              className="toolbar-select"
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'normal') {
+                  editor?.chain().focus().unsetLineHeight().run();
+                } else {
+                  editor?.chain().focus().setLineHeight(val).run();
+                }
+              }}
+              defaultValue="normal"
+              title="줄 간격 (행간)"
+            >
+              <option value="normal">행간: 표준</option>
+              <option value="1.4">행간: 140%</option>
+              <option value="1.6">행간: 160%</option>
+              <option value="1.8">행간: 180%</option>
+              <option value="2.0">행간: 200%</option>
+            </select>
+          </div>
+
           {extraToolbarItems}
         </div>
       )}
@@ -363,6 +582,22 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             </div>
           )}
           <EditorContent editor={editor} />
+        </div>
+      </div>
+
+      {/* 하단 에디터 상태 바: 공백 포함 글자수 & 원고지 환산 매수 표기 */}
+      <div className="editor-status-bar">
+        <div className="status-bar-left">
+          <div className="status-stat-item">
+            <span>공백 포함</span>
+            <span className="status-stat-strong">{liveCharCount.toLocaleString()}자</span>
+          </div>
+          <div className="status-manuscript-badge">
+            <span>원고지 약 {(liveCharCount / 200).toFixed(1)}매</span>
+          </div>
+        </div>
+        <div className="status-bar-right">
+          <span>단축키: Ctrl+F 검색 · Ctrl+H 찾아바꾸기</span>
         </div>
       </div>
     </div>

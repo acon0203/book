@@ -1,0 +1,3531 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연재서재 - 창작실 UI 프로토타입 샘플 (집필 스튜디오 에디토리얼 무드)</title>
+  <!-- Google Fonts: 클래식 세리프 & 프리텐다드 산세리프 & 영문 Cinzel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Serif+KR:wght@300;400;500;600;700&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================================
+       1. 디자인 토큰 (집필 스튜디오 일체형 톤앤매너)
+       ========================================================================= */
+    :root {
+      /* 라이트 모드 (에디토리얼 페이퍼 & 맑은 오트밀 바닥) */
+      --bg-base: #f5f0e9;           /* 따뜻하고 고즈넉한 오트밀 크림 바닥 */
+      --bg-surface: #ede6dc;        /* 상단 바 & 패널 음영 */
+      --bg-card: #ffffff;           /* 순백색 카드 & 원고 캔버스 */
+      --bg-hover: #f0ebe2;
+      --bg-active: #e6ded3;
+
+      --border-subtle: rgba(139, 90, 43, 0.08);
+      --border-focus: rgba(139, 90, 43, 0.28);
+      --border-divider: rgba(139, 90, 43, 0.12);
+
+      --color-primary: #8b5a2b;     /* 클래식 가죽 브라운 */
+      --color-primary-hover: #70441d;
+      --color-primary-soft: rgba(139, 90, 43, 0.08);
+
+      --color-reading: #2a6f55;     /* 세이지 에메랄드 */
+      --color-reading-soft: rgba(42, 111, 85, 0.08);
+
+      --color-accent-gold: #c48a54;
+      --color-danger: #c53030;
+
+      --text-main: #2b231d;         /* 먹물 잉크 블랙 */
+      --text-sub: #63574c;          /* 고서적 브라운 그레이 */
+      --text-muted: #9c9186;        /* 연한 브라운 그레이 */
+
+      --shadow-canvas: 0 4px 24px rgba(70, 50, 30, 0.06), 0 1px 3px rgba(70, 50, 30, 0.04);
+      --shadow-card: 0 2px 10px rgba(70, 50, 30, 0.04);
+      --shadow-md: 0 4px 16px rgba(100, 70, 40, 0.06);
+
+      --font-serif: 'Noto Serif KR', Georgia, serif;
+      --font-sans: 'Pretendard', -apple-system, sans-serif;
+      --font-display: 'Cinzel', serif;
+    }
+
+    [data-theme="dark"] {
+      /* 다크 모드 (모던 월넛 원목) */
+      --bg-base: #1c1815;           /* 깊은 월넛 원목 바닥 */
+      --bg-surface: #241f1a;        /* 사이드바 & 상단 패널 */
+      --bg-card: #2a231d;           /* 차분한 월넛 캔버스 */
+      --bg-hover: #332b24;
+      --bg-active: #3d342c;
+
+      --border-subtle: rgba(196, 138, 84, 0.12);
+      --border-focus: rgba(196, 138, 84, 0.32);
+      --border-divider: rgba(196, 138, 84, 0.15);
+
+      --color-primary: #c48a54;     /* 호박석 골드 */
+      --color-primary-hover: #d99b64;
+      --color-primary-soft: rgba(196, 138, 84, 0.12);
+
+      --color-reading: #48a381;
+      --color-reading-soft: rgba(72, 163, 129, 0.12);
+
+      --color-accent-gold: #d99b64;
+      --color-danger: #e53e3e;
+
+      --text-main: #f5efe6;         /* 따뜻한 양피지 화이트 */
+      --text-sub: #b8aba0;
+      --text-muted: #80756a;
+
+      --shadow-canvas: 0 4px 24px rgba(0, 0, 0, 0.35);
+      --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .icon {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    /* =========================================================================
+       2. 상단 탑바
+       ========================================================================= */
+    .preview-header-bar {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-divider);
+      padding: 0.45rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .preview-left {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .preview-back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.32rem 0.7rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .preview-back-btn:hover {
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+      background: var(--bg-hover);
+    }
+
+    .top-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border-divider);
+    }
+
+    .top-book-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .top-book-title {
+      font-family: var(--font-serif);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+    }
+
+    .top-genre-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .top-progress-pill {
+      font-size: 0.72rem;
+      color: var(--text-sub);
+      background: var(--bg-card);
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .top-progress-pill span {
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    .preview-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-goto-studio {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.34rem 0.85rem;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #8b5a2b, #a66e38);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(139, 90, 43, 0.2);
+      transition: all 0.15s ease;
+    }
+    [data-theme="dark"] .btn-goto-studio {
+      background: linear-gradient(135deg, #c48a54, #d99b64);
+      color: #1c1815;
+    }
+    .btn-goto-studio:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(139, 90, 43, 0.3);
+    }
+
+    .theme-toggle-group {
+      display: flex;
+      gap: 2px;
+      background: var(--bg-card);
+      padding: 2px;
+      border-radius: 7px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .theme-btn {
+      padding: 0.3rem 0.55rem;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-sub);
+      border: none;
+      transition: all 0.15s ease;
+    }
+    .theme-btn.active {
+      background: var(--color-primary);
+      color: #ffffff;
+    }
+
+    /* =========================================================================
+       3. 메인 3열 레이아웃
+       ========================================================================= */
+    .vault-layout-root {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 46px);
+      padding: 1.25rem 1.5rem 1.5rem;
+      gap: 1.25rem;
+      overflow: hidden;
+    }
+
+    .vault-window-container {
+      flex: 1;
+      display: flex;
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: var(--shadow-canvas);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    /* 3-1. 좌측 작품 기획 서가 */
+    .vault-project-col {
+      width: 250px;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border-divider);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .vault-col-header {
+      padding: 1.15rem 1.15rem 0.85rem;
+      border-bottom: 1px solid var(--border-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .vault-col-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .vault-col-sub {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+    }
+
+    .vault-col-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+    }
+
+    .btn-new-project {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.32rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-new-project:hover {
+      background: var(--color-primary);
+      color: #ffffff;
+    }
+
+    .vault-project-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .project-card {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .project-card:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-focus);
+      transform: translateY(-1px);
+    }
+    .project-card.active {
+      background: var(--bg-hover);
+      border-color: var(--color-primary);
+      box-shadow: 0 2px 8px rgba(139, 90, 43, 0.08);
+    }
+
+    .project-cover-bar {
+      width: 4px;
+      height: 38px;
+      border-radius: 2px;
+      background: var(--color-primary);
+      flex-shrink: 0;
+    }
+
+    .project-meta-wrap {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .project-title {
+      font-family: var(--font-serif);
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .project-sub-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .project-genre {
+      font-weight: 500;
+    }
+
+    .project-step-badge {
+      font-size: 0.66rem;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+
+    /* 3-2. 중앙 작업 캔버스 & 5대 파이프라인 */
+    .vault-main-canvas {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+      background: var(--bg-card);
+    }
+
+    .pipeline-step-bar {
+      display: flex;
+      align-items: stretch;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-divider);
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+
+    .pipeline-step-item {
+      flex: 1;
+      min-width: 135px;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.85rem 1.15rem;
+      cursor: pointer;
+      border-right: 1px solid var(--border-divider);
+      background: transparent;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .pipeline-step-item:last-child {
+      border-right: none;
+    }
+    .pipeline-step-item:hover {
+      background: var(--bg-hover);
+    }
+    .pipeline-step-item.active {
+      background: var(--bg-card);
+      border-bottom-color: var(--color-primary);
+    }
+
+    .step-num-pill {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: rgba(139, 90, 43, 0.1);
+      color: var(--color-primary);
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      flex-shrink: 0;
+    }
+    .pipeline-step-item.active .step-num-pill {
+      background: var(--color-primary);
+      color: #ffffff;
+    }
+
+    .step-text-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .step-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+    .pipeline-step-item.active .step-title-row {
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    .step-desc {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pipeline-content-viewport {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 1.75rem 2.5rem;
+      background: var(--bg-card);
+    }
+
+    /* STEP 0: 아이디어 노트 */
+    .ideas-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .ideas-input-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-divider);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .ideas-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      font-family: inherit;
+    }
+
+    .btn-add-idea {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      background: var(--color-primary);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-add-idea:hover {
+      background: var(--color-primary-hover);
+    }
+
+    .ideas-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .idea-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .idea-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .idea-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      font-size: 0.68rem;
+      font-weight: 600;
+    }
+
+    .idea-card-body {
+      font-family: var(--font-serif);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--text-main);
+    }
+
+    .idea-card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.4rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--border-subtle);
+    }
+
+    .btn-idea-action {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      color: var(--text-sub);
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: all 0.15s ease;
+    }
+    .btn-idea-action:hover {
+      background: var(--bg-hover);
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+    .btn-idea-action.danger:hover {
+      color: var(--color-danger);
+      border-color: var(--color-danger);
+    }
+
+    /* STEP 1: 출간 기획서 */
+    .proposal-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .proposal-top-notice {
+      background: var(--color-primary-soft);
+      border: 1px solid var(--border-focus);
+      border-radius: 8px;
+      padding: 0.9rem 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .notice-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.82rem;
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+
+    .btn-save-proposal {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      background: var(--color-primary);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+
+    .proposal-section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1.25rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .proposal-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .proposal-label {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .proposal-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .proposal-textarea {
+      width: 100%;
+      min-height: 80px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-divider);
+      border-radius: 8px;
+      padding: 0.75rem 0.9rem;
+      font-size: 0.86rem;
+      color: var(--text-main);
+      font-family: var(--font-serif);
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+    }
+    .proposal-textarea:focus {
+      border-color: var(--color-primary);
+      background: var(--bg-card);
+    }
+
+    /* STEP 2: 글감 & 취재창고 */
+    .materials-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .materials-filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .cat-pill-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .cat-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+    }
+    .cat-pill-btn.active {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+    }
+
+    .materials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 1.15rem;
+    }
+
+    .material-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .material-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .material-cat-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .material-title {
+      font-family: var(--font-serif);
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .material-body {
+      font-size: 0.83rem;
+      color: var(--text-sub);
+      line-height: 1.55;
+    }
+
+    .material-source {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* =========================================================================
+       [STEP 3] 인물 & 뼈대 (UI 깨짐 방지 및 목차조립대 스타일의 표준 플롯 트리)
+       ========================================================================= */
+    .story-container {
+      display: grid;
+      grid-template-columns: minmax(230px, 270px) minmax(0, 1fr);
+      gap: 1.25rem;
+      width: 100%;
+      min-width: 0;
+      margin: 0 auto;
+    }
+
+    .story-left-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      min-width: 0;
+    }
+
+    .story-right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      min-width: 0;
+    }
+
+    .story-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border-divider);
+      min-width: 0;
+    }
+
+    .story-panel-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .char-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .char-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.85rem 0.95rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      box-shadow: var(--shadow-card);
+      min-width: 0;
+    }
+
+    .char-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+    }
+
+    .char-name {
+      font-family: var(--font-serif);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .char-role-badge {
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .char-meta-row {
+      font-size: 0.74rem;
+      color: var(--text-sub);
+      line-height: 1.45;
+      word-break: keep-all;
+    }
+
+    /* 🌟 목차 조립대 스타일의 표준 플롯 & 세부 플롯 하위트리 구조 (별도 박스 제거) */
+    .plot-stages-tree {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      min-width: 0;
+    }
+
+    .plot-stage-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      min-width: 0;
+    }
+
+    .plot-stage-bar {
+      background: var(--bg-surface);
+      padding: 0.65rem 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-divider);
+      min-width: 0;
+    }
+
+    .plot-stage-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .plot-stage-name {
+      font-family: var(--font-serif);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .plot-stage-count-badge {
+      font-size: 0.68rem;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      color: var(--color-primary);
+      border: 1px solid var(--border-subtle);
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .plot-stage-sub-list {
+      padding: 0.35rem 0.65rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    /* 4번 반영: 별도 무거운 박스 없이 목차조립대 소목차처럼 단정한 하위 행 */
+    .plot-genre-switcher {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 0.65rem;
+      overflow-x: auto;
+      padding-bottom: 0.2rem;
+    }
+    .plot-genre-btn {
+      padding: 0.28rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .plot-genre-btn:hover {
+      background: var(--bg-hover);
+      color: var(--color-primary);
+    }
+    .plot-genre-btn.active {
+      background: var(--color-primary);
+      color: #ffffff;
+      border-color: var(--color-primary);
+    }
+
+    /* 플롯 단계 표준 뼈대 출판 가이드 해설 */
+    .plot-stage-guide {
+      font-size: 0.74rem;
+      color: var(--text-sub);
+      padding: 0.4rem 0.95rem;
+      background: rgba(139, 90, 43, 0.04);
+      border-bottom: 1px dashed var(--border-divider);
+      line-height: 1.45;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    [data-theme="dark"] .plot-stage-guide {
+      background: rgba(196, 138, 84, 0.05);
+    }
+
+    .plot-sub-item-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .plot-sub-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.45rem 0.65rem;
+      border-radius: 5px;
+      background: transparent;
+      border: 1px solid transparent;
+      font-size: 0.82rem;
+      color: var(--text-sub);
+      transition: all 0.15s ease;
+      min-width: 0;
+      position: relative;
+    }
+    .plot-sub-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+    }
+    .plot-sub-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      padding-right: 0.5rem;
+    }
+    .plot-sub-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      flex-shrink: 0;
+    }
+    .plot-sub-item:hover .plot-sub-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 세부 꼭지별 아이디어 메모 배지 & 인라인 입력창 */
+    .plot-sub-memo-badge {
+      font-size: 0.73rem;
+      color: var(--color-primary);
+      background: var(--color-primary-soft);
+      padding: 0.3rem 0.65rem;
+      border-radius: 5px;
+      margin: 0.1rem 0.3rem 0.35rem 0.65rem;
+      line-height: 1.45;
+      border-left: 3px solid var(--color-primary);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.4rem;
+    }
+    .plot-sub-memo-badge .memo-content {
+      flex: 1;
+      word-break: break-all;
+    }
+    .plot-sub-memo-input-wrap {
+      padding: 0.45rem 0.65rem;
+      background: var(--bg-surface);
+      border-radius: 6px;
+      margin: 0.15rem 0.3rem 0.35rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      border: 1px solid var(--border-focus);
+    }
+    .plot-sub-memo-textarea {
+      width: 100%;
+      height: 60px;
+      resize: vertical;
+      font-family: inherit;
+      font-size: 0.78rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-divider);
+      background: var(--bg-card);
+      color: var(--text-main);
+      outline: none;
+    }
+    .plot-memo-btns {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.3rem;
+    }
+
+    /* =========================================================================
+       [STEP 4] 목차 조립대 (노션 스타일 실시간 드래그 피드백 & 앱 브랜드 인디케이터)
+       ========================================================================= */
+    .outline-sandbox-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .outline-top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.85rem 1.15rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-divider);
+      border-radius: 8px;
+    }
+
+    .btn-plan-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.38rem 0.85rem;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #8b5a2b, #a66e38);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(139, 90, 43, 0.2);
+    }
+    [data-theme="dark"] .btn-plan-outline {
+      background: linear-gradient(135deg, #c48a54, #d99b64);
+      color: #1c1815;
+    }
+
+    .outline-chap-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      margin-bottom: 0.85rem;
+      position: relative;
+      transition: background 0.15s ease, opacity 0.15s ease;
+    }
+
+    /* 🌟 5번 반영: 노션 스타일 드래그 상태 & 앱 테마 색상 인디케이터 라인 (본버전 1:1 매칭) */
+    .outline-chap-header.is-dragging,
+    .outline-sec-row.is-dragging {
+      opacity: 0.35 !important;
+      background: rgba(139, 90, 43, 0.08) !important;
+    }
+
+    /* 상단 삽입 위치 가이드라인 (앱 브랜드 컬러) */
+    .outline-chap-header.drag-over-top::before,
+    .outline-sec-row.drag-over-top::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: 4px;
+      right: 4px;
+      height: 3px;
+      background: var(--color-primary);
+      border-radius: 999px;
+      box-shadow: 0 0 6px var(--color-primary);
+      z-index: 25;
+      pointer-events: none;
+    }
+
+    /* 하단 삽입 위치 가이드라인 (앱 브랜드 컬러) */
+    .outline-chap-header.drag-over-bottom::after,
+    .outline-sec-row.drag-over-bottom::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 4px;
+      right: 4px;
+      height: 3px;
+      background: var(--color-primary);
+      border-radius: 999px;
+      box-shadow: 0 0 6px var(--color-primary);
+      z-index: 25;
+      pointer-events: none;
+    }
+
+    /* 소목차를 챕터 헤더 위에 드래그했을 때 챕터 하이라이트 */
+    .outline-chap-header.drag-target-hover {
+      background: var(--color-primary-soft) !important;
+      outline: 2px solid var(--color-primary) !important;
+      outline-offset: -1px;
+    }
+
+    .outline-chap-header {
+      background: var(--bg-surface);
+      padding: 0.75rem 1.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-divider);
+      cursor: grab;
+      user-select: none;
+      position: relative;
+    }
+    .outline-chap-header:active {
+      cursor: grabbing;
+    }
+
+    .chap-left-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chap-title-inline {
+      font-family: var(--font-serif);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .inline-edit-input {
+      font-family: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border: 1px solid var(--color-primary);
+      border-radius: 4px;
+      background: var(--bg-card);
+      color: var(--text-main);
+      outline: none;
+      width: 80%;
+    }
+
+    .chap-hover-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+    .outline-chap-header:hover .chap-hover-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .outline-sec-list {
+      padding: 0.5rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .outline-sec-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      background: var(--bg-card);
+      border: 1px dashed var(--border-subtle);
+      font-size: 0.82rem;
+      color: var(--text-sub);
+      cursor: grab;
+      position: relative;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+    .outline-sec-row:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+    .outline-sec-row:active {
+      cursor: grabbing;
+    }
+
+    .sec-hover-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+    }
+    .outline-sec-row:hover .sec-hover-actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .mini-icon-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .mini-icon-btn:hover {
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+      background: var(--color-primary-soft);
+    }
+    .mini-icon-btn.danger:hover {
+      color: var(--color-danger);
+      border-color: var(--color-danger);
+      background: rgba(197, 48, 48, 0.08);
+    }
+
+    /* 3-3. 우측 3열: AI 기획 어시스턴트 카드 + 독립 쿼터 바 */
+    .vault-ai-col-wrap {
+      width: 340px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .vault-ai-card {
+      flex: 1;
+      min-height: 0;
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: var(--shadow-canvas);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .ai-col-header {
+      padding: 0.95rem 1.15rem;
+      border-bottom: 1px solid var(--border-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+      flex-shrink: 0;
+    }
+
+    .ai-col-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .ai-col-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .ai-chat-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .ai-msg-bubble {
+      padding: 0.8rem 0.95rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+    .ai-msg-bubble.assistant {
+      border-left: 3px solid var(--color-primary);
+    }
+    .ai-msg-bubble.user {
+      background: var(--color-primary-soft);
+      border-color: var(--border-focus);
+      color: var(--color-primary);
+      align-self: flex-end;
+    }
+
+    .ai-quick-prompts {
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      border-top: 1px solid var(--border-divider);
+      background: var(--bg-surface);
+      flex-shrink: 0;
+    }
+
+    .prompt-chip {
+      padding: 0.28rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .prompt-chip:hover {
+      background: var(--color-primary-soft);
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .ai-input-wrap {
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      gap: 0.45rem;
+      border-top: 1px solid var(--border-divider);
+      background: var(--bg-card);
+      flex-shrink: 0;
+    }
+
+    .ai-input {
+      flex: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-divider);
+      border-radius: 6px;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.82rem;
+      color: var(--text-main);
+      outline: none;
+    }
+
+    /* 독립 쿼터 바 */
+    .v5-quota-pill-bar {
+      background: var(--bg-card);
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-card);
+      padding: 0.65rem 0.95rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .v5-quota-pill-bar:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-hover);
+      transform: translateY(-1px);
+    }
+
+    .v5-quota-pill-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .v5-quota-pill-left .icon {
+      color: var(--color-primary);
+    }
+
+    .v5-quota-pill-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: rgba(42, 111, 85, 0.12);
+      color: var(--color-reading);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    /* =========================================================================
+       4. 쿼터 모달 팝업 & 툴팁 스타일
+       ========================================================================= */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(2px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-box {
+      width: 620px;
+      max-width: 92vw;
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border-divider);
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalPop 0.2s ease;
+    }
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+      position: relative;
+    }
+    .modal-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .title-tooltip-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: help;
+    }
+    .title-info-icon {
+      width: 15px;
+      height: 15px;
+      color: var(--text-muted);
+      transition: color 0.15s ease;
+    }
+    .title-tooltip-wrap:hover .title-info-icon {
+      color: var(--color-primary);
+    }
+
+    .quota-tooltip-popover {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      width: 350px;
+      background: #2b231d;
+      color: #ffffff;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      font-size: 0.74rem;
+      line-height: 1.55;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: all 0.2s ease;
+      z-index: 1000;
+    }
+    [data-theme="dark"] .quota-tooltip-popover {
+      background: #1c1815;
+      border: 1px solid var(--border-divider);
+    }
+    .title-tooltip-wrap:hover .quota-tooltip-popover {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .tooltip-header {
+      font-weight: 700;
+      color: var(--color-accent-gold);
+      margin-bottom: 0.4rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 0.3rem;
+      font-size: 0.78rem;
+    }
+    .tooltip-item {
+      margin-bottom: 0.35rem;
+    }
+    .tooltip-item strong {
+      color: #e5b382;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+      max-height: 72vh;
+      overflow-y: auto;
+    }
+
+    .quota-group-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .quota-group-title {
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding-left: 2px;
+    }
+
+    .quota-item-card {
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      background: var(--bg-card);
+      padding: 0.7rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .quota-item-card:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-hover);
+    }
+    .quota-item-card.active {
+      border-color: var(--color-primary);
+      background: var(--color-primary-soft);
+      box-shadow: 0 1px 4px rgba(139, 90, 43, 0.08);
+    }
+
+    .quota-card-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
+    .quota-card-left-info {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-shrink: 0;
+    }
+
+    .quota-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+    .quota-item-card.active .quota-status-dot {
+      background: var(--color-reading);
+      box-shadow: 0 0 6px var(--color-reading);
+    }
+
+    .quota-card-model-name {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .quota-card-model-desc {
+      font-size: 0.74rem;
+      color: var(--text-sub);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: left;
+    }
+
+    .quota-card-rpd-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(42, 111, 85, 0.12);
+      color: var(--color-reading);
+      flex-shrink: 0;
+    }
+
+    .quota-card-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      padding-top: 0.35rem;
+      border-top: 1px dashed var(--border-divider);
+    }
+
+    .quota-meta-limits {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .modal-footer {
+      padding: 0.85rem 1.25rem;
+      border-top: 1px solid var(--border-divider);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      background: var(--bg-surface);
+    }
+
+    .toast-msg {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #2b231d;
+      color: #ffffff;
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+    }
+    [data-theme="dark"] .toast-msg {
+      background: #c48a54;
+      color: #1c1815;
+    }
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .ref-chips-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .ref-chip {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-divider);
+      color: var(--text-sub);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================================
+       1. 상단 탑바
+       ========================================================================= -->
+  <header class="preview-header-bar">
+    <div class="preview-left">
+      <button class="preview-back-btn" onclick="showToast('내 서재로 이동합니다.')">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        서재
+      </button>
+
+      <div class="top-divider"></div>
+
+      <div class="top-book-meta">
+        <span class="top-book-title" id="activeBookTitle">심야의 문장과 고요한 방</span>
+        <span class="top-genre-badge" id="activeBookGenre">에세이·수필</span>
+        <div class="top-progress-pill">
+          기획 파이프라인 <span id="activeBookProgress">3 / 5단계</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-right">
+      <button class="btn-goto-studio" onclick="showToast('기획된 목차와 함께 집필 스튜디오로 이동합니다.')">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        집필 스튜디오로 이동
+      </button>
+
+      <div class="theme-toggle-group">
+        <button class="theme-btn active" id="btnThemeLight" onclick="setTheme('light')">라이트</button>
+        <button class="theme-btn" id="btnThemeDark" onclick="setTheme('dark')">다크</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       2. 메인 워크스페이스 레이아웃 (고정 3열: 서가 + 캔버스 + 우측 AI 패널)
+       ========================================================================= -->
+  <main class="vault-layout-root">
+
+    <div class="vault-window-container">
+
+      <!-- 좌측 작품 기획 서가 -->
+      <aside class="vault-project-col">
+        <div class="vault-col-header">
+          <div class="vault-col-title-wrap">
+            <span class="vault-col-sub">PROJECTS</span>
+            <h2 class="vault-col-title">기획 서가</h2>
+          </div>
+          <button class="btn-new-project" onclick="openNewProjectModal()">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            새 기획
+          </button>
+        </div>
+
+        <div class="vault-project-list" id="projectList">
+          <div class="project-card active" onclick="selectProject('심야의 문장과 고요한 방', '에세이·수필', '3 / 5단계', 'essay', this)">
+            <div class="project-cover-bar"></div>
+            <div class="project-meta-wrap">
+              <span class="project-title">심야의 문장과 고요한 방</span>
+              <div class="project-sub-row">
+                <span class="project-genre">에세이·수필</span>
+                <span class="project-step-badge">글감창고</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="project-card" onclick="selectProject('인공지능 시대의 글쓰기 혁명', '실무·실용', '4 / 5단계', 'practical', this)">
+            <div class="project-cover-bar" style="background:#2a6f55;"></div>
+            <div class="project-meta-wrap">
+              <span class="project-title">인공지능 시대의 글쓰기 혁명</span>
+              <div class="project-sub-row">
+                <span class="project-genre">실무·실용</span>
+                <span class="project-step-badge">인물/플롯</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="project-card" onclick="selectProject('어둠이 걷히는 시간', '소설·웹소설', '1 / 5단계', 'fiction', this)">
+            <div class="project-cover-bar" style="background:#70441d;"></div>
+            <div class="project-meta-wrap">
+              <span class="project-title">어둠이 걷히는 시간</span>
+              <div class="project-sub-row">
+                <span class="project-genre">소설·웹소설</span>
+                <span class="project-step-badge">출간기획서</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 중앙 5대 창작 파이프라인 메인 캔버스 -->
+      <section class="vault-main-canvas">
+
+        <nav class="pipeline-step-bar">
+          <div class="pipeline-step-item active" id="tab-step-0" onclick="switchPipelineStep(0)">
+            <div class="step-num-pill">01</div>
+            <div class="step-text-wrap">
+              <div class="step-title-row">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2"/></svg>
+                아이디어 노트
+              </div>
+              <span class="step-desc">자유로운 발상과 메모</span>
+            </div>
+          </div>
+
+          <div class="pipeline-step-item" id="tab-step-1" onclick="switchPipelineStep(1)">
+            <div class="step-num-pill">02</div>
+            <div class="step-text-wrap">
+              <div class="step-title-row">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                출간 기획서
+              </div>
+              <span class="step-desc">로그라인 & 타깃 독자</span>
+            </div>
+          </div>
+
+          <div class="pipeline-step-item" id="tab-step-2" onclick="switchPipelineStep(2)">
+            <div class="step-num-pill">03</div>
+            <div class="step-text-wrap">
+              <div class="step-title-row">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                글감·취재창고
+              </div>
+              <span class="step-desc">팩트/통계/인용구 보관</span>
+            </div>
+          </div>
+
+          <div class="pipeline-step-item" id="tab-step-3" onclick="switchPipelineStep(3)">
+            <div class="step-num-pill">04</div>
+            <div class="step-text-wrap">
+              <div class="step-title-row">
+                <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                인물 & 뼈대
+              </div>
+              <span class="step-desc">인물시트 & 표준 플롯</span>
+            </div>
+          </div>
+
+          <div class="pipeline-step-item" id="tab-step-4" onclick="switchPipelineStep(4)">
+            <div class="step-num-pill">05</div>
+            <div class="step-text-wrap">
+              <div class="step-title-row">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+                목차 조립대
+              </div>
+              <span class="step-desc">가목차 드래그 조립</span>
+            </div>
+          </div>
+        </nav>
+
+        <div class="pipeline-content-viewport" id="viewportContent">
+
+          <!-- STEP 0: 아이디어 노트 -->
+          <div class="ideas-container" id="view-step-0">
+            <div class="ideas-input-box">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2"/></svg>
+              <input type="text" class="ideas-input" id="quickIdeaInput" placeholder="스쳐 지나가는 찰나의 영감이나 단상을 자유롭게 적어보세요... (Enter 등록)" onkeydown="if(event.key==='Enter') addQuickIdea()">
+              <button class="btn-add-idea" onclick="addQuickIdea()">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                아이디어 기록
+              </button>
+            </div>
+
+            <div class="ideas-card-grid" id="ideasGrid">
+              <div class="idea-card">
+                <div class="idea-card-header">
+                  <span class="idea-badge">단상 메모</span>
+                  <span>10분 전</span>
+                </div>
+                <div class="idea-card-body">비 오는 날 새벽 2시, 찻잔에서 피어오르는 김과 오래된 책 냄새의 상관관계. 후각이 기억을 소환하는 메커니즘을 3장에 연결할 것.</div>
+                <div class="idea-card-actions">
+                  <button class="btn-idea-action" onclick="showToast('글감 창고로 승격되었습니다.')">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    글감 보관
+                  </button>
+                  <button class="btn-idea-action danger" onclick="this.closest('.idea-card').remove(); showToast('아이디어가 삭제되었습니다.')">
+                    <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STEP 1: 출간 기획서 -->
+          <div class="proposal-container" id="view-step-1" style="display:none;">
+            <div class="proposal-top-notice">
+              <div class="notice-left">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                단행본 1권을 관통하는 4대 기획 축을 정리하면 집필 방향이 흔들리지 않습니다.
+              </div>
+              <button class="btn-save-proposal" onclick="showToast('출간 기획서가 저장되었습니다.')">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                기획서 저장
+              </button>
+            </div>
+
+            <div class="proposal-section-card">
+              <div class="proposal-label-row">
+                <label class="proposal-label">
+                  <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  1. 핵심 로그라인 (Core Logline)
+                </label>
+                <span class="proposal-hint">책 전체를 한 문장으로 정의하는 핵심 명제</span>
+              </div>
+              <textarea class="proposal-textarea" id="proposalLogline">매일 쏟아지는 자극과 피로에 지친 현대인들에게, 밤 열한 시 고요한 서재의 책상에서 건져 올린 단단하고 따뜻한 위로를 전하는 감성 에세이.</textarea>
+            </div>
+
+            <div class="proposal-section-card">
+              <div class="proposal-label-row">
+                <label class="proposal-label">
+                  <svg class="icon" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  2. 기획 의도 및 집필 배경 (Intention)
+                </label>
+                <span class="proposal-hint">왜 지금 이 책을 써야 하는가?</span>
+              </div>
+              <textarea class="proposal-textarea" id="proposalIntention">누구나 고독한 순간을 마주하지만, 그 시간을 어떻게 보내느냐에 따라 삶의 결이 달라집니다. 침묵을 두려워하지 않고 나만의 언어를 마주하는 시간의 가치를 이야기하고자 합니다.</textarea>
+            </div>
+
+            <div class="proposal-section-card">
+              <div class="proposal-label-row">
+                <label class="proposal-label">
+                  <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  3. 타깃 독자층 (Target Audience)
+                </label>
+                <span class="proposal-hint">누가 이 책을 읽고 공감할 것인가?</span>
+              </div>
+              <textarea class="proposal-textarea" id="proposalTarget">직장과 일상에서 번아웃을 겪는 20~40대 직장인, 퇴근 후 나만의 온전한 회복 루틴과 조용한 사색의 공간을 찾고 싶은 독자.</textarea>
+            </div>
+
+            <div class="proposal-section-card">
+              <div class="proposal-label-row">
+                <label class="proposal-label">
+                  <svg class="icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  4. 기존 도서 대비 차별점 (Differentiation)
+                </label>
+                <span class="proposal-hint">유사 베스트셀러와 다른 나만의 독창성</span>
+              </div>
+              <textarea class="proposal-textarea" id="proposalDiff">단순한 감성 힐링 문구 나열을 지양하고, 실제 밤의 서재에서 행해지는 필사와 독서, 오브제의 감각적 디테일을 융합한 정밀한 에세이 구성.</textarea>
+            </div>
+          </div>
+
+          <!-- STEP 2: 글감 & 취재창고 -->
+          <div class="materials-container" id="view-step-2" style="display:none;">
+            <div class="materials-filter-bar">
+              <div class="cat-pill-group">
+                <button class="cat-pill-btn active" onclick="filterCategory('ALL', this)">전체 자료</button>
+                <button class="cat-pill-btn" onclick="filterCategory('quote', this)">인용구·명언</button>
+                <button class="cat-pill-btn" onclick="filterCategory('data', this)">통계·팩트</button>
+                <button class="cat-pill-btn" onclick="filterCategory('ref', this)">문헌·발췌</button>
+              </div>
+
+              <button class="btn-add-idea" onclick="openMaterialModal()">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                취재 자료 등록
+              </button>
+            </div>
+
+            <div class="materials-grid" id="materialsGrid">
+              <div class="material-card" data-cat="quote">
+                <div class="material-header">
+                  <span class="material-cat-tag">인용구</span>
+                  <span style="font-size:0.7rem; color:var(--text-muted);">#사색 #고독</span>
+                </div>
+                <h4 class="material-title">파스칼의 《팡세》 - 방 안에 머무는 능력</h4>
+                <p class="material-body">"인간의 모든 불행은 단 하나의 사실, 즉 방 안에 홀로 고요히 머물 줄 모른다는 데서 비롯된다."</p>
+                <div class="material-source">출처: 블레즈 파스칼, 《팡세》 139절</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- =================================================================
+               [STEP 3] 인물 & 뼈대 (UI 깨짐 방지 및 목차조립대 스타일의 일반 플롯 트리)
+               ================================================================= -->
+          <div class="story-container" id="view-step-3" style="display:none;">
+            <!-- 좌측: 인물/화자 시트 -->
+            <div class="story-left-col">
+              <div class="story-panel-header">
+                <h3 class="story-panel-title">
+                  <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  인물·화자 프로필
+                </h3>
+                <button class="btn-add-idea" style="padding:0.25rem 0.55rem; font-size:0.72rem;" onclick="showToast('새 인물 프로필 추가 모달을 엽니다.')">
+                  + 인물 추가
+                </button>
+              </div>
+              <div class="char-card-list" id="charCardList"></div>
+            </div>
+
+            <!-- 우측: 장르 표준 플롯 규격 & 일반 세부 플롯 하위트리 (목차조립대 패밀리룩) -->
+            <div class="story-right-col">
+              <div class="story-panel-header">
+                <div>
+                  <h3 class="story-panel-title" id="plotPanelTitle">
+                    <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                    장르 표준 플롯 규격
+                  </h3>
+                </div>
+                <span style="font-size:0.72rem; color:var(--color-primary); font-weight:600;" id="plotBadge">장르 자동 매칭</span>
+              </div>
+
+              <!-- 🌟 표준 플롯 뼈대 장르별 열람 및 전환 탭 -->
+              <div class="plot-genre-switcher" id="plotGenreSwitcher">
+                <button class="plot-genre-btn active" id="pgb-essay" onclick="switchPlotGenre('essay', this)">에세이·수필 (4단계 뼈대)</button>
+                <button class="plot-genre-btn" id="pgb-practical" onclick="switchPlotGenre('practical', this)">실무·실용 (4단계 뼈대)</button>
+                <button class="plot-genre-btn" id="pgb-fiction" onclick="switchPlotGenre('fiction', this)">소설·서사 (5단계 뼈대)</button>
+              </div>
+
+              <!-- 목차 조립대처럼 깔끔한 1:1 하위트리 형태의 플롯 단계 & 세부 플롯 & 아이디어 메모 -->
+              <div class="plot-stages-tree" id="plotStagesTree"></div>
+            </div>
+          </div>
+
+          <!-- =================================================================
+               [STEP 4] 목차 조립대 (노션 스타일 실시간 드래그 피드백 & 앱 브랜드 인디케이터)
+               ================================================================= -->
+          <div class="outline-sandbox-container" id="view-step-4" style="display:none;">
+            <div class="outline-top-actions">
+              <div style="font-size:0.82rem; color:var(--text-main); font-weight:600;">
+                <span style="color:var(--color-primary); font-family:var(--font-display);">OUTLINE SANDBOX</span>
+                <span style="margin-left:0.4rem; color:var(--text-sub); font-weight:normal;">마우스 드래그로 순서를 변경하고 호버 시 수정·삭제할 수 있습니다.</span>
+              </div>
+              <div style="display:flex; gap:0.4rem;">
+                <button class="btn-plan-outline" onclick="openOutlinePlanModal()">
+                  <svg class="icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  목차 기획
+                </button>
+                <button class="btn-add-idea" onclick="addNewChapter()">
+                  <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  장 추가
+                </button>
+              </div>
+            </div>
+
+            <!-- 목차 리스트 (노션 스타일 드래그 앤 드롭 영역) -->
+            <div id="outlineChaptersContainer"></div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <!-- -------------------------------------------------------------------------
+         3. 우측 3열: AI 기획 어시스턴트 카드 + 독립 쿼터 바
+         ------------------------------------------------------------------------- -->
+    <aside class="vault-ai-col-wrap">
+      <div class="vault-ai-card">
+        <div class="ai-col-header">
+          <div class="ai-col-title-wrap">
+            <svg class="icon" style="color:var(--color-primary);" viewBox="0 0 24 24">
+              <rect x="3" y="11" width="18" height="10" rx="2"/>
+              <circle cx="12" cy="5" r="2"/>
+              <path d="M12 7v4"/>
+              <line x1="8" y1="16" x2="8" y2="16"/>
+              <line x1="16" y1="16" x2="16" y2="16"/>
+            </svg>
+            <span class="ai-col-title">AI 기획 어시스턴트</span>
+          </div>
+        </div>
+
+        <div class="ai-chat-body" id="aiChatBody">
+          <div class="ai-msg-bubble assistant">
+            반갑습니다, 작가님. 도서 기획 및 플롯 설계를 돕는 <strong>AI 기획 어시스턴트</strong>입니다.<br><br>
+            로그라인 진단, 장르별 서사 보강, 목차 구성 등 기획 전반에 대해 언제든 질문해 주세요.
+          </div>
+        </div>
+
+        <div class="ai-quick-prompts">
+          <button class="prompt-chip" onclick="askAIPrompt('로그라인 매력도를 평가해줘.')">로그라인 평가</button>
+          <button class="prompt-chip" onclick="askAIPrompt('현재 플롯의 클라이맥스 갈등을 보강해줘.')">플롯 갈등 보강</button>
+          <button class="prompt-chip" onclick="askAIPrompt('베스트셀러 목차 표준과 비교해줘.')">목차 표준 비교</button>
+        </div>
+
+        <div class="ai-input-wrap">
+          <input type="text" class="ai-input" id="aiInput" placeholder="기획 고민이나 보완점을 질문하세요..." onkeydown="if(event.key==='Enter') sendAIMessage()">
+          <button class="btn-add-idea" onclick="sendAIMessage()">전송</button>
+        </div>
+      </div>
+
+      <!-- 독립된 쿼터 바 카드 -->
+      <div class="v5-quota-pill-bar" onclick="openQuotaModal()" title="AI 모델별 일일 잔여 한도 및 모델 전환">
+        <div class="v5-quota-pill-left">
+          <svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="activeModelNameLabel">스마트 자동 전환</span>
+        </div>
+        <span class="v5-quota-pill-badge" id="activeModelQuotaBadge">100%</span>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- =========================================================================
+       4. 모달 팝업 모음
+       ========================================================================= -->
+
+  <!-- [2번 반영] AI 모델 쿼터 현황 및 전환 모달 (우리앱 10대 정식 모델 100% 매칭 + 설명 우측 + 하단 메타 + 제목 툴팁) -->
+  <div class="modal-backdrop" id="quotaModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <svg class="icon" style="color:var(--color-primary);" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          AI 모델 쿼터 및 전환
+          <!-- 제목 옆 정보 툴팁 -->
+          <div class="title-tooltip-wrap">
+            <svg class="icon title-info-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <div class="quota-tooltip-popover">
+              <div class="tooltip-header">API 호출 규격 및 지표 안내</div>
+              <div class="tooltip-item">
+                <strong>• RPM (Requests Per Minute):</strong> 1분당 최대 요청 가능한 API 호출 횟수입니다. (초과 시 429 일시 대기)
+              </div>
+              <div class="tooltip-item">
+                <strong>• TPM (Tokens Per Minute):</strong> 1분당 모델이 처리할 수 있는 최대 단어·문자 토큰 총량입니다.
+              </div>
+              <div class="tooltip-item">
+                <strong>• RPD (Requests Per Day):</strong> 1일(24시간) 동안 사용 가능한 최대 요청 횟수입니다.
+              </div>
+              <div class="tooltip-item">
+                <strong>• 리셋 기준:</strong> 매일 17:00 KST (태평양 표준시 자정)에 모든 일일 쿼터가 100% 자동 리셋됩니다.
+              </div>
+              <div class="tooltip-item">
+                <strong>• 스마트 자동 전환:</strong> 일일 한도 소진 시 3.8 Flash 소진 시 하향 모델 순차 적용으로 0초 무중단 자동 대체됩니다.
+              </div>
+            </div>
+          </div>
+        </h3>
+        <button onclick="closeModal('quotaModal')" style="background:none;border:none;cursor:pointer;color:var(--text-sub);">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- 그룹 1: 스마트 자동 전환 -->
+        <div class="quota-group-section">
+          <span class="quota-group-title">스마트 자동 전환 (권장 엔진)</span>
+          <div class="quota-item-card active" onclick="selectAiModel('smart_cascade', '스마트 자동 전환', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">스마트 자동 전환</span>
+              </div>
+              <span class="quota-card-model-desc">3.8 Flash 소진 시 하향 모델 순차 적용 (3.7 ➔ 3.6 ➔ 3.5 Lite ➔ 3.1 Lite ➔ Gemma)</span>
+              <span class="quota-card-rpd-badge">자동 연계</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>리셋: 매일 17:00 KST (태평양 자정)</span>
+              <div class="quota-meta-limits">
+                <span>한도: 15 RPM</span>
+                <span>·</span>
+                <span>1M TPM</span>
+                <span>·</span>
+                <span>통합 한도 보장</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 그룹 2: 플래그십 모델 (Flagship) - 우리 앱 4종 모델 (일 20회) -->
+        <div class="quota-group-section">
+          <span class="quota-group-title">플래그십 모델 (Flagship · 일 20회)</span>
+          <div class="quota-item-card" onclick="selectAiModel('gemini-3.8-flash', 'Gemini 3.8 Flash', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">Gemini 3.8 Flash</span>
+              </div>
+              <span class="quota-card-model-desc">구글의 현존 최신 최고 성능 플래그십 모델</span>
+              <span class="quota-card-rpd-badge">20 / 20</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>리셋: 매일 17:00 KST (태평양 자정)</span>
+              <div class="quota-meta-limits">
+                <span>한도: 5 RPM</span>
+                <span>·</span>
+                <span>250K TPM</span>
+                <span>·</span>
+                <span>20 RPD</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="quota-item-card" onclick="selectAiModel('gemini-3.7-flash', 'Gemini 3.7 Flash', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">Gemini 3.7 Flash</span>
+              </div>
+              <span class="quota-card-model-desc">고성능 플래그십 2순위 백업 모델</span>
+              <span class="quota-card-rpd-badge">20 / 20</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>리셋: 매일 17:00 KST (태평양 자정)</span>
+              <div class="quota-meta-limits">
+                <span>한도: 5 RPM</span>
+                <span>·</span>
+                <span>250K TPM</span>
+                <span>·</span>
+                <span>20 RPD</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="quota-item-card" onclick="selectAiModel('gemini-3.6-flash', 'Gemini 3.6 Flash', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">Gemini 3.6 Flash</span>
+              </div>
+              <span class="quota-card-model-desc">단종된 3.5 Flash를 대체하는 최신 고성능 표준 모델</span>
+              <span class="quota-card-rpd-badge">20 / 20</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>리셋: 매일 17:00 KST (태평양 자정)</span>
+              <div class="quota-meta-limits">
+                <span>한도: 5 RPM</span>
+                <span>·</span>
+                <span>250K TPM</span>
+                <span>·</span>
+                <span>20 RPD</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="quota-item-card" onclick="selectAiModel('gemini-2.5-flash', 'Gemini 2.5 Flash', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">Gemini 2.5 Flash</span>
+              </div>
+              <span class="quota-card-model-desc">검증된 구글 표준 Flash 모델</span>
+              <span class="quota-card-rpd-badge">20 / 20</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>리셋: 매일 17:00 KST (태평양 자정)</span>
+              <div class="quota-meta-limits">
+                <span>한도: 5 RPM</span>
+                <span>·</span>
+                <span>250K TPM</span>
+                <span>·</span>
+                <span>20 RPD</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 그룹 3: Lite 대용량 모델 - 우리 앱 3종 모델 -->
+        <div class="quota-group-section">
+          <span class="quota-group-title">Lite 대용량 모델 (경량·안정)</span>
+          <div class="quota-item-card" onclick="selectAiModel('gemini-3.5-flash-lite', 'Gemini 3.5 Flash Lite', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">Gemini 3.5 Flash Lite</span>
+              </div>
+              <span class="quota-card-model-desc">하루 500회 넉넉한 한도와 빠른 응답 속도의 대용량 주력 모델</span>
+              <span class="quota-card-rpd-badge">500 / 500</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>리셋: 매일 17:00 KST (남은 시간: 약 3시간 45분)</span>
+              <div class="quota-meta-limits">
+                <span>한도: 15 RPM</span>
+                <span>·</span>
+                <span>250K TPM</span>
+                <span>·</span>
+                <span>500 RPD</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="quota-item-card" onclick="selectAiModel('gemini-3.1-flash-lite', 'Gemini 3.1 Flash Lite', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">Gemini 3.1 Flash Lite</span>
+              </div>
+              <span class="quota-card-model-desc">하루 500회 넉넉한 한도의 대용량 보조 모델</span>
+              <span class="quota-card-rpd-badge">500 / 500</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>리셋: 매일 17:00 KST (남은 시간: 약 3시간 45분)</span>
+              <div class="quota-meta-limits">
+                <span>한도: 15 RPM</span>
+                <span>·</span>
+                <span>250K TPM</span>
+                <span>·</span>
+                <span>500 RPD</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="quota-item-card" onclick="selectAiModel('gemini-2.5-flash-lite', 'Gemini 2.5 Flash Lite', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">Gemini 2.5 Flash Lite</span>
+              </div>
+              <span class="quota-card-model-desc">검증된 안정화 경량 모델</span>
+              <span class="quota-card-rpd-badge">20 / 20</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>리셋: 매일 17:00 KST (남은 시간: 약 3시간 45분)</span>
+              <div class="quota-meta-limits">
+                <span>한도: 10 RPM</span>
+                <span>·</span>
+                <span>250K TPM</span>
+                <span>·</span>
+                <span>20 RPD</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 그룹 4: 오픈 모델 (Gemma 4 최신 모델) - 우리 앱 2종 모델 -->
+        <div class="quota-group-section">
+          <span class="quota-group-title">오픈 모델 (Gemma 4 초거대 안전망)</span>
+          <div class="quota-item-card" onclick="selectAiModel('gemma-4-31b-it', 'Gemma 4 31B', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">Gemma 4 31B</span>
+              </div>
+              <span class="quota-card-model-desc">하루 14,400회 무제한급 초거대 안전망 백업 모델</span>
+              <span class="quota-card-rpd-badge">14.4K / 14.4K</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>상태: 정상 가용</span>
+              <div class="quota-meta-limits">
+                <span>한도: 30 RPM</span>
+                <span>·</span>
+                <span>16K TPM</span>
+                <span>·</span>
+                <span>14,400 RPD</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="quota-item-card" onclick="selectAiModel('gemma-4-26b-a4b-it', 'Gemma 4 26B', this)">
+            <div class="quota-card-top-row">
+              <div class="quota-card-left-info">
+                <span class="quota-status-dot"></span>
+                <span class="quota-card-model-name">Gemma 4 26B</span>
+              </div>
+              <span class="quota-card-model-desc">하루 14,400회 지원 최종 무제한 백업 모델</span>
+              <span class="quota-card-rpd-badge">14.4K / 14.4K</span>
+            </div>
+            <div class="quota-card-meta-row">
+              <span>상태: 정상 가용</span>
+              <div class="quota-meta-limits">
+                <span>한도: 30 RPM</span>
+                <span>·</span>
+                <span>16K TPM</span>
+                <span>·</span>
+                <span>14,400 RPD</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-idea-action" onclick="closeModal('quotaModal')">닫기</button>
+        <button class="btn-add-idea" onclick="confirmQuotaModal()">선택 모델 적용</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 목차 기획 모달 -->
+  <div class="modal-backdrop" id="outlinePlanModal">
+    <div class="modal-box" style="width: 540px;">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          AI 목차 자동 기획
+        </h3>
+        <button onclick="closeModal('outlinePlanModal')" style="background:none;border:none;cursor:pointer;color:var(--text-sub);">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="background:var(--color-primary-soft); border:1px solid var(--border-focus); border-radius:8px; padding:0.85rem 1rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <strong style="font-size:0.84rem; color:var(--color-primary);" id="modalGenreStandardTitle">에세이·수필 표준 출판 규격</strong>
+            <span style="font-size:0.7rem; background:var(--bg-card); padding:1px 6px; border-radius:4px; font-weight:600; color:var(--color-primary);">장르 규격 자동 고정</span>
+          </div>
+          <p style="font-size:0.75rem; color:var(--text-sub);" id="modalGenreStandardDesc">
+            권장 단행본 분량: 4~5개 장, 장당 4~5개 절 (총 18~20꼭지, 꼭지당 약 2,500자)
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">기획 참조 인물 및 플롯 뼈대</label>
+          <div class="ref-chips-wrap" id="modalRefChips"></div>
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="form-label">AI 기획 목차 초안 미리보기</label>
+            <button class="btn-plan-outline" style="padding:0.25rem 0.6rem; font-size:0.72rem;" onclick="generateAiOutlineDraft()">
+              <svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              인물·뼈대 기반 자동 생성
+            </button>
+          </div>
+          <div id="aiOutlinePreviewBox" style="background:var(--bg-surface); border:1px solid var(--border-divider); border-radius:8px; padding:0.85rem 1rem; max-height:180px; overflow-y:auto; font-size:0.8rem; line-height:1.6; color:var(--text-main);">
+            '인물·뼈대 기반 자동 생성' 버튼을 누르면 인물과 플롯 뼈대의 세부 메모를 바탕으로 최적화된 목차가 즉시 도출됩니다.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-idea-action" onclick="closeModal('outlinePlanModal')">닫기</button>
+        <button class="btn-add-idea" onclick="applyAiOutlineDraft()">목차 조립대에 반영하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 새 프로젝트 모달 -->
+  <div class="modal-backdrop" id="newProjectModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">새 도서 기획 시작</h3>
+        <button onclick="closeModal('newProjectModal')" style="background:none;border:none;cursor:pointer;color:var(--text-sub);">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">작품 가제목</label>
+          <input type="text" class="form-input" id="newBookInput" placeholder="예: 새벽의 편지와 만년필">
+        </div>
+        <div class="form-group">
+          <label class="form-label">대표 장르</label>
+          <select class="form-select" id="newBookGenre">
+            <option value="essay">에세이·수필</option>
+            <option value="fiction">소설·웹소설</option>
+            <option value="practical">실무·실용</option>
+            <option value="self_improvement">자기계발</option>
+            <option value="business">경제경영</option>
+            <option value="humanities">인문·철학</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-idea-action" onclick="closeModal('newProjectModal')">취소</button>
+        <button class="btn-add-idea" onclick="confirmNewProject()">기획 시작</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 취재 자료 모달 -->
+  <div class="modal-backdrop" id="materialModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">취재 자료 등록</h3>
+        <button onclick="closeModal('materialModal')" style="background:none;border:none;cursor:pointer;color:var(--text-sub);">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">자료 구분</label>
+          <select class="form-select" id="matCatInput">
+            <option value="quote">인용구·명언</option>
+            <option value="data">통계·시장 팩트</option>
+            <option value="ref">문헌·도서 발췌</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">자료 제목</label>
+          <input type="text" class="form-input" id="matTitleInput" placeholder="핵심 요약 제목">
+        </div>
+        <div class="form-group">
+          <label class="form-label">자료 본문 내용</label>
+          <textarea class="form-input" id="matContentInput" style="height:90px; resize:vertical;" placeholder="인용 문장이나 통계 팩트"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-idea-action" onclick="closeModal('materialModal')">취소</button>
+        <button class="btn-add-idea" onclick="confirmNewMaterial()">보관하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 메시지 -->
+  <div class="toast-msg" id="toast">알림 메시지</div>
+
+  <script>
+    // =========================================================================
+    // 1. 8대 장르 출판 표준 플롯 & 일반적인 세부 플롯 (목차조립대 하위항목 스타일)
+    // =========================================================================
+    const PLOT_TEMPLATES = {
+      essay: {
+        name: '감성·사색 에세이 (공감과 성찰 4단계)',
+        badge: '에세이·수필',
+        desc: '일상의 사소한 포착에서 출발하여 내면의 결핍과 사유를 거쳐 깊은 위로와 여운으로 이어지는 출판 표준 서사',
+        standard: '권장 규격: 4~5개 장, 장당 3~4개 꼭지 (총 15~18꼭지, 꼭지당 2,500자 내외)',
+        stages: [
+          {
+            title: '1. 일상의 발견 (도입과 착안)',
+            desc: '일상의 배경, 사소하지만 잊히지 않는 순간의 포착과 질문',
+            subplots: [
+              '1.1 일상의 고요한 배경과 낯선 순간의 발견',
+              '1.2 무심코 지나친 풍경 속 사소한 질문의 시작'
+            ]
+          },
+          {
+            title: '2. 내면의 직면 (정서와 결핍)',
+            desc: '마주한 감정의 민낯, 지나온 시간에 대한 성찰과 질문',
+            subplots: [
+              '2.1 마주한 솔직한 감정과 마음의 결핍',
+              '2.2 지나온 시간의 기억과 내면의 대화'
+            ]
+          },
+          {
+            title: '3. 사유의 확장 (관점의 전환과 통찰)',
+            desc: '결핍을 새롭게 바라보는 시선, 사물이나 타인을 통한 사색',
+            subplots: [
+              '3.1 결핍을 다시 바라보는 새로운 시선',
+              '3.2 사물이나 타인을 통해 얻은 깊은 성찰'
+            ]
+          },
+          {
+            title: '4. 삶의 잔향 (회복과 삶의 태도)',
+            desc: '일상으로 돌아오는 따뜻한 온기, 내일을 살아갈 작은 다짐',
+            subplots: [
+              '4.1 일상으로 돌아오는 따뜻한 온기와 깨달음',
+              '4.2 내일을 살아갈 담담한 다짐과 배웅'
+            ]
+          }
+        ]
+      },
+      practical: {
+        name: '실무·실용 가이드 (문제해결 4단계 프레임워크)',
+        badge: '업무·생산성',
+        desc: '독자가 겪는 핵심 문제 진단에서 시작해 표준 해결 원리와 단계별 실무 프로세스, 실천 체크리스트 제공',
+        standard: '권장 규격: 4개 파트, 파트당 3~4개 챕터 (총 14~16꼭지, 꼭지당 3,000자 내외)',
+        stages: [
+          {
+            title: '1. 문제의 진단 (현실과 결핍)',
+            desc: '현업에서 반복되는 문제와 고질적 병목, 기존 방식의 한계 진단',
+            subplots: [
+              '1.1 현업에서 반복되는 문제와 고질적 병목',
+              '1.2 기존 접근 방식의 한계와 손실 진단'
+            ]
+          },
+          {
+            title: '2. 핵심 솔루션 (원리와 프레임워크)',
+            desc: '본질을 관통하는 핵심 해결 원리와 시행착오를 줄이는 표준 공식',
+            subplots: [
+              '2.1 본질을 관통하는 핵심 해결 원리',
+              '2.2 시행착오를 줄이는 단계별 표준 공식'
+            ]
+          },
+          {
+            title: '3. 실전 적용 (가이드와 모범 사례)',
+            desc: '현장에 즉시 복사해 적용하는 단계별 프로세스와 실전 모범 케이스',
+            subplots: [
+              '3.1 즉시 실행 가능한 단계별 실무 프로세스',
+              '3.2 실패 없는 적용을 위한 실전 모범 사례'
+            ]
+          },
+          {
+            title: '4. 완성 및 검증 (체크리스트와 로드맵)',
+            desc: '결과물의 완성도를 끌어올리는 자가 진단표와 지속 가능한 유지법',
+            subplots: [
+              '4.1 퀄리티를 완성하는 자가 진단 체크리스트',
+              '4.2 흔한 실수 방지 팁과 지속 가능한 로드맵'
+            ]
+          }
+        ]
+      },
+      fiction: {
+        name: '소설·서사 (3막 5단계 정석 서사 플롯)',
+        badge: '소설·웹소설',
+        desc: '고전 서사학의 3막 구조. 일상의 결핍에서 출발해 위기와 절정을 거쳐 새로운 일상으로 회복되는 정석 서사',
+        standard: '권장 규격: 5개 대챕터, 20~25개 중챕터 연재 규격 (화당 4,500~5,000자)',
+        stages: [
+          {
+            title: '1. 발단 (일상과 결핍)',
+            desc: '평온한 일상의 세계, 주인공의 결핍, 균열을 일으키는 첫 번째 사건',
+            subplots: [
+              '1.1 평온한 일상의 세계와 주인공의 결핍',
+              '1.2 일상의 균열을 일으키는 첫 번째 사건'
+            ]
+          },
+          {
+            title: '2. 전개 (모험과 시련)',
+            desc: '새로운 세계로의 진입, 조력자와의 만남, 거듭되는 시험과 갈등의 고조',
+            subplots: [
+              '2.1 새로운 세계로의 진입과 조력자와의 만남',
+              '2.2 거듭되는 시험과 갈등의 고조'
+            ]
+          },
+          {
+            title: '3. 위기 (최대의 장벽)',
+            desc: '적대자의 위협, 치명적인 실패와 절망, 물러설 수 없는 한계 상황',
+            subplots: [
+              '3.1 적대자의 위협과 치명적인 좌절',
+              '3.2 물러설 수 없는 절체절명의 한계 상황'
+            ]
+          },
+          {
+            title: '4. 절정 (대면과 클라이맥스)',
+            desc: '피할 수 없는 정면 승부, 진실의 탄로, 주인공의 각성과 결정적 선택',
+            subplots: [
+              '4.1 피할 수 없는 운명과의 정면 승부',
+              '4.2 주인공의 각성과 결정적 선택'
+            ]
+          },
+          {
+            title: '5. 결말 (해소와 새로운 시작)',
+            desc: '갈등의 해소, 상처의 치유, 변화된 모습으로 맞이하는 새로운 일상',
+            subplots: [
+              '5.1 갈등의 해소와 상처의 회복',
+              '5.2 변화된 모습으로 맞이하는 새로운 일상'
+            ]
+          }
+        ]
+      }
+    };
+
+    let currentGenreKey = 'essay';
+
+    // 가목차 조립대 초기 데이터 (일반적이고 품격 있는 목차 구조)
+    let draftChapters = [
+      {
+        id: 'c1',
+        title: '제1장. 사색의 시작과 일상의 관찰',
+        sections: [
+          { id: 's1_1', title: '1.1 일상의 고요함과 관찰의 시선' },
+          { id: 's1_2', title: '1.2 소란한 세상 속 나만의 중심 잡기' }
+        ]
+      },
+      {
+        id: 'c2',
+        title: '제2장. 내면의 소리와 결핍의 마주함',
+        sections: [
+          { id: 's2_1', title: '2.1 침묵 속에서 비로소 들리는 생각들' },
+          { id: 's2_2', title: '2.2 비워내고 나서야 채워지는 마음' }
+        ]
+      },
+      {
+        id: 'c3',
+        title: '제3장. 사유의 확장과 관점의 전환',
+        sections: [
+          { id: 's3_1', title: '3.1 결핍을 새로운 시선으로 바라보는 법' },
+          { id: 's3_2', title: '3.2 사소한 사물과 타인에게 배우는 통찰' }
+        ]
+      },
+      {
+        id: 'c4',
+        title: '제4장. 회복의 온기와 새로운 다짐',
+        sections: [
+          { id: 's4_1', title: '4.1 일상으로 돌아오는 따뜻한 온기' },
+          { id: 's4_2', title: '4.2 내일로 건너가는 담담한 발걸음' }
+        ]
+      }
+    ];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderPlotStages();
+      renderCharacters();
+      renderOutlineChapters();
+    });
+
+    function selectProject(title, genre, progress, genreKey, elem) {
+      document.querySelectorAll('.project-card').forEach(c => c.classList.remove('active'));
+      elem.classList.add('active');
+      document.getElementById('activeBookTitle').textContent = title;
+      document.getElementById('activeBookGenre').textContent = genre;
+      document.getElementById('activeBookProgress').textContent = progress;
+
+      currentGenreKey = genreKey || 'essay';
+      renderPlotStages();
+      renderCharacters();
+      showToast(`'${title}' (${genre}) 기획 서재를 불러왔습니다.`);
+    }
+
+    // 장르 표준 플롯 뼈대 전환 (버튼 클릭)
+    function switchPlotGenre(genreKey, elem) {
+      currentGenreKey = genreKey;
+      document.querySelectorAll('.plot-genre-btn').forEach(b => b.classList.remove('active'));
+      if (elem) {
+        elem.classList.add('active');
+      } else {
+        const btn = document.getElementById(`pgb-${genreKey}`);
+        if (btn) btn.classList.add('active');
+      }
+      renderPlotStages();
+      renderCharacters();
+      const tpl = PLOT_TEMPLATES[genreKey];
+      showToast(`'${tpl.name}' 표준 플롯 뼈대를 불러왔습니다.`);
+    }
+
+    // 세부 플롯 메모 상태 추적
+    let activeMemoEditingKey = null; // 'sIdx_spIdx'
+
+    function togglePlotSubMemo(sIdx, spIdx) {
+      const key = `${sIdx}_${spIdx}`;
+      activeMemoEditingKey = (activeMemoEditingKey === key) ? null : key;
+      renderPlotStages();
+      if (activeMemoEditingKey === key) {
+        setTimeout(() => {
+          const ta = document.getElementById(`subMemoInput_${key}`);
+          if (ta) ta.focus();
+        }, 50);
+      }
+    }
+
+    function savePlotSubMemo(sIdx, spIdx) {
+      const key = `${sIdx}_${spIdx}`;
+      const ta = document.getElementById(`subMemoInput_${key}`);
+      const text = ta ? ta.value.trim() : '';
+      const tpl = PLOT_TEMPLATES[currentGenreKey] || PLOT_TEMPLATES.essay;
+      const sp = tpl.stages[sIdx].subplots[spIdx];
+      
+      if (typeof sp === 'string') {
+        tpl.stages[sIdx].subplots[spIdx] = { title: sp, memo: text };
+      } else {
+        sp.memo = text;
+      }
+      activeMemoEditingKey = null;
+      renderPlotStages();
+      showToast(text ? '아이디어 메모가 저장되었습니다.' : '아이디어 메모가 비워졌습니다.');
+    }
+
+    function deletePlotSubMemo(sIdx, spIdx) {
+      const tpl = PLOT_TEMPLATES[currentGenreKey] || PLOT_TEMPLATES.essay;
+      const sp = tpl.stages[sIdx].subplots[spIdx];
+      if (typeof sp === 'object') {
+        sp.memo = '';
+      }
+      renderPlotStages();
+      showToast('아이디어 메모가 삭제되었습니다.');
+    }
+
+    // 3&4번 반영: 목차 조립대 스타일의 일반적인 표준 플롯 & 서사 뼈대 가이드 & 아이디어 메모 렌더링
+    function renderPlotStages() {
+      const tpl = PLOT_TEMPLATES[currentGenreKey] || PLOT_TEMPLATES.essay;
+      document.getElementById('plotPanelTitle').innerHTML = `
+        <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        ${tpl.name}
+      `;
+      document.getElementById('plotBadge').textContent = tpl.badge;
+
+      // 상단 스위처 버튼 동기화
+      document.querySelectorAll('.plot-genre-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`pgb-${currentGenreKey}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const tree = document.getElementById('plotStagesTree');
+      tree.innerHTML = '';
+
+      tpl.stages.forEach((stage, sIdx) => {
+        const group = document.createElement('div');
+        group.className = 'plot-stage-group';
+
+        const subListHtml = stage.subplots.map((sp, spIdx) => {
+          const title = typeof sp === 'string' ? sp : sp.title;
+          const memo = typeof sp === 'object' && sp.memo ? sp.memo : '';
+          const isEditing = activeMemoEditingKey === `${sIdx}_${spIdx}`;
+
+          return `
+            <div class="plot-sub-item-wrap">
+              <div class="plot-sub-item">
+                <span class="plot-sub-title">${escapeHtml(title)}</span>
+                <div class="plot-sub-actions">
+                  <button class="mini-icon-btn ${memo ? 'active' : ''}" style="${memo ? 'color:var(--color-primary);border-color:var(--color-primary);background:var(--color-primary-soft);' : ''}" onclick="togglePlotSubMemo(${sIdx}, ${spIdx})" title="${memo ? '아이디어 메모 수정' : '아이디어 메모 작성'}">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </button>
+                  <button class="mini-icon-btn" onclick="editPlotSubplot(${sIdx}, ${spIdx})" title="세부 꼭지명 수정">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button class="mini-icon-btn danger" onclick="removePlotSubplot(${sIdx}, ${spIdx})" title="세부 꼭지 삭제">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 저장된 아이디어 메모 표시 -->
+              ${memo && !isEditing ? `
+                <div class="plot-sub-memo-badge" title="클릭하여 메모 수정" onclick="togglePlotSubMemo(${sIdx}, ${spIdx})">
+                  <span class="memo-content"><strong>💡 구상 메모:</strong> ${escapeHtml(memo)}</span>
+                  <button class="mini-icon-btn danger" style="width:18px;height:18px;margin-left:4px;" onclick="event.stopPropagation(); deletePlotSubMemo(${sIdx}, ${spIdx})" title="메모 삭제">
+                    <svg class="icon" style="width:10px;height:10px;" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+              ` : ''}
+
+              <!-- 아이디어 메모 입력창 -->
+              ${isEditing ? `
+                <div class="plot-sub-memo-input-wrap">
+                  <textarea class="plot-sub-memo-textarea" id="subMemoInput_${sIdx}_${spIdx}" placeholder="이 꼭지에 담을 구체적 사건, 소재, 인상적인 문장이나 착안점을 자유롭게 적어두세요...">${escapeHtml(memo)}</textarea>
+                  <div class="plot-memo-btns">
+                    <button class="mini-icon-btn" style="width:auto;padding:0.2rem 0.5rem;font-size:0.72rem;" onclick="togglePlotSubMemo(${sIdx}, ${spIdx})">취소</button>
+                    <button class="btn-add-idea" style="padding:0.2rem 0.6rem;font-size:0.72rem;" onclick="savePlotSubMemo(${sIdx}, ${spIdx})">메모 저장</button>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+
+        group.innerHTML = `
+          <div class="plot-stage-bar">
+            <div class="plot-stage-left">
+              <span class="plot-stage-name">${stage.title}</span>
+              <span class="plot-stage-count-badge">${stage.subplots.length}꼭지</span>
+            </div>
+            <button class="mini-icon-btn" onclick="addPlotSubplot(${sIdx})" title="세부 꼭지 추가">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+          <!-- 🌟 표준 플롯 뼈대 서사 가이드 상시 확인 -->
+          <div class="plot-stage-guide">
+            <svg class="icon" style="color:var(--color-primary); width:13px; height:13px;" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <span><strong>서사 뼈대 가이드:</strong> ${escapeHtml(stage.desc)}</span>
+          </div>
+          <div class="plot-stage-sub-list">
+            ${subListHtml}
+          </div>
+        `;
+        tree.appendChild(group);
+      });
+    }
+
+    function addPlotSubplot(sIdx) {
+      const tpl = PLOT_TEMPLATES[currentGenreKey] || PLOT_TEMPLATES.essay;
+      const count = tpl.stages[sIdx].subplots.length + 1;
+      const val = prompt('추가할 세부 플롯 꼭지명을 입력하세요:', `${sIdx + 1}.${count} 새로운 세부 꼭지`);
+      if (val && val.trim()) {
+        tpl.stages[sIdx].subplots.push(val.trim());
+        renderPlotStages();
+        showToast('세부 플롯 꼭지가 추가되었습니다.');
+      }
+    }
+
+    function editPlotSubplot(sIdx, spIdx) {
+      const tpl = PLOT_TEMPLATES[currentGenreKey] || PLOT_TEMPLATES.essay;
+      const sp = tpl.stages[sIdx].subplots[spIdx];
+      const oldVal = typeof sp === 'string' ? sp : sp.title;
+      const val = prompt('세부 플롯 꼭지명 수정:', oldVal);
+      if (val && val.trim()) {
+        if (typeof sp === 'string') {
+          tpl.stages[sIdx].subplots[spIdx] = val.trim();
+        } else {
+          sp.title = val.trim();
+        }
+        renderPlotStages();
+        showToast('세부 플롯 꼭지가 수정되었습니다.');
+      }
+    }
+
+    function removePlotSubplot(sIdx, spIdx) {
+      const tpl = PLOT_TEMPLATES[currentGenreKey] || PLOT_TEMPLATES.essay;
+      tpl.stages[sIdx].subplots.splice(spIdx, 1);
+      renderPlotStages();
+      showToast('세부 플롯이 삭제되었습니다.');
+    }
+
+    function renderCharacters() {
+      const list = document.getElementById('charCardList');
+      if (currentGenreKey === 'essay') {
+        list.innerHTML = `
+          <div class="char-card">
+            <div class="char-header">
+              <span class="char-name">화자 (나)</span>
+              <span class="char-role-badge">에세이스트</span>
+            </div>
+            <div class="char-meta-row"><strong>핵심 성격:</strong> 일상을 관찰하고 내면의 언어를 찾는 사색가</div>
+            <div class="char-meta-row"><strong>지향점:</strong> 번잡함에서 벗어나 고요한 나만의 중심 회복</div>
+          </div>
+          <div class="char-card">
+            <div class="char-header">
+              <span class="char-name">사유의 매개체 (오브제/기억)</span>
+              <span class="char-role-badge">상징적 매개</span>
+            </div>
+            <div class="char-meta-row"><strong>역할:</strong> 사색과 성찰의 문을 열어주는 감각적 계기</div>
+          </div>
+        `;
+      } else if (currentGenreKey === 'practical') {
+        list.innerHTML = `
+          <div class="char-card">
+            <div class="char-header">
+              <span class="char-name">타깃 독자 페르소나</span>
+              <span class="char-role-badge">독자 페르소나</span>
+            </div>
+            <div class="char-meta-row"><strong>핵심 페인포인트:</strong> 반복 업무 비효율과 야근의 굴레</div>
+            <div class="char-meta-row"><strong>달성 목표:</strong> 4단계 표준 프로세스로 50% 이상 시간 단축</div>
+          </div>
+        `;
+      } else {
+        list.innerHTML = `
+          <div class="char-card">
+            <div class="char-header">
+              <span class="char-name">주인공 (탐색자)</span>
+              <span class="char-role-badge">주역</span>
+            </div>
+            <div class="char-meta-row"><strong>내적 결핍:</strong> 평온함 뒤에 숨겨진 정체성의 혼란</div>
+            <div class="char-meta-row"><strong>서사 목표:</strong> 닥쳐온 시련을 극복하고 진실에 도달</div>
+          </div>
+        `;
+      }
+    }
+
+    // =========================================================================
+    // 5번 반영: 본버전 Vault 100% 동일 노션 스타일 드래그 앤 드롭 (앱 테마 라인)
+    // =========================================================================
+    let draggedItem = null; // { type: 'chapter' | 'section', chapterId, sectionId, cIdx, sIdx }
+    let dragOverTarget = null; // { type, id, position: 'top' | 'bottom' }
+
+    function renderOutlineChapters() {
+      const container = document.getElementById('outlineChaptersContainer');
+      container.innerHTML = '';
+
+      draftChapters.forEach((chap, cIdx) => {
+        const block = document.createElement('div');
+        block.className = 'outline-chap-block';
+        block.id = `chapBlock_${chap.id}`;
+
+        // 챕터 헤더 생성 (본버전 Vault처럼 헤더 바 자체를 드래그하도록 하여 노션 느낌 극대화)
+        const header = document.createElement('div');
+        header.className = 'outline-chap-header';
+        header.id = `chapHeader_${chap.id}`;
+        header.draggable = true;
+
+        // 챕터 드래그 이벤트 (헤더 기준)
+        header.addEventListener('dragstart', (e) => {
+          e.stopPropagation();
+          e.dataTransfer.effectAllowed = 'move';
+          draggedItem = { type: 'chapter', chapterId: chap.id, cIdx };
+          header.classList.add('is-dragging');
+        });
+        header.addEventListener('dragend', () => {
+          header.classList.remove('is-dragging');
+          clearAllDragStyles();
+          draggedItem = null;
+          dragOverTarget = null;
+        });
+        header.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!draggedItem) return;
+
+          if (draggedItem.type === 'chapter') {
+            if (draggedItem.chapterId === chap.id) return;
+            const rect = header.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const position = e.clientY < midY ? 'top' : 'bottom';
+            clearAllDragStyles();
+            header.classList.add(`drag-over-${position}`);
+            dragOverTarget = { type: 'chapter', id: chap.id, position, targetCIdx: cIdx };
+          } else if (draggedItem.type === 'section') {
+            clearAllDragStyles();
+            header.classList.add('drag-target-hover');
+            dragOverTarget = { type: 'chapter-drop-target', id: chap.id, targetCIdx: cIdx };
+          }
+        });
+        header.addEventListener('drop', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!draggedItem) return;
+
+          if (draggedItem.type === 'chapter') {
+            const srcIdx = draggedItem.cIdx;
+            let tgtIdx = cIdx;
+            if (dragOverTarget?.position === 'bottom' && srcIdx < cIdx) {
+              // keep
+            } else if (dragOverTarget?.position === 'bottom' && srcIdx > cIdx) {
+              tgtIdx = cIdx + 1;
+            } else if (dragOverTarget?.position === 'top' && srcIdx < cIdx) {
+              tgtIdx = Math.max(0, cIdx - 1);
+            }
+            if (srcIdx !== tgtIdx) {
+              const [moved] = draftChapters.splice(srcIdx, 1);
+              draftChapters.splice(tgtIdx, 0, moved);
+              renderOutlineChapters();
+              showToast('챕터 위치가 이동되었습니다.');
+            }
+          } else if (draggedItem.type === 'section') {
+            const srcChap = draftChapters[draggedItem.cIdx];
+            const tgtChap = draftChapters[cIdx];
+            if (srcChap && tgtChap) {
+              const [movedSec] = srcChap.sections.splice(draggedItem.sIdx, 1);
+              tgtChap.sections.unshift(movedSec);
+              renderOutlineChapters();
+              showToast('소목차가 해당 챕터의 첫 꼭지로 이동되었습니다.');
+            }
+          }
+          clearAllDragStyles();
+        });
+
+        header.innerHTML = `
+          <div class="chap-left-wrap" id="chapTitleWrap_${cIdx}">
+            <span class="chap-title-inline" onondblclick="startEditChapter(${cIdx})">${escapeHtml(chap.title)}</span>
+          </div>
+          <div class="chap-hover-actions">
+            <button class="mini-icon-btn" onclick="addNewSection(${cIdx})" title="절 추가">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <button class="mini-icon-btn" onclick="startEditChapter(${cIdx})" title="챕터명 수정">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="mini-icon-btn danger" onclick="deleteChapter(${cIdx})" title="챕터 삭제">
+              <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+          </div>
+        `;
+        block.appendChild(header);
+
+        // 절 리스트
+        const secList = document.createElement('div');
+        secList.className = 'outline-sec-list';
+
+        chap.sections.forEach((sec, sIdx) => {
+          const secRow = document.createElement('div');
+          secRow.className = 'outline-sec-row';
+          secRow.id = `secRow_${sec.id}`;
+          secRow.draggable = true;
+
+          // 소목차 드래그 핸들러 (노션 스타일)
+          secRow.addEventListener('dragstart', (e) => {
+            e.stopPropagation();
+            e.dataTransfer.effectAllowed = 'move';
+            draggedItem = { type: 'section', chapterId: chap.id, sectionId: sec.id, cIdx, sIdx };
+            secRow.classList.add('is-dragging');
+          });
+          secRow.addEventListener('dragend', () => {
+            secRow.classList.remove('is-dragging');
+            clearAllDragStyles();
+            draggedItem = null;
+            dragOverTarget = null;
+          });
+          secRow.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!draggedItem || draggedItem.type !== 'section') return;
+            if (draggedItem.sectionId === sec.id) return;
+
+            const rect = secRow.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const position = e.clientY < midY ? 'top' : 'bottom';
+            clearAllDragStyles();
+            secRow.classList.add(`drag-over-${position}`);
+            dragOverTarget = { type: 'section', id: sec.id, position, targetCIdx: cIdx, targetSIdx: sIdx };
+          });
+          secRow.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!draggedItem || draggedItem.type !== 'section') return;
+
+            const srcChapIdx = draggedItem.cIdx;
+            const srcSecIdx = draggedItem.sIdx;
+            let tgtSecIdx = sIdx;
+
+            if (srcChapIdx === cIdx) {
+              if (dragOverTarget?.position === 'bottom' && srcSecIdx < sIdx) {
+                // keep
+              } else if (dragOverTarget?.position === 'bottom' && srcSecIdx > sIdx) {
+                tgtSecIdx = sIdx + 1;
+              } else if (dragOverTarget?.position === 'top' && srcSecIdx < sIdx) {
+                tgtSecIdx = Math.max(0, sIdx - 1);
+              }
+            } else {
+              if (dragOverTarget?.position === 'bottom') tgtSecIdx = sIdx + 1;
+            }
+
+            const [movedSec] = draftChapters[srcChapIdx].sections.splice(srcSecIdx, 1);
+            draftChapters[cIdx].sections.splice(tgtSecIdx, 0, movedSec);
+
+            clearAllDragStyles();
+            renderOutlineChapters();
+            showToast('소목차 위치가 이동되었습니다.');
+          });
+
+          secRow.innerHTML = `
+            <span id="secTitleSpan_${cIdx}_${sIdx}" onondblclick="startEditSection(${cIdx}, ${sIdx})">${escapeHtml(sec.title)}</span>
+            <div class="sec-hover-actions">
+              <button class="mini-icon-btn" onclick="addNewSectionAfter(${cIdx}, ${sIdx})" title="절 추가">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <button class="mini-icon-btn" onclick="startEditSection(${cIdx}, ${sIdx})" title="수정">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <button class="mini-icon-btn danger" onclick="deleteSection(${cIdx}, ${sIdx})" title="삭제">
+                <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          `;
+          secList.appendChild(secRow);
+        });
+
+        block.appendChild(secList);
+        container.appendChild(block);
+      });
+    }
+
+    function clearAllDragStyles() {
+      document.querySelectorAll('.outline-chap-header, .outline-sec-row').forEach(el => {
+        el.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-target-hover', 'is-dragging');
+      });
+    }
+
+    function startEditChapter(cIdx) {
+      const wrap = document.getElementById(`chapTitleWrap_${cIdx}`);
+      const oldTitle = draftChapters[cIdx].title;
+      wrap.innerHTML = `
+        <input type="text" class="inline-edit-input" value="${escapeHtml(oldTitle)}" 
+          onkeydown="if(event.key==='Enter') commitEditChapter(${cIdx}, this.value)"
+          onblur="commitEditChapter(${cIdx}, this.value)">
+      `;
+      wrap.querySelector('input').focus();
+    }
+    function commitEditChapter(cIdx, val) {
+      if (val && val.trim()) draftChapters[cIdx].title = val.trim();
+      renderOutlineChapters();
+    }
+
+    function startEditSection(cIdx, sIdx) {
+      const span = document.getElementById(`secTitleSpan_${cIdx}_${sIdx}`);
+      const oldTitle = draftChapters[cIdx].sections[sIdx].title;
+      span.innerHTML = `
+        <input type="text" class="inline-edit-input" value="${escapeHtml(oldTitle)}" 
+          onkeydown="if(event.key==='Enter') commitEditSection(${cIdx}, ${sIdx}, this.value)"
+          onblur="commitEditSection(${cIdx}, ${sIdx}, this.value)">
+      `;
+      span.querySelector('input').focus();
+    }
+    function commitEditSection(cIdx, sIdx, val) {
+      if (val && val.trim()) draftChapters[cIdx].sections[sIdx].title = val.trim();
+      renderOutlineChapters();
+    }
+
+    function addNewChapter() {
+      const count = draftChapters.length + 1;
+      draftChapters.push({
+        id: `c_${Date.now()}`,
+        title: `제${count}장. 새로운 이야기의 시작`,
+        sections: [
+          { id: `s_${Date.now()}_1`, title: `${count}.1 첫 번째 꼭지 기획` }
+        ]
+      });
+      renderOutlineChapters();
+      showToast(`'제${count}장'이 추가되었습니다.`);
+    }
+
+    function deleteChapter(cIdx) {
+      if (confirm('이 챕터를 삭제하시겠습니까?')) {
+        draftChapters.splice(cIdx, 1);
+        renderOutlineChapters();
+        showToast('챕터가 삭제되었습니다.');
+      }
+    }
+
+    function addNewSection(cIdx) {
+      const secCount = draftChapters[cIdx].sections.length + 1;
+      draftChapters[cIdx].sections.push({
+        id: `s_${Date.now()}`,
+        title: `${cIdx + 1}.${secCount} 새로운 소목차`
+      });
+      renderOutlineChapters();
+      showToast('새 소목차가 추가되었습니다.');
+    }
+
+    function addNewSectionAfter(cIdx, sIdx) {
+      draftChapters[cIdx].sections.splice(sIdx + 1, 0, {
+        id: `s_${Date.now()}`,
+        title: `${cIdx + 1}.${sIdx + 2} 새로운 소목차`
+      });
+      renderOutlineChapters();
+      showToast('소목차가 추가되었습니다.');
+    }
+
+    function deleteSection(cIdx, sIdx) {
+      draftChapters[cIdx].sections.splice(sIdx, 1);
+      renderOutlineChapters();
+      showToast('소목차가 삭제되었습니다.');
+    }
+
+    // 목차 기획 모달
+    let generatedAiOutline = null;
+
+    function openOutlinePlanModal() {
+      const tpl = PLOT_TEMPLATES[currentGenreKey] || PLOT_TEMPLATES.essay;
+      document.getElementById('modalGenreStandardTitle').textContent = `${tpl.name} 출판 규격`;
+      document.getElementById('modalGenreStandardDesc').textContent = tpl.standard;
+
+      const chips = document.getElementById('modalRefChips');
+      chips.innerHTML = `
+        <span class="ref-chip">로그라인: ${document.getElementById('activeBookTitle').textContent}</span>
+        <span class="ref-chip">장르: ${tpl.badge}</span>
+      `;
+      tpl.stages.forEach(st => {
+        const chip = document.createElement('span');
+        chip.className = 'ref-chip';
+        chip.textContent = st.title;
+        chips.appendChild(chip);
+      });
+
+      document.getElementById('aiOutlinePreviewBox').innerHTML = `
+        '인물·뼈대 기반 자동 생성' 버튼을 누르면 인물과 플롯 뼈대의 세부 메모를 바탕으로 최적화된 목차가 즉시 도출됩니다.
+      `;
+      generatedAiOutline = null;
+      document.getElementById('outlinePlanModal').classList.add('open');
+    }
+
+    function generateAiOutlineDraft() {
+      const box = document.getElementById('aiOutlinePreviewBox');
+      box.innerHTML = `<span style="color:var(--color-primary); font-weight:600;">AI 어시스턴트가 3단계 인물 및 플롯 뼈대를 분석하여 베스트셀러 목차를 조립 중입니다...</span>`;
+
+      setTimeout(() => {
+        const tpl = PLOT_TEMPLATES[currentGenreKey] || PLOT_TEMPLATES.essay;
+        generatedAiOutline = tpl.stages.map((st, idx) => ({
+          id: `ai_c_${idx + 1}`,
+          title: `제${idx + 1}장. ${st.title.replace(/^\d+\.\s*/, '')}`,
+          sections: st.subplots.map((sp, spIdx) => ({
+            id: `ai_s_${idx + 1}_${spIdx + 1}`,
+            title: typeof sp === 'string' ? sp : sp.title
+          }))
+        }));
+
+        let previewHtml = `<div style="display:flex; flex-direction:column; gap:0.5rem;">`;
+        generatedAiOutline.forEach(c => {
+          previewHtml += `<div><strong>${c.title}</strong><ul style="padding-left:1.2rem; margin-top:2px; color:var(--text-sub);">`;
+          c.sections.forEach(s => {
+            previewHtml += `<li>${s.title}</li>`;
+          });
+          previewHtml += `</ul></div>`;
+        });
+        previewHtml += `</div>`;
+
+        box.innerHTML = previewHtml;
+        showToast('인물·뼈대 기반 AI 목차 초안이 도출되었습니다!');
+      }, 700);
+    }
+
+    function applyAiOutlineDraft() {
+      if (!generatedAiOutline || generatedAiOutline.length === 0) {
+        showToast('먼저 목차를 생성해주세요.');
+        return;
+      }
+      draftChapters = structuredClone(generatedAiOutline);
+      renderOutlineChapters();
+      closeModal('outlinePlanModal');
+      showToast('AI 기획 목차가 목차 조립대에 성공적으로 반영되었습니다! 🪄');
+    }
+
+    // 쿼터 모달
+    function openQuotaModal() {
+      document.getElementById('quotaModal').classList.add('open');
+    }
+
+    let selectedModel = { id: 'smart_cascade', label: '스마트 자동 전환' };
+    function selectAiModel(id, label, elem) {
+      document.querySelectorAll('.quota-item-card').forEach(c => c.classList.remove('active'));
+      elem.classList.add('active');
+      selectedModel = { id, label };
+    }
+
+    function confirmQuotaModal() {
+      document.getElementById('activeModelNameLabel').textContent = selectedModel.label;
+      closeModal('quotaModal');
+      showToast(`AI 엔진이 '${selectedModel.label}'(으)로 적용되었습니다.`);
+    }
+
+    function sendAIMessage() {
+      const input = document.getElementById('aiInput');
+      const text = input.value.trim();
+      if (!text) return;
+      askAIPrompt(text);
+      input.value = '';
+    }
+
+    function askAIPrompt(prompt) {
+      const chatBody = document.getElementById('aiChatBody');
+      const userBubble = document.createElement('div');
+      userBubble.className = 'ai-msg-bubble user';
+      userBubble.textContent = prompt;
+      chatBody.appendChild(userBubble);
+      chatBody.scrollTop = chatBody.scrollHeight;
+
+      setTimeout(() => {
+        const aiBubble = document.createElement('div');
+        aiBubble.className = 'ai-msg-bubble assistant';
+        if (prompt.includes('로그라인')) {
+          aiBubble.innerHTML = `<strong>[로그라인 매력도 진단]</strong><br><br>
+현재 설정된 로그라인은 '피로'와 '쉼', '밤의 책상'이라는 명확한 감성적 대비가 있어 독자 공감대 형성에 우수합니다.<br><br>
+<strong>보강 제안:</strong> "퇴근 후 30분, 온전한 나를 마주하는 법"처럼 행동 단위의 직관적인 카피를 부제로 더하면 표지 전달력이 강화됩니다.`;
+        } else if (prompt.includes('목차')) {
+          aiBubble.innerHTML = `<strong>[베스트셀러 목차 비교 분석]</strong><br><br>
+동일 장르 베스트셀러들은 평균 4~5개 장, 장당 4~5개 꼭지로 완결성 높은 분량을 유지합니다. 현재 설정하신 가목차는 도입과 전개가 훌륭하므로 후반부 3.2절에 일상 복귀의 여운을 주는 꼭지를 보강하면 이상적입니다.`;
+        } else {
+          aiBubble.innerHTML = `작가님의 <strong>"${escapeHtml(prompt)}"</strong> 요청을 바탕으로 기획서를 검토했습니다.<br><br>
+인물 및 플롯 뼈대에 기록된 감정선과 세부 사건을 목차 각 꼭지에 반영해 나가시면 단단한 초고 집필로 이어질 수 있습니다.`;
+        }
+        chatBody.appendChild(aiBubble);
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }, 500);
+    }
+
+    function setTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('btnThemeDark').classList.add('active');
+        document.getElementById('btnThemeLight').classList.remove('active');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+        document.getElementById('btnThemeLight').classList.add('active');
+        document.getElementById('btnThemeDark').classList.remove('active');
+      }
+    }
+
+    function switchPipelineStep(stepIdx) {
+      for (let i = 0; i < 5; i++) {
+        const tab = document.getElementById(`tab-step-${i}`);
+        const view = document.getElementById(`view-step-${i}`);
+        if (i === stepIdx) {
+          tab.classList.add('active');
+          view.style.display = (i === 3) ? 'grid' : 'flex';
+        } else {
+          tab.classList.remove('active');
+          view.style.display = 'none';
+        }
+      }
+    }
+
+    function addQuickIdea() {
+      const input = document.getElementById('quickIdeaInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const grid = document.getElementById('ideasGrid');
+      const newCard = document.createElement('div');
+      newCard.className = 'idea-card';
+      newCard.innerHTML = `
+        <div class="idea-card-header">
+          <span class="idea-badge">단상 메모</span>
+          <span>방금 전</span>
+        </div>
+        <div class="idea-card-body">${escapeHtml(text)}</div>
+        <div class="idea-card-actions">
+          <button class="btn-idea-action" onclick="showToast('글감 창고로 승격되었습니다.')">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            글감 보관
+          </button>
+          <button class="btn-idea-action danger" onclick="this.closest('.idea-card').remove(); showToast('아이디어가 삭제되었습니다.')">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      `;
+      grid.prepend(newCard);
+      input.value = '';
+      showToast('새 아이디어가 기록되었습니다.');
+    }
+
+    function filterCategory(cat, btn) {
+      document.querySelectorAll('.cat-pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cards = document.querySelectorAll('.material-card');
+      cards.forEach(card => {
+        if (cat === 'ALL' || card.getAttribute('data-cat') === cat) card.style.display = 'flex';
+        else card.style.display = 'none';
+      });
+    }
+
+    function openNewProjectModal() {
+      document.getElementById('newProjectModal').classList.add('open');
+    }
+    function openMaterialModal() {
+      document.getElementById('materialModal').classList.add('open');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function confirmNewProject() {
+      const title = document.getElementById('newBookInput').value.trim();
+      const genreSelect = document.getElementById('newBookGenre');
+      const genreKey = genreSelect.value;
+      const genreText = genreSelect.options[genreSelect.selectedIndex].text;
+      if (!title) {
+        showToast('작품명을 입력해주세요.');
+        return;
+      }
+      const list = document.getElementById('projectList');
+      const card = document.createElement('div');
+      card.className = 'project-card';
+      card.onclick = function() { selectProject(title, genreText, '0 / 5단계', genreKey, this); };
+      card.innerHTML = `
+        <div class="project-cover-bar" style="background:#8b5a2b;"></div>
+        <div class="project-meta-wrap">
+          <span class="project-title">${escapeHtml(title)}</span>
+          <div class="project-sub-row">
+            <span class="project-genre">${genreText}</span>
+            <span class="project-step-badge">기획시작</span>
+          </div>
+        </div>
+      `;
+      list.prepend(card);
+      closeModal('newProjectModal');
+      document.getElementById('newBookInput').value = '';
+      selectProject(title, genreText, '0 / 5단계', genreKey, card);
+      showToast(`'${title}' 신규 기획이 생성되었습니다.`);
+    }
+
+    function confirmNewMaterial() {
+      const cat = document.getElementById('matCatInput').value;
+      const title = document.getElementById('matTitleInput').value.trim();
+      const content = document.getElementById('matContentInput').value.trim();
+      if (!title || !content) {
+        showToast('제목과 내용을 모두 입력해주세요.');
+        return;
+      }
+      const grid = document.getElementById('materialsGrid');
+      const card = document.createElement('div');
+      card.className = 'material-card';
+      card.setAttribute('data-cat', cat);
+      card.innerHTML = `
+        <div class="material-header">
+          <span class="material-cat-tag">취재자료</span>
+          <span style="font-size:0.7rem; color:var(--text-muted);">#신규보관</span>
+        </div>
+        <h4 class="material-title">${escapeHtml(title)}</h4>
+        <p class="material-body">${escapeHtml(content)}</p>
+        <div class="material-source">출처: 직접 등록 자료</div>
+      `;
+      grid.prepend(card);
+      closeModal('materialModal');
+      document.getElementById('matTitleInput').value = '';
+      document.getElementById('matContentInput').value = '';
+      showToast('취재 자료가 보관되었습니다.');
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+  </script>
+</body>
+</html>

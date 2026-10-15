@@ -111,7 +111,7 @@ export default function BookInfoModal({
         });
 
         await loadBooks();
-        showToast(`'${newBook.title}' 새 전자책 프로젝트가 시작되었습니다! 🚀`, 'success');
+        showToast(`'${newBook.title}' 새 전자책 프로젝트가 시작되었습니다.`, 'success');
         onClose();
         if (onSuccess) {
           onSuccess(newBook);

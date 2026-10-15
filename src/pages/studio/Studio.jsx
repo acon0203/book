@@ -482,6 +482,7 @@ export default function Studio() {
   const [findMatches, setFindMatches] = useState([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(-1);
   const findInputRef = useRef(null);
+  const replaceInputRef = useRef(null);
 
   // 편집기 영역 포커스 활성화 여부 판별 헬퍼
   const checkIsEditorFocused = () => {
@@ -650,13 +651,17 @@ export default function Studio() {
         return;
       }
 
-      // 2. Ctrl+F: 편집기가 활성화되어 있을 때만 브라우저 기본 검색 차단 및 에디터 인라인 검색바 열기
-      if (isCtrl && key === 'f') {
+      // 2. Ctrl+F / Ctrl+H: 편집기 인라인 검색바 및 찾아바꾸기 열기
+      if (isCtrl && (key === 'f' || key === 'h')) {
         if (checkIsEditorFocused() || isFindBarOpen) {
           e.preventDefault();
           setIsFindBarOpen(true);
+          const isReplaceMode = key === 'h';
           setTimeout(() => {
-            if (findInputRef.current) {
+            if (isReplaceMode && replaceInputRef.current) {
+              replaceInputRef.current.focus();
+              replaceInputRef.current.select();
+            } else if (findInputRef.current) {
               findInputRef.current.focus();
               findInputRef.current.select();
             }
@@ -935,7 +940,7 @@ export default function Studio() {
     }
     setPolishSourceText(block.text);
     setActiveAiTab('polish');
-    showToast('✨ 해당 문단이 우측 AI 문장 교정기에 입력되었습니다!', 'success');
+    showToast('해당 문단이 우측 AI 문장 교정기에 입력되었습니다.', 'success');
   };
 
   if (!activeBook) {
@@ -1383,7 +1388,7 @@ export default function Studio() {
                       openReader(activeBook.id, activeChapterId);
                     }
                   }}
-                  title="문피아·네이버 스타일 표준 웹 뷰어로 즉시 열람합니다"
+                  title="표준 통합 웹 뷰어로 즉시 열람합니다"
                 >
                   <BookOpen size={13} />
                   <span>미리보기</span>
@@ -1516,6 +1521,7 @@ export default function Studio() {
                   <div className="find-input-wrap">
                     <Replace size={14} className="find-icon" />
                     <input
+                      ref={replaceInputRef}
                       type="text"
                       className="find-input replace-input"
                       placeholder="바꿀 단어..."
@@ -1763,7 +1769,7 @@ export default function Studio() {
                                 type="text"
                                 className="paragraph-label-input"
                                 value={p.label || ''}
-                                placeholder="📌 키워드 / 요약 메모"
+                                placeholder="키워드 / 요약 메모"
                                 title="문단 모드에서만 보이는 작가용 메모/키워드"
                                 onChange={(e) => handleParagraphLabelChange(p.id, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}

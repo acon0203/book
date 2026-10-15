@@ -49,6 +49,7 @@ export default function Reader() {
   const [textAlign, setTextAlign] = useState(() => localStorage.getItem('reader_align') || 'justify');
   const [viewMode, setViewMode] = useState(() => localStorage.getItem('reader_view_mode') || 'scroll'); // 'scroll' | 'page'
   const [isWide, setIsWide] = useState(() => localStorage.getItem('reader_wide') === 'true');
+  const [accentColor, setAccentColor] = useState(() => localStorage.getItem('reader_accent_color') || 'default');
 
   // 2. UI 토글 상태
   const [isTocOpen, setIsTocOpen] = useState(false);
@@ -104,7 +105,8 @@ export default function Reader() {
     localStorage.setItem('reader_align', textAlign);
     localStorage.setItem('reader_view_mode', viewMode);
     localStorage.setItem('reader_wide', isWide);
-  }, [fontFamily, fontSize, lineHeight, readerTheme, textAlign, viewMode, isWide]);
+    localStorage.setItem('reader_accent_color', accentColor);
+  }, [fontFamily, fontSize, lineHeight, readerTheme, textAlign, viewMode, isWide, accentColor]);
 
   // 팝오버 외부 클릭 감지
   useEffect(() => {
@@ -296,10 +298,11 @@ export default function Reader() {
       style={{
         '--reader-font-size': `${fontSize}px`,
         '--reader-line-height': `${lineHeight}%`,
-        '--reader-text-align': textAlign
+        '--reader-text-align': textAlign,
+        ...(accentColor !== 'default' ? { '--reader-accent-custom': accentColor } : {})
       }}
     >
-      {/* 1. 네이버웹소설 스타일 간명 슬림 상단 바 */}
+      {/* 1. 표준 슬림 상단 바 */}
       <header className="reader-header">
         <div className="reader-header-left">
           <button 
@@ -396,7 +399,7 @@ export default function Reader() {
             {isWide ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
 
-          {/* 네이버 스타일 [보기설정 ▾] 버튼 & 팝오버 */}
+          {/* 표준 미니멀 [보기설정 ▾] 버튼 & 팝오버 */}
           <div className="reader-settings-wrap" ref={settingsRef}>
             <button 
               className={`reader-settings-btn ${isSettingsOpen ? 'active' : ''}`}
@@ -409,7 +412,7 @@ export default function Reader() {
               <ChevronDown size={14} className={`chevron-icon ${isSettingsOpen ? 'rotate' : ''}`} />
             </button>
 
-            {/* 네이버 스타일 미니멀 설정 팝오버 */}
+            {/* 표준 미니멀 설정 팝오버 */}
             {isSettingsOpen && (
               <div className="reader-settings-popover">
                 {/* 1. 폰트 선택 탭 */}
@@ -521,6 +524,49 @@ export default function Reader() {
                     </button>
                   </div>
                 </div>
+
+                {/* 5. 강조 포인트 색상 선택기 (기본, 브라운, 그린, 버건디, 블루) */}
+                <div className="settings-row accent-palette-row">
+                  <span className="setting-sublabel">강조 색상</span>
+                  <div className="accent-colors-wrap">
+                    <button
+                      type="button"
+                      className={`accent-chip ${accentColor === 'default' ? 'active' : ''}`}
+                      onClick={() => setAccentColor('default')}
+                      title="기본 테마색 (본문 일치)"
+                    >
+                      기본
+                    </button>
+                    <button
+                      type="button"
+                      className={`accent-dot-btn ${accentColor === '#8b5a2b' ? 'active' : ''}`}
+                      style={{ backgroundColor: '#8b5a2b', color: '#8b5a2b' }}
+                      onClick={() => setAccentColor('#8b5a2b')}
+                      title="클래식 브라운"
+                    />
+                    <button
+                      type="button"
+                      className={`accent-dot-btn ${accentColor === '#2a6f55' ? 'active' : ''}`}
+                      style={{ backgroundColor: '#2a6f55', color: '#2a6f55' }}
+                      onClick={() => setAccentColor('#2a6f55')}
+                      title="딥 포레스트"
+                    />
+                    <button
+                      type="button"
+                      className={`accent-dot-btn ${accentColor === '#8b263e' ? 'active' : ''}`}
+                      style={{ backgroundColor: '#8b263e', color: '#8b263e' }}
+                      onClick={() => setAccentColor('#8b263e')}
+                      title="와인 버건디"
+                    />
+                    <button
+                      type="button"
+                      className={`accent-dot-btn ${accentColor === '#2563eb' ? 'active' : ''}`}
+                      style={{ backgroundColor: '#2563eb', color: '#2563eb' }}
+                      onClick={() => setAccentColor('#2563eb')}
+                      title="로열 블루"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -529,7 +575,7 @@ export default function Reader() {
 
       {/* 2. 본문 뷰포트 영역 */}
       <main className="reader-viewport">
-        {/* 문피아 스타일 챕터 메타 지표 헤더 */}
+        {/* 챕터 메타 지표 헤더 */}
         <section className="reader-chapter-hero">
           <h1 className="chapter-hero-title">
             {currentChapter.title || `제 ${currentChapterIndex + 1} 장`}
@@ -628,7 +674,7 @@ export default function Reader() {
 
         {/* 3. 본문 하단 소통 및 네비게이션 섹션 */}
         <footer className="reader-bottom-section">
-          {/* 네이버웹소설 스타일: ✍️ 작가의 말 카드 */}
+          {/* 작가의 말 카드 */}
           <div className="reader-author-note-card">
             <div className="author-note-header">
               <div className="author-note-title">

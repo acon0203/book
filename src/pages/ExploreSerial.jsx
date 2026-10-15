@@ -20,7 +20,7 @@ import {
 import { useStore } from '../store';
 import './ExploreSerial.css';
 
-// 교보문고 표준 핵심 8대 장르 (자서전, 회고록, 평전 포함)
+// 표준 핵심 8대 장르 (자서전, 회고록, 평전 포함)
 const KYOBO_GENRES = [
   { id: 'all', label: '전체 장르' },
   { id: 'novel', label: '소설', keywords: ['소설', '웹소설', '문학'] },
@@ -314,7 +314,7 @@ export default function ExploreSerial() {
           </div>
         </section>
 
-        {/* 문피아 스타일 메인 작품 리스트 */}
+        {/* 메인 연재 작품 리스트 */}
         <section className="serial-books-list-section">
           <div className="list-section-summary">
             <span>총 <strong>{filteredBooks.length}</strong>개의 연재 작품</span>

@@ -71,7 +71,7 @@ export const useStore = create((set, get) => {
         const result = await cloudSyncService.backupToCloud(user.uid, user.email, user.displayName);
         set({ syncStatus: 'synced', lastSyncedAt: result.syncedAt });
         if (showNotification) {
-          get().showToast('클라우드에 안전하게 동기화되었습니다! ☁️', 'success');
+          get().showToast('클라우드에 안전하게 동기화되었습니다.', 'success');
         }
       } catch (err) {
         console.error('[CloudSync Error]:', err);
@@ -386,8 +386,8 @@ export const useStore = create((set, get) => {
       }));
       get().showToast(
         nextCompleted
-          ? `'${target.title}' 도서가 완결(완성작)로 등록되었습니다! 🏆`
-          : `'${target.title}' 도서가 연재중으로 전환되었습니다. ✍️`,
+          ? `'${target.title}' 도서가 완결(완성작)로 등록되었습니다.`
+          : `'${target.title}' 도서가 연재중으로 전환되었습니다.`,
         'success'
       );
       return nextCompleted;
@@ -425,7 +425,7 @@ export const useStore = create((set, get) => {
         activeBook: (state.activeBook?.id === targetId) ? updatedBook : state.activeBook,
         books: state.books.map(b => b.id === targetId ? updatedBook : b)
       }));
-      get().showToast(`도서 정보가 성공적으로 저장되었습니다. ✨`, 'success');
+      get().showToast('도서 정보가 성공적으로 저장되었습니다.', 'success');
       return updatedBook;
     },
 
@@ -819,7 +819,7 @@ export const useStore = create((set, get) => {
         set({ activeBook: updatedBook });
         get().loadBooks();
         if (chap?.status === 'published') {
-          get().showToast(`🎉 '${chap.title}' 챕터가 연재 발행되었습니다!`, 'success');
+          get().showToast(`'${chap.title}' 챕터가 연재 발행되었습니다.`, 'success');
         } else {
           get().showToast('챕터 연재 발행이 취소되고 초고 상태로 전환되었습니다.', 'info');
         }
@@ -838,7 +838,7 @@ export const useStore = create((set, get) => {
         set({ activeBook: updatedBook });
         get().loadBooks();
         if (sec?.status === 'published') {
-          get().showToast(`🎉 '${sec.title}' 소목차가 연재 발행되었습니다!`, 'success');
+          get().showToast(`'${sec.title}' 소목차가 연재 발행되었습니다.`, 'success');
         } else {
           get().showToast('소목차 연재 발행이 취소되었습니다.', 'info');
         }
@@ -856,7 +856,7 @@ export const useStore = create((set, get) => {
         set({ activeBook: updatedBook });
         get().loadBooks();
         if (chap?.status === 'published') {
-          get().showToast(`🎉 '${chap.title}' 챕터와 하위 소목차가 모두 연재 발행되었습니다!`, 'success');
+          get().showToast(`'${chap.title}' 챕터와 하위 소목차가 모두 연재 발행되었습니다.`, 'success');
         } else {
           get().showToast('챕터 및 하위 소목차 발행이 일괄 취소되었습니다.', 'info');
         }
@@ -873,7 +873,7 @@ export const useStore = create((set, get) => {
         set({ activeBook: updatedBook });
         get().loadBooks();
         if (updatedBook.status === 'completed') {
-          get().showToast(`🎊 《${updatedBook.title}》 도서 전체가 완결 출간(발행)되었습니다!`, 'success');
+          get().showToast(`'${updatedBook.title}' 도서 전체가 완결 출간(발행)되었습니다.`, 'success');
         } else {
           get().showToast('도서 전체 연재 발행이 초고 상태로 일괄 전환되었습니다.', 'info');
         }
@@ -889,7 +889,7 @@ export const useStore = create((set, get) => {
         const updatedBook = await bookService.updateBatchPublishSections(activeBook.id, publishedSectionIds);
         set({ activeBook: updatedBook });
         get().loadBooks();
-        get().showToast(`✨ 선택한 회차(${publishedSectionIds.length}개)의 연재 발행 상태가 저장되었습니다.`, 'success');
+        get().showToast(`선택한 회차(${publishedSectionIds.length}개)의 연재 발행 상태가 저장되었습니다.`, 'success');
       } catch (err) {
         get().showToast(`선택 발행 저장 실패: ${err.message}`, 'error');
       }

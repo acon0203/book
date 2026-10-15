@@ -66,7 +66,7 @@ export default function ManuscriptImportModal({ isOpen, onClose, currentBook = n
 
       setParsedResult(parsed);
       setBookTitle(parsed.title);
-      showToast(`${file.name} 원고를 성공적으로 분석했습니다! 📄`, 'success');
+      showToast(`${file.name} 원고를 성공적으로 분석했습니다.`, 'success');
     } catch (err) {
       console.error(err);
       showToast(`원고 분석 실패: ${err.message}`, 'error');
@@ -86,7 +86,7 @@ export default function ManuscriptImportModal({ isOpen, onClose, currentBook = n
       const parsed = parseManuscript(pastedText, '붙여넣은 원고');
       setParsedResult(parsed);
       setBookTitle(parsed.title);
-      showToast('원고가 성공적으로 분석되었습니다! ✍️', 'success');
+      showToast('원고가 성공적으로 분석되었습니다.', 'success');
     } catch (err) {
       showToast(`분석 실패: ${err.message}`, 'error');
     } finally {
@@ -134,7 +134,7 @@ export default function ManuscriptImportModal({ isOpen, onClose, currentBook = n
         });
 
         await loadBooks();
-        showToast(`'${newBook.title}' 도서로 원고가 성공적으로 등록되었습니다! 🚀`, 'success');
+        showToast(`'${newBook.title}' 도서로 원고가 성공적으로 등록되었습니다.`, 'success');
         onClose();
         openBook(newBook.id);
       } else {
@@ -147,7 +147,7 @@ export default function ManuscriptImportModal({ isOpen, onClose, currentBook = n
         });
 
         await loadBooks();
-        showToast(`${parsedResult.chapters.length}개 챕터가 현재 도서에 추가되었습니다! ✨`, 'success');
+        showToast(`${parsedResult.chapters.length}개 챕터가 현재 도서에 추가되었습니다.`, 'success');
         onClose();
       }
     } catch (err) {

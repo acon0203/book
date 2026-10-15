@@ -270,7 +270,7 @@ export default function Settings() {
                     <span className="notice-badge">기능 추가</span>
                     <span className="notice-date">2026.10</span>
                   </div>
-                  <h4>v1.1.0 - 문피아식 연재 탐색 & 네이버웹소설식 웹 뷰어 오픈</h4>
+                  <h4>v1.1.0 - 실시간 연재 탐색 & 표준 통합 웹 뷰어 오픈</h4>
                   <p>
                     8대 장르 바와 실시간 TOP 5 랭킹, 요일별 연재 목록을 탑재한 '연재 작품' 탐색 화면과 
                     가독성 극대화 폰트, 화이트/세피아/다크 테마, 페이지 넘김 모드를 갖춘 표준 뷰어가 출시되었습니다.

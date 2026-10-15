@@ -249,3 +249,106 @@
   pointer-events: none;
   height: 0;
 }
+
+/* 툴바 팝오버 래퍼 & 미니 팔레트 */
+.toolbar-popover-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.toolbar-palette-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #ffffff;
+  border: 1px solid rgba(139, 90, 43, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="dark"] .toolbar-palette-popover {
+  background: #2a241f;
+  border-color: rgba(184, 150, 118, 0.2);
+}
+
+.palette-color-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  outline: none;
+}
+
+.palette-color-btn:hover {
+  transform: scale(1.2);
+}
+
+.palette-color-btn.active {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* 하단 에디터 상태 바 (글자수 & 원고지 환산 매수) */
+.editor-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.85rem;
+  background: #faf8f5;
+  border: 1px solid rgba(139, 90, 43, 0.12);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .editor-status-bar {
+  background: #241f1a;
+  border-color: var(--border-divider);
+}
+
+.status-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-stat-strong {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.status-manuscript-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(139, 90, 43, 0.08);
+  color: var(--primary);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.74rem;
+}
+
+.status-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+

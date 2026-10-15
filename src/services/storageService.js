@@ -478,6 +478,24 @@ export const storageService = {
     return newItem;
   },
 
+  updateVaultItem: (id, updates) => {
+    const vault = storageService.getVault();
+    const idx = vault.findIndex(v => v.id === id);
+    if (idx === -1) {
+      const newItem = {
+        id: id || `vault_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        createdAt: new Date().toISOString(),
+        ...updates
+      };
+      vault.unshift(newItem);
+      storageService.saveVault(vault);
+      return newItem;
+    }
+    vault[idx] = { ...vault[idx], ...updates, updatedAt: new Date().toISOString() };
+    storageService.saveVault(vault);
+    return vault[idx];
+  },
+
   deleteVaultItem: (id) => {
     const vault = storageService.getVault();
     const filtered = vault.filter(v => v.id !== id);

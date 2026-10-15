@@ -1,6 +1,6 @@
 /* ==========================================================================
    표준 통합 웹 뷰어 (Reader.css) - Zero-Lag 초경량 독서 전용 스타일시트
-   문피아의 실용적 기능 + 네이버웹소설의 간명한 미니멀 디자인 융합
+   연재서재 고유의 실용적 기능과 정갈하고 세련된 미니멀 독서 인터페이스
    ========================================================================== */
 
 /* 1. 기본 컨테이너 & 레이아웃 */
@@ -80,7 +80,7 @@
   font-family: '맑은 고딕', 'Malgun Gothic', 'Dotum', sans-serif !important;
 }
 
-/* 4. 네이버웹소설 스타일 간명 슬림 상단 바 */
+/* 4. 표준 미니멀 슬림 상단 바 */
 .reader-header {
   position: sticky;
   top: 0;
@@ -354,7 +354,7 @@
   color: var(--reader-text);
 }
 
-/* 네이버 스타일 [보기설정 ▾] 팝오버 */
+/* 표준 미니멀 [보기설정 ▾] 팝오버 */
 .reader-settings-wrap {
   position: relative;
 }
@@ -590,6 +590,52 @@
   border-color: var(--reader-accent);
 }
 
+/* 강조 포인트 색상 선택 행 */
+.accent-palette-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.2rem;
+  border-top: 1px solid var(--reader-border);
+}
+.accent-colors-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.accent-chip {
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--reader-border);
+  background: transparent;
+  color: var(--reader-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.accent-chip.active {
+  background: var(--reader-text);
+  color: var(--reader-bg);
+  border-color: var(--reader-text);
+}
+.accent-dot-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.accent-dot-btn:hover {
+  transform: scale(1.18);
+}
+.accent-dot-btn.active {
+  box-shadow: 0 0 0 2px var(--reader-bg), 0 0 0 4px currentColor;
+  transform: scale(1.15);
+}
+
 /* 5. 본문 뷰포트 영역 */
 .reader-viewport {
   margin: 0 auto;
@@ -604,7 +650,7 @@
   max-width: 1080px;
 }
 
-/* 문피아 스타일 챕터 메타 지표 헤더 */
+/* 챕터 메타 지표 헤더 */
 .reader-chapter-hero {
   margin-bottom: 2.8rem;
   padding-bottom: 1.2rem;
@@ -660,8 +706,9 @@
   gap: 0.5rem;
 }
 .section-num {
-  color: var(--reader-accent);
-  font-weight: 800;
+  color: var(--reader-accent-custom, var(--reader-text));
+  font-weight: 700;
+  transition: color 0.15s ease;
 }
 
 /* 본문 순수 텍스트 렌더링 컨테이너 */
@@ -792,7 +839,7 @@
   gap: 2rem;
 }
 
-/* 네이버웹소설 스타일: ✍️ 작가의 말 카드 */
+/* 표준 스타일: 작가의 말 카드 */
 .reader-author-note-card {
   padding: 1.3rem 1.5rem;
   border-radius: 12px;

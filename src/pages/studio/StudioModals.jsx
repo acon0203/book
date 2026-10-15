@@ -169,7 +169,7 @@ export function ExportModal({ isOpen, onClose, activeBook, showToast }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>📥 전자책 전체 내보내기</h2>
+          <h2>전자책 전체 내보내기</h2>
           <button className="modal-close-btn" onClick={onClose}>
             <X size={20} />
           </button>
@@ -236,7 +236,7 @@ export function VaultModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>💡 AI 집필 참고 자료 선택</h2>
+          <h2>AI 집필 참고 자료 선택</h2>
           <button className="modal-close-btn" onClick={onClose}>
             <X size={20} />
           </button>
@@ -360,11 +360,11 @@ export function VersionModal({
                       )}
                     </div>
                     <div className="version-card-meta">
-                      <span>🕒 {new Date(ver.createdAt).toLocaleString('ko-KR')}</span>
+                      <span>{new Date(ver.createdAt).toLocaleString('ko-KR')}</span>
                       <span>·</span>
-                      <span>📝 {(ver.totalWords || 0).toLocaleString()} 자</span>
+                      <span>{(ver.totalWords || 0).toLocaleString()} 자</span>
                       <span>·</span>
-                      <span>📚 {ver.chapterCount || ver.chapters?.length || 0}개 챕터</span>
+                      <span>{ver.chapterCount || ver.chapters?.length || 0}개 챕터</span>
                     </div>
                   </div>
                   <div className="version-card-actions">

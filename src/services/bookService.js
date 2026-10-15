@@ -53,6 +53,7 @@ export const bookService = {
   // 3. 자료 금고 (Vault)
   getVault: async () => storageService.getVault(),
   createVaultItem: async (item) => storageService.createVaultItem(item),
+  updateVaultItem: async (id, data) => storageService.updateVaultItem(id, data),
   deleteVaultItem: async (id) => storageService.deleteVaultItem(id),
 
   // 4. 통계 및 설정

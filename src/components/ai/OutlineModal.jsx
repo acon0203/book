@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, AlertTriangle } from 'lucide-react';
+import { X, Sparkles, AlertTriangle, Bot, Info } from 'lucide-react';
 import bestsellerDb from '../../data/bestseller-db.json';
 import { bookService } from '../../services/bookService';
 import { storageService } from '../../services/storageService';
@@ -117,7 +117,10 @@ export default function OutlineModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>🤖 AI 목차 자동 기획</h2>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Bot size={20} />
+            <span>AI 목차 자동 기획</span>
+          </h2>
           <button className="modal-close-btn" onClick={onClose}>
             <X size={20} />
           </button>
@@ -132,7 +135,7 @@ export default function OutlineModal({
             {/* 베스트셀러 장르 템플릿 선택 칩 */}
             <div className="form-group" style={{ marginBottom: '1.1rem' }}>
               <label className="outline-genre-header">
-                <span>📚 베스트셀러 표준 규격 템플릿 (25권 표본 DB)</span>
+                <span>베스트셀러 표준 규격 템플릿 (25권 표본 DB)</span>
                 {selectedGenre && bestsellerDb.genres[selectedGenre] && (
                   <span className="outline-genre-badge">
                     {bestsellerDb.genres[selectedGenre].standards.chapters}장 × {bestsellerDb.genres[selectedGenre].standards.sectionsPerChapter}꼭지 표준
@@ -155,7 +158,6 @@ export default function OutlineModal({
                         setCustomSectionCount(g.standards.sectionsPerChapter);
                       }}
                     >
-                      <span className="outline-genre-icon">{g.icon}</span>
                       <span className="outline-genre-name">{g.name}</span>
                     </button>
                   );
@@ -176,7 +178,7 @@ export default function OutlineModal({
                   <option value="5">5장 (단행본 표준 - 추천)</option>
                   <option value="6">6장 (단계별 가이드)</option>
                   <option value="7">7장 (심층 전문서)</option>
-                  <option value="custom">✏️ 직접 입력...</option>
+                  <option value="custom">직접 입력...</option>
                 </select>
                 {chapterCount === 'custom' && (
                   <input
@@ -202,7 +204,7 @@ export default function OutlineModal({
                   <option value="8">8개 (단행본 표준 - 추천)</option>
                   <option value="10">10개 (스피디 / 현대 트렌드)</option>
                   <option value="12">12개 (숏폼 칼럼형)</option>
-                  <option value="custom">✏️ 직접 입력...</option>
+                  <option value="custom">직접 입력...</option>
                 </select>
                 {sectionsPerChapter === 'custom' && (
                   <input
@@ -234,18 +236,18 @@ export default function OutlineModal({
               return (
                 <div className="outline-spec-card">
                   <div className="outline-spec-main">
-                    <span>📚 예상 책 분량: <strong className="outline-spec-pages-highlight">약 {estBookPages}쪽</strong> ({effChapters}장 × {effSections}꼭지 = 총 {total}꼭지)</span>
+                    <span>예상 책 분량: <strong className="outline-spec-pages-highlight">약 {estBookPages}쪽</strong> ({effChapters}장 × {effSections}꼭지 = 총 {total}꼭지)</span>
                     <span className="outline-spec-words">본문 약 {estWords.toLocaleString()}자 (A4 약 {estA4Pages}장)</span>
                   </div>
                   
                   {genreInfo && (
                     <div className="outline-spec-detail">
                       <div className="outline-spec-detail-row">
-                        <span>🎯 <strong className="outline-spec-bold">{genreInfo.name} 기준</strong>: 꼭지당 약 {avgWords.toLocaleString()}자</span>
+                        <span><strong className="outline-spec-bold">{genreInfo.name} 기준</strong>: 꼭지당 약 {avgWords.toLocaleString()}자</span>
                         <span className="outline-spec-dim">{genreInfo.characteristics}</span>
                       </div>
                       <div>
-                        📖 <span className="outline-spec-dim">실측 표본:</span> {genreInfo.sampleBooks.slice(0, 3).map(b => `《${b.title}》(${b.structure})`).join(', ')} 등
+                        <span className="outline-spec-dim">실측 표본:</span> {genreInfo.sampleBooks.slice(0, 3).map(b => `${b.title} (${b.structure})`).join(', ')} 등
                       </div>
                     </div>
                   )}
@@ -274,7 +276,7 @@ export default function OutlineModal({
                   {outlineError.message}
                   {outlineError.isFixed && (
                     <span className="outline-error-tip">
-                      💡 구글 AI Studio에서 해당 모델이 일시 점검 중이거나 불안정한 상태입니다. 가장 빠르고 안정적인 <strong>Gemini 3.5 Flash Lite</strong> 또는 <strong>스마트 자동 전환</strong>으로 모델을 변경해 보세요.
+                      구글 AI Studio에서 해당 모델이 일시 점검 중이거나 불안정한 상태입니다. 가장 빠르고 안정적인 <strong>Gemini 3.5 Flash Lite</strong> 또는 <strong>스마트 자동 전환</strong>으로 모델을 변경해 보세요.
                     </span>
                   )}
                 </p>
@@ -286,7 +288,7 @@ export default function OutlineModal({
                     setView('settings');
                   }}
                 >
-                  <span>⚙️ 설정으로 이동하여 AI 모델 변경하기 ➔</span>
+                  <span>설정으로 이동하여 AI 모델 변경하기 ➔</span>
                 </button>
               </div>
             )}

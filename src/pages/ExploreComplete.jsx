@@ -18,7 +18,7 @@ import {
 import { useStore } from '../store';
 import './ExploreComplete.css';
 
-// 교보문고 표준 핵심 8대 장르 (자서전, 회고록, 평전 포함)
+// 표준 핵심 8대 장르 (자서전, 회고록, 평전 포함)
 const KYOBO_GENRES = [
   { id: 'all', label: '전체 장르' },
   { id: 'novel', label: '소설', keywords: ['소설', '웹소설', '문학'] },

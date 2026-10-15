@@ -177,7 +177,7 @@ export default function ModelQuotasModal({ isOpen, onClose }) {
               <div className="quota-item-left">
                 <div className="quota-model-badge-row">
                   <Sparkles size={16} style={{ color: '#f59e0b' }} />
-                  <span className="quota-model-title">⭐ 스마트 자동 전환 (강력 추천)</span>
+                  <span className="quota-model-title">스마트 자동 전환 (추천)</span>
                   {selectedModelId === 'smart_cascade' && (
                     <span className="quota-active-tag">적용 대상</span>
                   )}
@@ -201,7 +201,7 @@ export default function ModelQuotasModal({ isOpen, onClose }) {
           {/* 2. 그룹 1: 플래그십 모델 (성능 높은 순) */}
           <div className="quotas-group-section">
             <div className="quotas-group-title">
-              <span>👑 플래그십 모델 (성능 최고순 · 일 20회)</span>
+              <span>플래그십 모델 (성능 최고순 · 일 20회)</span>
             </div>
             <div className="quotas-model-list">
               {flagshipModels.map(renderModelCard)}
@@ -211,7 +211,7 @@ export default function ModelQuotasModal({ isOpen, onClose }) {
           {/* 3. 그룹 2: Lite 대용량 모델 (최신순) */}
           <div className="quotas-group-section">
             <div className="quotas-group-title">
-              <span>⚡ Lite 대용량 모델 (초고속 안정 · 일 500회)</span>
+              <span>Lite 대용량 모델 (초고속 안정 · 일 500회)</span>
             </div>
             <div className="quotas-model-list">
               {liteModels.map(renderModelCard)}
@@ -221,7 +221,7 @@ export default function ModelQuotasModal({ isOpen, onClose }) {
           {/* 4. 그룹 3: Gemma 4 기타 모델 (대규모 한도) */}
           <div className="quotas-group-section">
             <div className="quotas-group-title">
-              <span>🌐 Gemma 4 최신 모델 (Google 오픈 모델 · 일 14.4K회)</span>
+              <span>Gemma 최신 모델 (Google 오픈 모델 · 일 14.4K회)</span>
             </div>
             <div className="quotas-model-list">
               {gemmaModels.map(renderModelCard)}
