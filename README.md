@@ -14,6 +14,8 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 ├── sample-library.html          # 내 서재 디자인 디테일 단독 프로토타입 샘플
 ├── sample-studio.html           # 집필 스튜디오 UI 버전 비교(v2~v5) 단독 프로토타입 샘플
 ├── sample-vault.html            # [신설] 창작실 집필스튜디오 에디토리얼 무드 리디자인 프로토타입 샘플
+├── public/
+│   └── _redirects                   # Cloudflare Pages SPA 새로고침 라우팅 보장 리디렉션 규칙
 ├── index.html                   # Vite 진입점 HTML
 ├── vite.config.js               # Vite 8 설정 (React 플러그인, 5173 단독)
 ├── package.json                 # 스크립트 및 의존성 패키지 관리
