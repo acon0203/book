@@ -19,9 +19,8 @@
    ========================================================================== */
 .global-right-rail {
   width: 220px;
-  background: var(--bg-surface);
-  backdrop-filter: var(--blur);
-  border-left: 1px solid var(--border-glass);
+  background-color: var(--bg-deep);
+  border-left: none;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
