@@ -68,14 +68,8 @@ export default function App() {
         {renderPage()}
       </main>
       {!isWriterSpace && (
-        <aside className="global-right-rail" aria-label="사이드 배너 광고 영역">
-          <div className="right-rail-ad-slot">
-            <span className="ad-slot-tag">광고</span>
-            <div className="ad-slot-placeholder">
-              <span className="ad-slot-title">스폰서 배너 공간</span>
-              <span className="ad-slot-desc">160 × 600</span>
-            </div>
-          </div>
+        <aside className="global-right-rail" aria-label="사이드 여백">
+          <div className="right-rail-ad-slot" id="yeonjae-right-ad-slot" />
         </aside>
       )}
       <Toast />
