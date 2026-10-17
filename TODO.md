@@ -115,7 +115,7 @@
   - 전역 공통 테마 토큰을 1차 기준으로 삼고 페이지별 특화 요소만 최소 오버라이드하도록 정돈
 - [x] **1-7. [완료] 클라우드 호스팅 배포 및 실서비스 도메인 연결**
   - **Cloudflare Workers Static Assets 배포 완료**: 대역폭(트래픽) 100% 완전 무제한 무료, 전 세계 최고속 CDN, SPA 리라이트 지원
-  - **프로덕션 라이브 주소**: `https://book.acon0203.workers.dev`
+  - **프로덕션 라이브 주소**: `https://books.acon0203.workers.dev`
   - `wrangler.json` 기반 무중단 배포 및 SPA 네이티브 라우팅 연동 완료
 
 ---
