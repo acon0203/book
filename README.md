@@ -18,6 +18,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 │   └── _redirects                   # Cloudflare Pages SPA 새로고침 라우팅 보장 리디렉션 규칙
 ├── index.html                   # Vite 진입점 HTML
 ├── vite.config.js               # Vite 8 설정 (React 플러그인, 5173 단독)
+├── wrangler.json                # Cloudflare Workers 정적 에셋 및 SPA 라우팅 배포 설정
 ├── package.json                 # 스크립트 및 의존성 패키지 관리
 ├── TODO.md                      # 전체 로드맵 및 단계별 작업 추적표
 ├── HISTORY.md                   # 일자별 개발 세션 핵심 작업 및 변경 히스토리 기록
