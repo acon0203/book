@@ -1,7 +1,6 @@
 .global-sidebar {
   width: 220px;
-  background: var(--bg-surface);
-  backdrop-filter: var(--blur);
+  background: var(--bg-deep);
   border-right: 1px solid var(--border-glass);
   display: flex;
   flex-direction: column;
@@ -99,9 +98,10 @@
 }
 
 .nav-item.active {
-  background: var(--bg-active);
+  background: var(--bg-card);
   color: var(--primary);
-  border-color: var(--primary-glow);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 8px rgba(100, 70, 40, 0.04);
   font-weight: 600;
 }
 

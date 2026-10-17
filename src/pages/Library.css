@@ -15,9 +15,9 @@
    1. 상단 헤더: 제목 옆 인라인 설명문
    ========================================================================== */
 .library-header {
-  padding: 1.15rem 2rem;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-surface);
+  padding: 2rem 2.4rem 0.6rem 2.4rem;
+  border-bottom: none;
+  background: transparent;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -66,12 +66,12 @@
    2. 본문 스크롤 영역
    ========================================================================== */
 .library-body {
-  padding: 1.6rem 2rem 3rem;
+  padding: 1rem 2.4rem 3rem 2.4rem;
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 1.6rem;
+  gap: 1.8rem;
 }
 
 /* ==========================================================================
@@ -212,8 +212,14 @@
   background: var(--border-color);
 }
 
-.highlight-flame {
-  color: #f59e0b;
+.highlight-author {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.highlight-reader {
+  color: #2a6f55;
+  font-weight: 700;
 }
 
 .stat-more-link {

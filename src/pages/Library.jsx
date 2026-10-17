@@ -226,7 +226,7 @@ export default function Library() {
                 <div className="stat-items-group">
                   <div className="stat-mini-item">
                     <span className="stat-mini-label">집필 루틴</span>
-                    <span className="stat-mini-val highlight-flame">{authorStats.streak}일 연속</span>
+                    <span className="stat-mini-val highlight-author">{authorStats.streak}일 연속</span>
                   </div>
                   <div className="stat-divider-line" />
                   <div className="stat-mini-item">
@@ -258,7 +258,7 @@ export default function Library() {
                 <div className="stat-items-group">
                   <div className="stat-mini-item">
                     <span className="stat-mini-label">독서 루틴</span>
-                    <span className="stat-mini-val highlight-flame">{readerStats.streak}일 연속</span>
+                    <span className="stat-mini-val highlight-reader">{readerStats.streak}일 연속</span>
                   </div>
                   <div className="stat-divider-line" />
                   <div className="stat-mini-item">
@@ -338,7 +338,11 @@ export default function Library() {
             >
               <div 
                 className="book-spine-thumb"
-                style={{ background: recentReadingBook?.coverColor || 'linear-gradient(135deg, #1b382b, #0d1e16)' }}
+                style={{ 
+                  background: (books.find(b => b.id === recentReadingBook?.bookId)?.coverColor) 
+                    || recentReadingBook?.coverColor 
+                    || 'linear-gradient(135deg, #1b382b, #0d1e16)' 
+                }}
               >
                 <div className="book-spine-line" />
                 <span className="spine-genre">{recentReadingBook?.genre || '독서'}</span>
