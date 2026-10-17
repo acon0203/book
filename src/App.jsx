@@ -58,12 +58,26 @@ export default function App() {
     );
   }
 
+  // 작가 공간(창작실, 집필 스튜디오)은 AI 패널이 위치하므로 우측 대칭 레일에서 제외
+  const isWriterSpace = currentView === 'studio' || currentView === 'vault';
+
   return (
     <div className="app-layout">
       <Sidebar />
       <main className="main-content">
         {renderPage()}
       </main>
+      {!isWriterSpace && (
+        <aside className="global-right-rail" aria-label="사이드 배너 광고 영역">
+          <div className="right-rail-ad-slot">
+            <span className="ad-slot-tag">광고</span>
+            <div className="ad-slot-placeholder">
+              <span className="ad-slot-title">스폰서 배너 공간</span>
+              <span className="ad-slot-desc">160 × 600</span>
+            </div>
+          </div>
+        </aside>
+      )}
       <Toast />
       <CustomDialog />
     </div>
