@@ -295,6 +295,247 @@
   box-shadow: 0 0 0 2px var(--primary);
 }
 
+/* 🌟 글자체 셀렉트 */
+.font-select {
+  max-width: 135px;
+  font-family: inherit;
+}
+
+/* 🌟 제목 순환 H 버튼 */
+.heading-cycle-btn {
+  position: relative;
+  font-weight: 700;
+}
+.heading-h-letter {
+  font-size: 0.95rem;
+  font-family: var(--font-serif, serif);
+}
+.heading-sub-badge {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--primary);
+  line-height: 1;
+}
+
+/* 🌟 표준 글자색 A 밑줄 바 아이콘 */
+.tool-font-color-icon {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.font-color-letter {
+  font-weight: 800;
+  font-size: 0.88rem;
+  font-family: serif;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.font-color-indicator {
+  width: 14px;
+  height: 3px;
+  border-radius: 1px;
+}
+
+/* 🌟 스플릿 버튼 (인용블록 메인 + 드롭다운 화살표) */
+.toolbar-split-btn-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.split-main-btn {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  padding-right: 3px;
+}
+.split-arrow-btn {
+  width: 16px !important;
+  padding: 0 !important;
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: 1px solid rgba(139, 90, 43, 0.14) !important;
+  color: var(--text-muted);
+}
+.split-arrow-btn:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+/* 🌟 드롭다운 메뉴 (인용문 형식 & 더보기) */
+.toolbar-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  min-width: 175px;
+  background: #ffffff;
+  border: 1px solid rgba(139, 90, 43, 0.2);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+[data-theme="dark"] .toolbar-dropdown-menu {
+  background: #2a241f;
+  border-color: rgba(184, 150, 118, 0.2);
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+.dropdown-item:hover {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+.quote-preview-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  font-weight: 700;
+  color: var(--primary);
+}
+.more-menu-dropdown {
+  min-width: 140px;
+  right: 0;
+  left: auto;
+}
+.more-menu-header {
+  padding: 6px 10px 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  border-bottom: 1px solid rgba(139, 90, 43, 0.1);
+  margin-bottom: 2px;
+}
+
+/* 🌟 특수문자 팝오버 */
+.toolbar-special-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  width: 270px;
+  background: #ffffff;
+  border: 1px solid rgba(139, 90, 43, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+[data-theme="dark"] .toolbar-special-popover {
+  background: #2a241f;
+  border-color: rgba(184, 150, 118, 0.2);
+}
+.special-char-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.special-char-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  padding-left: 2px;
+}
+.special-char-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+.special-char-btn {
+  height: 28px;
+  background: rgba(139, 90, 43, 0.04);
+  border: 1px solid rgba(139, 90, 43, 0.1);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: all 0.12s ease;
+}
+.special-char-btn:hover {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+
+/* 🌟 인용구 4가지 스타일 */
+.rich-editor-body .tiptap blockquote {
+  border-left: 3px solid var(--primary);
+  margin: 1.25rem 0;
+  padding: 0.75rem 1.25rem;
+  color: var(--text-muted);
+  background: rgba(139, 90, 43, 0.04);
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+}
+.rich-editor-body .tiptap blockquote.quote-card {
+  border: 1px solid rgba(139, 90, 43, 0.2);
+  border-radius: 8px;
+  background: var(--bg-panel);
+  padding: 1.1rem 1.4rem;
+  font-style: normal;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+.rich-editor-body .tiptap blockquote.quote-editorial {
+  border-left: none;
+  border-top: 1px solid rgba(139, 90, 43, 0.2);
+  border-bottom: 1px solid rgba(139, 90, 43, 0.2);
+  padding: 1.3rem 2rem;
+  font-family: var(--font-serif, serif);
+  font-size: 1.12rem;
+  text-align: center;
+  background: transparent;
+  color: var(--text-main);
+  font-style: normal;
+}
+.rich-editor-body .tiptap blockquote.quote-dashed {
+  border: 1.5px dashed rgba(139, 90, 43, 0.25);
+  border-radius: 8px;
+  background: rgba(139, 90, 43, 0.02);
+  padding: 1rem 1.3rem;
+  font-style: normal;
+}
+
+/* 🌟 테이블 스타일 */
+.rich-editor-body .tiptap table.editor-user-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.4rem 0;
+}
+.rich-editor-body .tiptap table.editor-user-table th,
+.rich-editor-body .tiptap table.editor-user-table td {
+  border: 1px solid rgba(139, 90, 43, 0.18);
+  padding: 8px 12px;
+}
+.rich-editor-body .tiptap table.editor-user-table th {
+  background: rgba(139, 90, 43, 0.06);
+  font-weight: 600;
+}
+
 /* 하단 에디터 상태 바 (글자수 & 원고지 환산 매수) */
 .editor-status-bar {
   display: flex;

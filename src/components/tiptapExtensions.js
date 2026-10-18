@@ -325,3 +325,135 @@ export const LineHeight = Extension.create({
     };
   },
 });
+
+/**
+ * 6. FontFamily - 글자체 커스텀 마크
+ */
+export const FontFamily = Mark.create({
+  name: 'fontFamily',
+
+  addOptions() {
+    return {
+      fonts: [
+        { label: '기본 서체 (Pretendard)', value: 'inherit' },
+        { label: '나눔명조 (소설·에세이)', value: '"Nanum Myeongjo", serif' },
+        { label: '마루부리 (문학 서체)', value: '"MaruBuri", serif' },
+        { label: '리디바탕 (전자책 최적)', value: '"KoPubWorld Batang", "Ridibatang", serif' },
+        { label: '나눔고딕 (깔끔한 고딕)', value: '"Nanum Gothic", sans-serif' },
+        { label: 'KoPub돋움 (가독성 본문)', value: '"KoPubWorld Dotum", sans-serif' },
+        { label: 'D2Coding (코드·고정폭)', value: '"D2Coding", monospace' },
+      ],
+    };
+  },
+
+  addAttributes() {
+    return {
+      fontFamily: {
+        default: null,
+        parseHTML: (element) => element.style.fontFamily?.replace(/['"]+/g, ''),
+        renderHTML: (attributes) => {
+          if (!attributes.fontFamily || attributes.fontFamily === 'inherit') return {};
+          return { style: `font-family: ${attributes.fontFamily}` };
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: 'span[style*=font-family]',
+        getAttrs: (value) => {
+          const hasFont = /(?:^|;)\s*font-family:/i.test(value);
+          return hasFont ? {} : false;
+        },
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['span', mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addCommands() {
+    return {
+      setFontFamily: (fontFamily) => ({ chain }) => {
+        if (!fontFamily || fontFamily === 'inherit') {
+          return chain().unsetMark(this.name).run();
+        }
+        return chain().setMark(this.name, { fontFamily }).run();
+      },
+      unsetFontFamily: () => ({ chain }) => {
+        return chain().unsetMark(this.name).run();
+      },
+    };
+  },
+});
+
+/**
+ * 7. BackgroundColor - 배경색 커스텀 마크
+ */
+export const BackgroundColor = Mark.create({
+  name: 'backgroundColor',
+
+  addOptions() {
+    return {
+      colors: [
+        { label: '배경색 없음', value: 'transparent', bg: '#ffffff' },
+        { label: '크림 아이보리', value: '#fdfbf7', bg: '#fdfbf7' },
+        { label: '웜 베이지', value: '#f5f0ea', bg: '#f5f0ea' },
+        { label: '페일 그레이', value: '#f3f4f6', bg: '#f3f4f6' },
+        { label: '소프트 레몬', value: '#fef9c3', bg: '#fef9c3' },
+        { label: '민트 아이스', value: '#dcfce7', bg: '#dcfce7' },
+        { label: '스카이 블러시', value: '#e0f2fe', bg: '#e0f2fe' },
+        { label: '로즈 틴트', value: '#ffe4e6', bg: '#ffe4e6' },
+      ],
+    };
+  },
+
+  addAttributes() {
+    return {
+      backgroundColor: {
+        default: null,
+        parseHTML: (element) => element.style.backgroundColor?.replace(/['"]+/g, ''),
+        renderHTML: (attributes) => {
+          if (!attributes.backgroundColor || attributes.backgroundColor === 'transparent') return {};
+          return {
+            style: `background-color: ${attributes.backgroundColor}; padding: 0.15em 0.35em; border-radius: 4px;`,
+          };
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: 'span[style*=background-color]',
+        getAttrs: (value) => {
+          const hasBg = /(?:^|;)\s*background-color:/i.test(value);
+          return hasBg ? {} : false;
+        },
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['span', mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addCommands() {
+    return {
+      setBackgroundColor: (backgroundColor) => ({ chain }) => {
+        if (!backgroundColor || backgroundColor === 'transparent') {
+          return chain().unsetMark(this.name).run();
+        }
+        return chain().setMark(this.name, { backgroundColor }).run();
+      },
+      unsetBackgroundColor: () => ({ chain }) => {
+        return chain().unsetMark(this.name).run();
+      },
+    };
+  },
+});
+

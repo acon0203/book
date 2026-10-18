@@ -7,13 +7,21 @@ import {
   AlignCenter,
   AlignRight,
   AlignJustify,
+  List,
+  ListOrdered,
   Indent as IndentIcon,
   Outdent as OutdentIcon,
-  Palette,
+  PaintBucket,
   Highlighter,
-  Check
+  ChevronDown,
+  MoreHorizontal,
+  Table,
+  Minus,
+  Code,
+  Omega
 } from 'lucide-react';
-import { TextColor, Highlight, TextAlign, Indent, LineHeight } from './tiptapExtensions';
+import { sinkListItem, liftListItem } from 'prosemirror-schema-list';
+import { TextColor, Highlight, TextAlign, Indent, LineHeight, FontFamily, BackgroundColor } from './tiptapExtensions';
 import './TiptapEditor.css';
 
 /**
@@ -55,9 +63,18 @@ const TiptapEditor = forwardRef(function TiptapEditor(
 
   // 툴바 팝오버 상태
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [isBgColorPickerOpen, setIsBgColorPickerOpen] = useState(false);
   const [isHighlightPickerOpen, setIsHighlightPickerOpen] = useState(false);
+  const [isSpecialCharOpen, setIsSpecialCharOpen] = useState(false);
+  const [isQuoteDropdownOpen, setIsQuoteDropdownOpen] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+
   const colorPickerRef = useRef(null);
+  const bgColorPickerRef = useRef(null);
   const highlightPickerRef = useRef(null);
+  const specialCharRef = useRef(null);
+  const quoteDropdownRef = useRef(null);
+  const moreMenuRef = useRef(null);
 
   // 실시간 글자수 상태
   const [liveCharCount, setLiveCharCount] = useState(0);
@@ -71,15 +88,36 @@ const TiptapEditor = forwardRef(function TiptapEditor(
       if (colorPickerRef.current && !colorPickerRef.current.contains(e.target)) {
         setIsColorPickerOpen(false);
       }
+      if (bgColorPickerRef.current && !bgColorPickerRef.current.contains(e.target)) {
+        setIsBgColorPickerOpen(false);
+      }
       if (highlightPickerRef.current && !highlightPickerRef.current.contains(e.target)) {
         setIsHighlightPickerOpen(false);
+      }
+      if (specialCharRef.current && !specialCharRef.current.contains(e.target)) {
+        setIsSpecialCharOpen(false);
+      }
+      if (quoteDropdownRef.current && !quoteDropdownRef.current.contains(e.target)) {
+        setIsQuoteDropdownOpen(false);
+      }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setIsMoreMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  // extensions 배열 (StarterKit + 글자색 + 형광펜 + 정렬 + 들여쓰기 + 줄간격)
+  const closeOtherPopovers = (except) => {
+    if (except !== 'color') setIsColorPickerOpen(false);
+    if (except !== 'bg') setIsBgColorPickerOpen(false);
+    if (except !== 'highlight') setIsHighlightPickerOpen(false);
+    if (except !== 'special') setIsSpecialCharOpen(false);
+    if (except !== 'quote') setIsQuoteDropdownOpen(false);
+    if (except !== 'more') setIsMoreMenuOpen(false);
+  };
+
+  // extensions 배열 (StarterKit + 글자색 + 배경색 + 글자체 + 형광펜 + 정렬 + 들여쓰기 + 줄간격)
   const extensions = React.useMemo(() => [
     StarterKit.configure({
       heading: {
@@ -90,6 +128,8 @@ const TiptapEditor = forwardRef(function TiptapEditor(
       placeholder
     }),
     TextColor,
+    BackgroundColor,
+    FontFamily,
     Highlight,
     TextAlign,
     Indent,
@@ -211,88 +251,226 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     }
   }));
 
-  // 현재 단락 서식 값 계산 (p, h1, h2, h3, blockquote)
-  const currentHeadingValue = editor?.isActive('heading', { level: 1 })
-    ? 'h1'
+  // 1. 글자체 목록
+  const fontFamilies = [
+    { label: '기본 서체 (Pretendard)', value: 'inherit' },
+    { label: '나눔명조 (소설·에세이)', value: '"Nanum Myeongjo", serif' },
+    { label: '마루부리 (문학 서체)', value: '"MaruBuri", serif' },
+    { label: '리디바탕 (전자책 최적)', value: '"KoPubWorld Batang", "Ridibatang", serif' },
+    { label: '나눔고딕 (깔끔한 고딕)', value: '"Nanum Gothic", sans-serif' },
+    { label: 'KoPub돋움 (가독성 본문)', value: '"KoPubWorld Dotum", sans-serif' },
+    { label: 'D2Coding (코드·고정폭)', value: '"D2Coding", monospace' },
+  ];
+
+  // 2. 제목 순환 H 버튼 (본문 ➔ 소제목 H3 ➔ 중제목 H2 ➔ 대제목 H1 ➔ 본문)
+  const currentHeadingLevel = editor?.isActive('heading', { level: 3 })
+    ? 3
     : editor?.isActive('heading', { level: 2 })
-    ? 'h2'
-    : editor?.isActive('heading', { level: 3 })
-    ? 'h3'
-    : editor?.isActive('blockquote')
-    ? 'blockquote'
-    : 'p';
+    ? 2
+    : editor?.isActive('heading', { level: 1 })
+    ? 1
+    : 0;
+
+  const handleHeadingCycle = () => {
+    if (!editor) return;
+    const isBlockquote = editor.isActive('blockquote');
+    if (isBlockquote) {
+      editor.chain().focus().toggleBlockquote().run();
+    }
+    if (currentHeadingLevel === 0) {
+      editor.chain().focus().clearNodes().toggleHeading({ level: 3 }).run();
+    } else if (currentHeadingLevel === 3) {
+      editor.chain().focus().clearNodes().toggleHeading({ level: 2 }).run();
+    } else if (currentHeadingLevel === 2) {
+      editor.chain().focus().clearNodes().toggleHeading({ level: 1 }).run();
+    } else {
+      editor.chain().focus().clearNodes().setParagraph().run();
+    }
+  };
+
+  // 3. 정렬 순환 (좌 ➔ 가운데 ➔ 우 ➔ 양쪽 ➔ 좌)
+  const currentAlign = editor?.isActive({ textAlign: 'center' })
+    ? 'center'
+    : editor?.isActive({ textAlign: 'right' })
+    ? 'right'
+    : editor?.isActive({ textAlign: 'justify' })
+    ? 'justify'
+    : 'left';
+
+  const handleAlignCycle = () => {
+    if (!editor) return;
+    const alignOrder = {
+      left: 'center',
+      center: 'right',
+      right: 'justify',
+      justify: 'left',
+    };
+    const next = alignOrder[currentAlign] || 'left';
+    editor.chain().focus().setTextAlign(next).run();
+  };
+
+  // 4. 목록 순환 (글머리 기호 ➔ 번호 매기기 ➔ 해제)
+  const isBulletList = editor?.isActive('bulletList');
+  const isOrderedList = editor?.isActive('orderedList');
+
+  const handleListCycle = () => {
+    if (!editor) return;
+    if (isBulletList) {
+      editor.chain().focus().toggleOrderedList().run();
+    } else if (isOrderedList) {
+      editor.chain().focus().toggleOrderedList().run();
+    } else {
+      editor.chain().focus().toggleBulletList().run();
+    }
+  };
+
+  // 5. 들여쓰기 / 내어쓰기 (mission 앱 방식: 목록일 때 기호 수준 한단계 조절)
+  const handleIndent = () => {
+    if (!editor) return;
+    if (editor.isActive('bulletList') || editor.isActive('orderedList')) {
+      const ok = editor.chain().focus().sinkListItem('listItem').run();
+      if (!ok && editor.view) {
+        const { state, dispatch } = editor.view;
+        if (state.schema.nodes.listItem) {
+          sinkListItem(state.schema.nodes.listItem)(state, dispatch);
+        }
+      }
+    } else {
+      editor.chain().focus().indent().run();
+    }
+  };
+
+  const handleOutdent = () => {
+    if (!editor) return;
+    if (editor.isActive('bulletList') || editor.isActive('orderedList')) {
+      const ok = editor.chain().focus().liftListItem('listItem').run();
+      if (!ok && editor.view) {
+        const { state, dispatch } = editor.view;
+        if (state.schema.nodes.listItem) {
+          liftListItem(state.schema.nodes.listItem)(state, dispatch);
+        }
+      }
+    } else {
+      editor.chain().focus().outdent().run();
+    }
+  };
+
+  // 6. 특수문자 삽입
+  const handleInsertChar = (char) => {
+    if (!editor) return;
+    editor.chain().focus().insertContent(char).run();
+    setIsSpecialCharOpen(false);
+  };
+
+  // 7. 인용문 스타일 적용
+  const handleApplyQuote = (styleType = 'classic') => {
+    if (!editor) return;
+    const isBlockquote = editor.isActive('blockquote');
+    const { from, to } = editor.state.selection;
+    const selectedText = editor.state.doc.textBetween(from, to, ' ').trim();
+    const textToInsert = selectedText || '인용할 문장 또는 핵심 발췌문을 입력하세요.';
+
+    if (styleType === 'classic') {
+      if (isBlockquote && !selectedText) {
+        editor.chain().focus().toggleBlockquote().run();
+      } else {
+        editor.chain().focus().insertContent(`<blockquote><p>${textToInsert}</p></blockquote>`).run();
+      }
+    } else if (styleType === 'card') {
+      editor.chain().focus().insertContent(`<blockquote class="quote-card"><p>${textToInsert}</p></blockquote>`).run();
+    } else if (styleType === 'editorial') {
+      editor.chain().focus().insertContent(`<blockquote class="quote-editorial"><p>${textToInsert}</p></blockquote>`).run();
+    } else if (styleType === 'dashed') {
+      editor.chain().focus().insertContent(`<blockquote class="quote-dashed"><p>${textToInsert}</p></blockquote>`).run();
+    }
+    setIsQuoteDropdownOpen(false);
+  };
+
+  // 8. 테이블 삽입
+  const handleInsertTable = () => {
+    if (!editor) return;
+    const tableHtml = `
+      <table class="editor-user-table" style="width: 100%; border-collapse: collapse; margin: 1.25rem 0; border: 1px solid rgba(139, 90, 43, 0.2);">
+        <thead>
+          <tr style="background: rgba(139, 90, 43, 0.08);">
+            <th style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px; text-align: left; font-weight: 600;">구분</th>
+            <th style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px; text-align: left; font-weight: 600;">내용 및 상세</th>
+            <th style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px; text-align: left; font-weight: 600;">비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">항목 1</td>
+            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">상세 설명 1</td>
+            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">참조</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">항목 2</td>
+            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">상세 설명 2</td>
+            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">참조</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    editor.chain().focus().insertContent(tableHtml).run();
+  };
+
+  // 글자색 인디케이터용 현재 색상 추출
+  const currentTextColor = editor?.getAttributes('textColor')?.color || '#2b231d';
 
   return (
     <div className={`tiptap-editor-container ${className}`}>
       {/* 상단 서식 툴바 */}
       {showToolbar && (
         <div className="rich-toolbar">
-          {/* 실행취소 & 다시실행 */}
-          <div className="toolbar-group">
-            <button
-              type="button"
-              className="tool-btn"
-              onClick={() => editor?.chain().focus().undo().run()}
-              disabled={!editor?.can().undo()}
-              title="실행 취소 (Ctrl+Z)"
-            >
-              ↶
-            </button>
-            <button
-              type="button"
-              className="tool-btn"
-              onClick={() => editor?.chain().focus().redo().run()}
-              disabled={!editor?.can().redo()}
-              title="다시 실행 (Ctrl+Y / Ctrl+Shift+Z)"
-            >
-              ↷
-            </button>
-          </div>
-
-          <div className="toolbar-divider" />
-          {/* 단락 서식 선택 (H1, H2, H3, 인용문, 본문) */}
+          {/* 그룹 1: 글자체 & 제목 순환 */}
           <div className="toolbar-group">
             <select
-              className="toolbar-select"
-              value={currentHeadingValue}
+              className="toolbar-select font-select"
               onChange={(e) => {
                 const val = e.target.value;
                 if (!editor) return;
-                const isBlockquote = editor.isActive('blockquote');
-
-                if (val === 'blockquote') {
-                  if (!isBlockquote) {
-                    editor.chain().focus().clearNodes().toggleBlockquote().run();
-                  }
-                } else if (val === 'h1' || val === 'h2' || val === 'h3') {
-                  const level = val === 'h1' ? 1 : val === 'h2' ? 2 : 3;
-                  if (isBlockquote) {
-                    editor.chain().focus().toggleBlockquote().clearNodes().toggleHeading({ level }).run();
-                  } else {
-                    editor.chain().focus().clearNodes().toggleHeading({ level }).run();
-                  }
+                if (val === 'inherit') {
+                  editor.chain().focus().unsetFontFamily().run();
                 } else {
-                  // 'p' (본문) 선택 시: 인용구 해제 및 일반 문단 복귀
-                  if (isBlockquote) {
-                    editor.chain().focus().toggleBlockquote().run();
-                  } else {
-                    editor.chain().focus().clearNodes().setParagraph().run();
-                  }
+                  editor.chain().focus().setFontFamily(val).run();
                 }
               }}
-              title="단락 서식 (본문 / 제목 / 인용구)"
+              defaultValue="inherit"
+              title="글자체 (서체 변경)"
             >
-              <option value="p">Normal (본문)</option>
-              <option value="h1">대제목 (H1)</option>
-              <option value="h2">중제목 (H2)</option>
-              <option value="h3">소제목 (H3)</option>
-              <option value="blockquote">인용문 (Quote)</option>
+              {fontFamilies.map((f) => (
+                <option key={f.value} value={f.value}>
+                  {f.label}
+                </option>
+              ))}
             </select>
+
+            <button
+              type="button"
+              className={`tool-btn heading-cycle-btn ${currentHeadingLevel > 0 ? 'active' : ''}`}
+              onClick={handleHeadingCycle}
+              title={
+                currentHeadingLevel === 3
+                  ? '현재: 소제목(H3) ➔ 클릭 시 중제목(H2) 변경'
+                  : currentHeadingLevel === 2
+                  ? '현재: 중제목(H2) ➔ 클릭 시 대제목(H1) 변경'
+                  : currentHeadingLevel === 1
+                  ? '현재: 대제목(H1) ➔ 클릭 시 본문(P) 변경'
+                  : '현재: 본문(P) ➔ 클릭 시 소제목(H3) 변경'
+              }
+            >
+              <span className="heading-h-letter">H</span>
+              {currentHeadingLevel > 0 && (
+                <span className="heading-sub-badge">{currentHeadingLevel}</span>
+              )}
+            </button>
           </div>
 
+          {/* 1번 구분선 */}
           <div className="toolbar-divider" />
 
-          {/* 인라인 서식 (굵게, 기울임, 밑줄, 취소선) */}
+          {/* 그룹 2: 볼드~취소선 & 글자색 & 배경색 & 형광펜 */}
           <div className="toolbar-group">
             <button
               type="button"
@@ -326,130 +504,25 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             >
               <s>S</s>
             </button>
-          </div>
 
-          <div className="toolbar-divider" />
-
-          {/* 블록 서식 (목록, 인용구, 코드블록, 서식 지우기) */}
-          <div className="toolbar-group">
-            <button
-              type="button"
-              className={`tool-btn ${editor?.isActive('bulletList') ? 'active' : ''}`}
-              onClick={() => editor?.chain().focus().toggleBulletList().run()}
-              title="글머리 기호 목록"
-            >
-              •≡
-            </button>
-            <button
-              type="button"
-              className={`tool-btn ${editor?.isActive('orderedList') ? 'active' : ''}`}
-              onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-              title="번호 매기기 목록"
-            >
-              1≡
-            </button>
-            <button
-              type="button"
-              className={`tool-btn ${editor?.isActive('blockquote') ? 'active' : ''}`}
-              onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-              title="인용 블록"
-            >
-              ❞
-            </button>
-            <button
-              type="button"
-              className={`tool-btn ${editor?.isActive('codeBlock') ? 'active' : ''}`}
-              onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
-              title="코드 블록"
-            >
-              &lt;/&gt;
-            </button>
-            <button
-              type="button"
-              className="tool-btn"
-              onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
-              title="서식 지우기"
-            >
-              T<sub>x</sub>
-            </button>
-          </div>
-
-          <div className="toolbar-divider" />
-
-          {/* 문단 정렬 (좌측, 가운데, 우측, 양쪽 정렬) */}
-          <div className="toolbar-group">
-            <button
-              type="button"
-              className={`tool-btn ${editor?.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
-              onClick={() => editor?.chain().focus().setTextAlign('left').run()}
-              title="왼쪽 정렬"
-            >
-              <AlignLeft size={14} />
-            </button>
-            <button
-              type="button"
-              className={`tool-btn ${editor?.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
-              onClick={() => editor?.chain().focus().setTextAlign('center').run()}
-              title="가운데 정렬"
-            >
-              <AlignCenter size={14} />
-            </button>
-            <button
-              type="button"
-              className={`tool-btn ${editor?.isActive({ textAlign: 'right' }) ? 'active' : ''}`}
-              onClick={() => editor?.chain().focus().setTextAlign('right').run()}
-              title="오른쪽 정렬"
-            >
-              <AlignRight size={14} />
-            </button>
-            <button
-              type="button"
-              className={`tool-btn ${editor?.isActive({ textAlign: 'justify' }) ? 'active' : ''}`}
-              onClick={() => editor?.chain().focus().setTextAlign('justify').run()}
-              title="양쪽 맞춤"
-            >
-              <AlignJustify size={14} />
-            </button>
-          </div>
-
-          <div className="toolbar-divider" />
-
-          {/* 들여쓰기 / 내어쓰기 */}
-          <div className="toolbar-group">
-            <button
-              type="button"
-              className="tool-btn"
-              onClick={() => editor?.chain().focus().outdent().run()}
-              title="내어쓰기 (Shift+Tab)"
-            >
-              <OutdentIcon size={14} />
-            </button>
-            <button
-              type="button"
-              className="tool-btn"
-              onClick={() => editor?.chain().focus().indent().run()}
-              title="들여쓰기 (Tab)"
-            >
-              <IndentIcon size={14} />
-            </button>
-          </div>
-
-          <div className="toolbar-divider" />
-
-          {/* 글자 색상 & 형광펜 하이라이트 (미니 팝오버 팔레트) */}
-          <div className="toolbar-group">
-            {/* 글자 색상 팔레트 */}
+            {/* 글자색 (표준 A 밑줄 바 아이콘) */}
             <div className="toolbar-popover-wrap" ref={colorPickerRef}>
               <button
                 type="button"
                 className={`tool-btn ${isColorPickerOpen ? 'active' : ''}`}
                 onClick={() => {
                   setIsColorPickerOpen((prev) => !prev);
-                  setIsHighlightPickerOpen(false);
+                  closeOtherPopovers('color');
                 }}
                 title="글자 색상"
               >
-                <Palette size={14} />
+                <div className="tool-font-color-icon">
+                  <span className="font-color-letter">A</span>
+                  <span
+                    className="font-color-indicator"
+                    style={{ backgroundColor: currentTextColor }}
+                  />
+                </div>
               </button>
               {isColorPickerOpen && (
                 <div className="toolbar-palette-popover">
@@ -483,14 +556,59 @@ const TiptapEditor = forwardRef(function TiptapEditor(
               )}
             </div>
 
-            {/* 형광펜 하이라이트 팔레트 */}
+            {/* 배경색 (페인트통 아이콘) */}
+            <div className="toolbar-popover-wrap" ref={bgColorPickerRef}>
+              <button
+                type="button"
+                className={`tool-btn ${isBgColorPickerOpen ? 'active' : ''}`}
+                onClick={() => {
+                  setIsBgColorPickerOpen((prev) => !prev);
+                  closeOtherPopovers('bg');
+                }}
+                title="글자 배경색 채우기"
+              >
+                <PaintBucket size={14} />
+              </button>
+              {isBgColorPickerOpen && (
+                <div className="toolbar-palette-popover">
+                  {[
+                    { label: '배경색 없음', color: 'transparent', bg: '#ffffff' },
+                    { label: '크림 아이보리', color: '#fdfbf7', bg: '#fdfbf7' },
+                    { label: '웜 베이지', color: '#f5f0ea', bg: '#f5f0ea' },
+                    { label: '페일 그레이', color: '#f3f4f6', bg: '#f3f4f6' },
+                    { label: '소프트 레몬', color: '#fef9c3', bg: '#fef9c3' },
+                    { label: '민트 아이스', color: '#dcfce7', bg: '#dcfce7' },
+                    { label: '스카이 블러시', color: '#e0f2fe', bg: '#e0f2fe' },
+                    { label: '로즈 틴트', color: '#ffe4e6', bg: '#ffe4e6' },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      className="palette-color-btn"
+                      style={{ backgroundColor: item.bg }}
+                      title={item.label}
+                      onClick={() => {
+                        if (item.color === 'transparent') {
+                          editor?.chain().focus().unsetBackgroundColor().run();
+                        } else {
+                          editor?.chain().focus().setBackgroundColor(item.color).run();
+                        }
+                        setIsBgColorPickerOpen(false);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 형광펜 (Highlighter) */}
             <div className="toolbar-popover-wrap" ref={highlightPickerRef}>
               <button
                 type="button"
                 className={`tool-btn ${isHighlightPickerOpen ? 'active' : ''}`}
                 onClick={() => {
                   setIsHighlightPickerOpen((prev) => !prev);
-                  setIsColorPickerOpen(false);
+                  closeOtherPopovers('highlight');
                 }}
                 title="형광펜 하이라이트"
               >
@@ -527,29 +645,299 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             </div>
           </div>
 
+          {/* 2번 구분선 */}
           <div className="toolbar-divider" />
 
-          {/* 줄 간격 (행간 조절) */}
+          {/* 그룹 3: 통합 정렬 & 통합 목록 & 들여쓰기/내어쓰기 */}
           <div className="toolbar-group">
-            <select
-              className="toolbar-select"
-              onChange={(e) => {
-                const val = e.target.value;
-                if (val === 'normal') {
-                  editor?.chain().focus().unsetLineHeight().run();
-                } else {
-                  editor?.chain().focus().setLineHeight(val).run();
-                }
-              }}
-              defaultValue="normal"
-              title="줄 간격 (행간)"
+            {/* 통합 정렬 버튼 (좌 ➔ 가운데 ➔ 우 ➔ 양쪽 순환) */}
+            <button
+              type="button"
+              className={`tool-btn ${currentAlign !== 'left' ? 'active' : ''}`}
+              onClick={handleAlignCycle}
+              title={`현재 정렬: ${
+                currentAlign === 'center'
+                  ? '가운데 정렬 (클릭 시 우측 정렬)'
+                  : currentAlign === 'right'
+                  ? '우측 정렬 (클릭 시 양쪽 맞춤)'
+                  : currentAlign === 'justify'
+                  ? '양쪽 맞춤 (클릭 시 좌측 정렬)'
+                  : '좌측 정렬 (클릭 시 가운데 정렬)'
+              }`}
             >
-              <option value="normal">행간: 표준</option>
-              <option value="1.4">행간: 140%</option>
-              <option value="1.6">행간: 160%</option>
-              <option value="1.8">행간: 180%</option>
-              <option value="2.0">행간: 200%</option>
-            </select>
+              {currentAlign === 'center' ? (
+                <AlignCenter size={14} />
+              ) : currentAlign === 'right' ? (
+                <AlignRight size={14} />
+              ) : currentAlign === 'justify' ? (
+                <AlignJustify size={14} />
+              ) : (
+                <AlignLeft size={14} />
+              )}
+            </button>
+
+            {/* 통합 목록 버튼 (글머리 기호 ➔ 번호 매기기 ➔ 해제 순환) */}
+            <button
+              type="button"
+              className={`tool-btn ${isBulletList || isOrderedList ? 'active' : ''}`}
+              onClick={handleListCycle}
+              title={
+                isBulletList
+                  ? '글머리 기호 목록 (클릭 시 번호 매기기로 변경)'
+                  : isOrderedList
+                  ? '번호 매기기 목록 (클릭 시 목록 해제)'
+                  : '목록 (클릭 시 글머리 기호 목록 생성)'
+              }
+            >
+              {isOrderedList ? <ListOrdered size={14} /> : <List size={14} />}
+            </button>
+
+            {/* 내어쓰기 */}
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={handleOutdent}
+              title="내어쓰기 / 상위 목록 레벨 복귀 (Shift+Tab)"
+            >
+              <OutdentIcon size={14} />
+            </button>
+
+            {/* 들여쓰기 */}
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={handleIndent}
+              title="들여쓰기 / 하위 목록 레벨로 낮춤 (Tab)"
+            >
+              <IndentIcon size={14} />
+            </button>
+          </div>
+
+          {/* 3번 구분선 */}
+          <div className="toolbar-divider" />
+
+          {/* 그룹 4: 특수문자, 서식지우기, 인용블록(드롭다운), 구분선, 코드블록, 테이블, 더보기 */}
+          <div className="toolbar-group">
+            {/* 특수문자 팝오버 */}
+            <div className="toolbar-popover-wrap" ref={specialCharRef}>
+              <button
+                type="button"
+                className={`tool-btn ${isSpecialCharOpen ? 'active' : ''}`}
+                onClick={() => {
+                  setIsSpecialCharOpen((prev) => !prev);
+                  closeOtherPopovers('special');
+                }}
+                title="특수문자 입력"
+              >
+                <Omega size={14} />
+              </button>
+              {isSpecialCharOpen && (
+                <div className="toolbar-special-popover">
+                  <div className="special-char-section">
+                    <div className="special-char-title">문장 부호</div>
+                    <div className="special-char-grid">
+                      {['“', '”', '‘', '’', '…', '—', '–', '·', '※', 'ㆍ'].map((ch) => (
+                        <button
+                          key={ch}
+                          type="button"
+                          className="special-char-btn"
+                          onClick={() => handleInsertChar(ch)}
+                        >
+                          {ch}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="special-char-section">
+                    <div className="special-char-title">문학·출판 기호</div>
+                    <div className="special-char-grid">
+                      {['《', '》', '〈', '〉', '「', '」', '『', '』', '★', '☆'].map((ch) => (
+                        <button
+                          key={ch}
+                          type="button"
+                          className="special-char-btn"
+                          onClick={() => handleInsertChar(ch)}
+                        >
+                          {ch}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="special-char-section">
+                    <div className="special-char-title">도형 및 화살표</div>
+                    <div className="special-char-grid">
+                      {['●', '○', '■', '□', '◆', '◇', '→', '←', '↔', '⇒'].map((ch) => (
+                        <button
+                          key={ch}
+                          type="button"
+                          className="special-char-btn"
+                          onClick={() => handleInsertChar(ch)}
+                        >
+                          {ch}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="special-char-section">
+                    <div className="special-char-title">단위 및 수학</div>
+                    <div className="special-char-grid">
+                      {['℃', '㎡', '℉', '±', '×', '÷', '≠', '≒', '§', '¶'].map((ch) => (
+                        <button
+                          key={ch}
+                          type="button"
+                          className="special-char-btn"
+                          onClick={() => handleInsertChar(ch)}
+                        >
+                          {ch}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 서식 지우기 */}
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={() => editor?.chain().focus().unsetAllMarks().clearNodes().run()}
+              title="서식 지우기 (모든 인라인 서식 초기화)"
+            >
+              T<sub>x</sub>
+            </button>
+
+            {/* 인용블록 + 형식 선택 드롭다운 */}
+            <div className="toolbar-split-btn-wrap" ref={quoteDropdownRef}>
+              <button
+                type="button"
+                className={`tool-btn split-main-btn ${editor?.isActive('blockquote') ? 'active' : ''}`}
+                onClick={() => handleApplyQuote('classic')}
+                title="인용 블록 토글"
+              >
+                ❞
+              </button>
+              <button
+                type="button"
+                className={`tool-btn split-arrow-btn ${isQuoteDropdownOpen ? 'active' : ''}`}
+                onClick={() => {
+                  setIsQuoteDropdownOpen((prev) => !prev);
+                  closeOtherPopovers('quote');
+                }}
+                title="인용문 형식 선택"
+              >
+                <ChevronDown size={11} />
+              </button>
+              {isQuoteDropdownOpen && (
+                <div className="toolbar-dropdown-menu">
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    onClick={() => handleApplyQuote('classic')}
+                  >
+                    <span className="quote-preview-tag classic">│</span>
+                    <span>클래식 라인 인용구</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    onClick={() => handleApplyQuote('card')}
+                  >
+                    <span className="quote-preview-tag card">▢</span>
+                    <span>서재 카드 박스 인용구</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    onClick={() => handleApplyQuote('editorial')}
+                  >
+                    <span className="quote-preview-tag editorial">“”</span>
+                    <span>에디토리얼 명조 인용구</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dropdown-item"
+                    onClick={() => handleApplyQuote('dashed')}
+                  >
+                    <span className="quote-preview-tag dashed">╌</span>
+                    <span>점선 메모 인용구</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 구분선 (Horizontal Rule) */}
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={() => editor?.chain().focus().setHorizontalRule().run()}
+              title="가로 구분선 삽입"
+            >
+              <Minus size={14} />
+            </button>
+
+            {/* 코드 블록 */}
+            <button
+              type="button"
+              className={`tool-btn ${editor?.isActive('codeBlock') ? 'active' : ''}`}
+              onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
+              title="코드 블록"
+            >
+              <Code size={14} />
+            </button>
+
+            {/* 테이블 만들기 */}
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={handleInsertTable}
+              title="테이블(표) 삽입"
+            >
+              <Table size={14} />
+            </button>
+
+            {/* 더보기 (...) 팝오버: 행간 등 추가 설정 */}
+            <div className="toolbar-popover-wrap" ref={moreMenuRef}>
+              <button
+                type="button"
+                className={`tool-btn ${isMoreMenuOpen ? 'active' : ''}`}
+                onClick={() => {
+                  setIsMoreMenuOpen((prev) => !prev);
+                  closeOtherPopovers('more');
+                }}
+                title="더보기 (행간 및 추가 설정)"
+              >
+                <MoreHorizontal size={14} />
+              </button>
+              {isMoreMenuOpen && (
+                <div className="toolbar-dropdown-menu more-menu-dropdown">
+                  <div className="more-menu-header">줄 간격 (행간)</div>
+                  {[
+                    { label: '표준 행간', val: 'normal' },
+                    { label: '140% 행간', val: '1.4' },
+                    { label: '160% 행간 (권장)', val: '1.6' },
+                    { label: '180% 행간', val: '1.8' },
+                    { label: '200% 행간', val: '2.0' },
+                  ].map((lh) => (
+                    <button
+                      key={lh.val}
+                      type="button"
+                      className="dropdown-item"
+                      onClick={() => {
+                        if (lh.val === 'normal') {
+                          editor?.chain().focus().unsetLineHeight().run();
+                        } else {
+                          editor?.chain().focus().setLineHeight(lh.val).run();
+                        }
+                        setIsMoreMenuOpen(false);
+                      }}
+                    >
+                      {lh.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {extraToolbarItems}
