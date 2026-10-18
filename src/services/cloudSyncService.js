@@ -9,6 +9,15 @@ import {
 } from 'firebase/firestore';
 import { storageService } from './storageService';
 
+const formatBackupDate = (date = new Date()) => {
+  const d = new Date(date);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${m}/${day} ${h}:${min}`;
+};
+
 export const cloudSyncService = {
   /**
    * 로컬 데이터를 Firestore 클라우드로 분리 컬렉션 동기화
@@ -50,11 +59,61 @@ export const cloudSyncService = {
     };
     batch.set(userDocRef, userMetadata, { merge: true });
 
+    // 클라우드 기존 도서 목록을 먼저 가볍게 읽어와서 이전 버전 보존 및 버전 목록 병합
+    let cloudBooksMap = new Map();
+    try {
+      const cloudBooksSnap = await getDocs(collection(db, 'users', userKey, 'books'));
+      cloudBooksSnap.forEach(d => {
+        cloudBooksMap.set(d.id, d.data());
+      });
+    } catch (e) {
+      console.warn('[CloudSync] 기존 클라우드 도서 조회 경고:', e);
+    }
+
+    const timeLabel = formatBackupDate();
+
     // [2] books 컬렉션 (users/{userKey}/books/{bookId})
     for (const book of books) {
       if (book.id) {
         const bookDocRef = doc(db, 'users', userKey, 'books', String(book.id));
         const cleanBook = JSON.parse(JSON.stringify(book));
+
+        const existingCloudBook = cloudBooksMap.get(String(book.id));
+        if (existingCloudBook && Array.isArray(existingCloudBook.chapters) && existingCloudBook.chapters.length > 0) {
+          // 클라우드에 있던 이전 버전들과 로컬 버전들 병합
+          const cloudVersions = Array.isArray(existingCloudBook.versions) ? existingCloudBook.versions : [];
+          const localVersions = Array.isArray(cleanBook.versions) ? cleanBook.versions : [];
+
+          // 클라우드에 있던 이전 원고와 로컬 원고가 다르면 클라우드 이전 원고도 버전으로 보존
+          const isContentDifferent = JSON.stringify(existingCloudBook.chapters) !== JSON.stringify(cleanBook.chapters);
+          
+          const versionMap = new Map();
+          cloudVersions.forEach(v => { if (v?.id) versionMap.set(v.id, v); });
+          localVersions.forEach(v => { if (v?.id) versionMap.set(v.id, v); });
+
+          if (isContentDifferent) {
+            const cloudTotalWords = (existingCloudBook.chapters || []).reduce((acc, c) =>
+              acc + (c.sections || []).reduce((sAcc, s) => sAcc + (s.content ? s.content.replace(/<[^>]*>/g, '').trim().length : 0), 0), 0);
+
+            const cloudPrevVersion = {
+              id: `ver_cloud_backup_${Date.now()}`,
+              name: `[동기화 이전 클라우드 원고 - ${timeLabel}]`,
+              createdAt: existingCloudBook.updatedAt || new Date().toISOString(),
+              chapterCount: existingCloudBook.chapters.length,
+              totalWords: cloudTotalWords,
+              chapters: JSON.parse(JSON.stringify(existingCloudBook.chapters)),
+              isAutoBackup: true
+            };
+            versionMap.set(cloudPrevVersion.id, cloudPrevVersion);
+          }
+
+          const mergedVersions = Array.from(versionMap.values())
+            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+            .slice(0, 20);
+
+          cleanBook.versions = mergedVersions;
+        }
+
         batch.set(bookDocRef, cleanBook, { merge: true });
       }
     }
@@ -200,16 +259,21 @@ export const cloudSyncService = {
     // 로컬스토리지에 반영 (로컬 원고 유실 방지: 클라우드 복원 전 로컬 원고를 자동 백업 버전으로 보존)
     if (books.length > 0) {
       const localBooks = storageService.getBooks();
+      const timeLabel = formatBackupDate();
+
       const preservedBooks = books.map((cloudBook) => {
         const localBook = localBooks.find((lb) => lb.id === cloudBook.id);
         if (localBook && Array.isArray(localBook.chapters) && localBook.chapters.length > 0) {
-          const existingVersions = Array.isArray(localBook.versions) ? [...localBook.versions] : [];
+          const cloudVersions = Array.isArray(cloudBook.versions) ? cloudBook.versions : [];
+          const localVersions = Array.isArray(localBook.versions) ? localBook.versions : [];
+
+          // 1. 기존 로컬 원고를 자동 백업 버전으로 생성
           const totalWords = (localBook.chapters || []).reduce((acc, c) =>
             acc + (c.sections || []).reduce((sAcc, s) => sAcc + (s.content ? s.content.replace(/<[^>]*>/g, '').trim().length : 0), 0), 0);
 
           const autoBackupVersion = {
             id: `ver_autobackup_${Date.now()}`,
-            name: `[클라우드 복원 전 로컬 백업]`,
+            name: `[동기화 이전 로컬 원고 - ${timeLabel}]`,
             createdAt: new Date().toISOString(),
             chapterCount: localBook.chapters.length,
             totalWords,
@@ -217,7 +281,16 @@ export const cloudSyncService = {
             isAutoBackup: true
           };
 
-          const mergedVersions = [autoBackupVersion, ...existingVersions].slice(0, 15);
+          // 2. 버전 히스토리 병합: 중복 ID 제거 및 최신순 정렬 (최대 20개 보존)
+          const versionMap = new Map();
+          localVersions.forEach(v => { if (v?.id) versionMap.set(v.id, v); });
+          cloudVersions.forEach(v => { if (v?.id) versionMap.set(v.id, v); });
+          versionMap.set(autoBackupVersion.id, autoBackupVersion);
+
+          const mergedVersions = Array.from(versionMap.values())
+            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+            .slice(0, 20);
+
           return {
             ...cloudBook,
             versions: mergedVersions
