@@ -643,30 +643,30 @@ export default function Settings() {
             <div className="cloud-action-left">
               <Cloud size={18} className="text-primary" />
               <div>
-                <strong>Google Cloud Firestore 동기화</strong>
+                <strong>Google Cloud Firestore 양방향 동기화</strong>
                 <span className="cloud-time-label">
-                  {lastSyncedAt ? `마지막 백업: ${new Date(lastSyncedAt).toLocaleString('ko-KR')}` : '아직 클라우드 백업 기록이 없습니다.'}
+                  {lastSyncedAt ? `마지막 동기화: ${new Date(lastSyncedAt).toLocaleString('ko-KR')}` : '아직 클라우드 동기화 기록이 없습니다.'}
                 </span>
               </div>
             </div>
             <div className="cloud-action-right">
               <button 
-                className="btn btn-secondary btn-sm" 
+                className="btn btn-primary btn-sm" 
                 onClick={() => syncToCloud(true)}
                 disabled={syncStatus === 'syncing' || !user}
-                title={user ? '현재 서재를 클라우드에 백업' : '로그인이 필요합니다'}
+                title={user ? '클라우드와 양방향 스마트 동기화' : '로그인이 필요합니다'}
               >
                 <RefreshCw size={13} className={syncStatus === 'syncing' ? 'spin-icon' : ''} />
-                <span>{syncStatus === 'syncing' ? '백업 중...' : '지금 클라우드 백업'}</span>
+                <span>{syncStatus === 'syncing' ? '동기화 중...' : '스마트 양방향 동기화'}</span>
               </button>
               <button 
                 className="btn btn-secondary btn-sm" 
                 onClick={handleCloudRestoreConfirm}
                 disabled={syncStatus === 'syncing' || !user}
-                title={user ? '클라우드 데이터 복원' : '로그인이 필요합니다'}
+                title={user ? '클라우드 데이터 전체 강제 복원' : '로그인이 필요합니다'}
               >
                 <Download size={13} />
-                <span>클라우드 데이터 복원</span>
+                <span>강제 클라우드 복원</span>
               </button>
             </div>
           </div>

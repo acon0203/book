@@ -24,6 +24,11 @@ export const useStore = create((set, get) => {
     initAuth: () => {
       authService.onAuthChange((user) => {
         set({ user, isAuthLoading: false });
+        if (user) {
+          setTimeout(() => {
+            get().checkCloudOnStartup();
+          }, 600);
+        }
       });
     },
 
@@ -32,6 +37,9 @@ export const useStore = create((set, get) => {
         const user = await authService.signInWithGoogle();
         set({ user });
         get().showToast(`환영합니다, ${user.displayName} 작가님!`, 'success');
+        setTimeout(() => {
+          get().checkCloudOnStartup();
+        }, 600);
       } catch (err) {
         if (err.code !== 'auth/popup-closed-by-user') {
           get().showToast(`로그인 실패: ${err.message}`, 'error');
@@ -49,8 +57,43 @@ export const useStore = create((set, get) => {
       }
     },
 
-    syncToCloud: async (showNotification = true) => {
-      const { user, syncStatus } = get();
+    /**
+     * 앱 시작 또는 로그인 시 클라우드의 최신 상태를 가볍게 점검
+     * - 다른 PC에서 작업한 최신본이 있고 현재 PC에 변경사항이 없으면 자동으로 최신본 로드
+     * - 충돌 상태이면 사용자에게 동기화 필요 알림
+     */
+    checkCloudOnStartup: async () => {
+      const { user } = get();
+      if (!user) return;
+      try {
+        const status = await cloudSyncService.checkSyncStatus(user.uid, user.email);
+        if (status.direction === 'download') {
+          console.log('[CloudSync] 📥 다른 PC에서 작업한 최신 원고 감지 ➔ 자동 최신화');
+          set({ syncStatus: 'syncing' });
+          const result = await cloudSyncService.restoreFromCloud(user.uid, user.email);
+          await get().loadBooks();
+          await get().loadVault();
+          set({ syncStatus: 'synced', lastSyncedAt: result.syncedAt });
+          get().showToast(`다른 기기에서 작성된 최신 원고를 안전하게 불러왔습니다! (${result.itemCounts.books}권)`, 'success');
+        } else if (status.direction === 'conflict') {
+          set({ syncStatus: 'idle' });
+          get().showToast('다른 기기에서 수정한 최신 원고가 있습니다. 동기화 버튼을 확인해주세요.', 'info');
+        } else if (status.direction === 'upToDate') {
+          set({ syncStatus: 'synced', lastSyncedAt: status.cloudMeta?.updatedAt || get().lastSyncedAt });
+        }
+      } catch (e) {
+        console.warn('[CloudSync] checkCloudOnStartup error:', e);
+      }
+    },
+
+    /**
+     * 드롭박스 방식의 양방향 스마트 동기화
+     * - 클라우드가 더 최신: 클라우드에서 안전하게 다운로드(Pull)
+     * - 로컬이 더 최신: 로컬 데이터를 클라우드에 안전하게 업로드(Push)
+     * - 양쪽 모두 수정됨(충돌): 사용자에게 안내 다이얼로그 띄워 선택하게 함
+     */
+    syncToCloud: async (showNotification = true, forceDirection = null) => {
+      const { user, syncStatus, openConfirm } = get();
       if (!user) {
         if (showNotification) get().showToast('클라우드 동기화를 위해 로그인이 필요합니다.', 'info');
         return;
@@ -59,10 +102,66 @@ export const useStore = create((set, get) => {
 
       try {
         set({ syncStatus: 'syncing' });
-        const result = await cloudSyncService.backupToCloud(user.uid, user.email, user.displayName);
-        set({ syncStatus: 'synced', lastSyncedAt: result.syncedAt });
-        if (showNotification) {
-          get().showToast('클라우드에 안전하게 동기화되었습니다.', 'success');
+
+        let direction = forceDirection;
+        let checkResult = null;
+
+        // 강제 방향 지정이 없으면 상태 분석
+        if (!direction) {
+          checkResult = await cloudSyncService.checkSyncStatus(user.uid, user.email);
+          direction = checkResult.direction;
+        }
+
+        // 1. 클라우드 최신본 다운로드
+        if (direction === 'download') {
+          const result = await cloudSyncService.restoreFromCloud(user.uid, user.email);
+          await get().loadBooks();
+          await get().loadVault();
+          set({ syncStatus: 'synced', lastSyncedAt: result.syncedAt });
+          if (showNotification) {
+            get().showToast(`다른 기기에서 작성된 최신 원고를 안전하게 불러왔습니다! (${result.itemCounts.books}권)`, 'success');
+          }
+          return;
+        }
+
+        // 2. 현재 PC 원고 업로드
+        if (direction === 'upload') {
+          const result = await cloudSyncService.backupToCloud(user.uid, user.email, user.displayName);
+          set({ syncStatus: 'synced', lastSyncedAt: result.syncedAt });
+          if (showNotification) {
+            get().showToast('현재 원고가 클라우드에 안전하게 동기화(백업)되었습니다.', 'success');
+          }
+          return;
+        }
+
+        // 3. 이미 일치하는 경우
+        if (direction === 'upToDate') {
+          set({ syncStatus: 'synced' });
+          if (showNotification) {
+            get().showToast('클라우드와 현재 원고가 이미 최신 상태로 일치합니다.', 'info');
+          }
+          return;
+        }
+
+        // 4. 충돌(Conflict) 상황: 양쪽 모두 수정된 경우
+        if (direction === 'conflict') {
+          set({ syncStatus: 'idle' });
+          const cloudDateStr = checkResult?.cloudMeta?.updatedAt
+            ? new Date(checkResult.cloudMeta.updatedAt).toLocaleString('ko-KR')
+            : '최근';
+
+          const shouldRestore = await openConfirm({
+            title: '원고 동기화 충돌 감지',
+            message: `다른 기기에서 수정한 최신 원고(${cloudDateStr})와 현재 PC의 수정 내역이 모두 존재합니다.\n\n클라우드의 최신 원고를 불러오시겠습니까?\n(현재 PC 원고는 버전 기록에 안전하게 자동 보존됩니다.)`,
+            confirmText: '클라우드 최신본 가져오기',
+            cancelText: '현재 PC 원고로 덮어쓰기'
+          });
+
+          if (shouldRestore) {
+            await get().syncToCloud(showNotification, 'download');
+          } else {
+            await get().syncToCloud(showNotification, 'upload');
+          }
         }
       } catch (err) {
         console.error('[CloudSync Error]:', err);

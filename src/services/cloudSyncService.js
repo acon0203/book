@@ -259,6 +259,140 @@ export const cloudSyncService = {
   },
 
   /**
+   * 로컬의 모든 도서/소목차/자료 중 가장 최근 수정된 일시(ms) 반환
+   */
+  getLocalLatestModifiedTime: () => {
+    let latest = 0;
+    try {
+      const books = storageService.getBooks();
+      for (const b of books) {
+        if (b.updatedAt) {
+          const t = new Date(b.updatedAt).getTime();
+          if (t > latest) latest = t;
+        }
+        if (Array.isArray(b.chapters)) {
+          for (const c of b.chapters) {
+            if (Array.isArray(c.sections)) {
+              for (const s of c.sections) {
+                if (s.updatedAt) {
+                  const st = new Date(s.updatedAt).getTime();
+                  if (st > latest) latest = st;
+                }
+              }
+            }
+          }
+        }
+      }
+      const vault = storageService.getVault();
+      for (const v of vault) {
+        if (v.updatedAt || v.createdAt) {
+          const vt = new Date(v.updatedAt || v.createdAt).getTime();
+          if (vt > latest) latest = vt;
+        }
+      }
+    } catch (e) {
+      console.warn('[CloudSync] getLocalLatestModifiedTime error:', e);
+    }
+    return latest;
+  },
+
+  /**
+   * 클라우드 사용자 메인 문서에서 메타데이터(수정일시, 도서수 등) 가볍게 1회 조회
+   */
+  getCloudMetadata: async (uid, userEmail = '') => {
+    if (!uid) return null;
+    const userKey = userEmail ? userEmail.trim().toLowerCase() : uid;
+    try {
+      const userDocRef = doc(db, 'users', userKey);
+      const snap = await getDoc(userDocRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        return {
+          exists: true,
+          updatedAt: data.updatedAt || null,
+          totalBooks: data.totalBooks || 0,
+          totalVault: data.totalVault || 0,
+          displayName: data.displayName || ''
+        };
+      }
+      return { exists: false, updatedAt: null };
+    } catch (e) {
+      console.error('[CloudSync] getCloudMetadata error:', e);
+      return null;
+    }
+  },
+
+  /**
+   * 로컬과 클라우드의 수정 시간을 비교하여 양방향 동기화 방향 자동 판별
+   * @returns {Promise<{ direction: 'upload'|'download'|'conflict'|'upToDate', cloudMeta: object, lastSyncedTime: number, localModifiedTime: number }>}
+   */
+  checkSyncStatus: async (uid, userEmail = '') => {
+    const cloudMeta = await cloudSyncService.getCloudMetadata(uid, userEmail);
+    const lastSyncedStr = localStorage.getItem('bookstudio_last_synced');
+    const lastSyncedTime = lastSyncedStr ? new Date(lastSyncedStr).getTime() : 0;
+    const localModifiedTime = cloudSyncService.getLocalLatestModifiedTime();
+
+    if (!cloudMeta || !cloudMeta.exists || !cloudMeta.updatedAt) {
+      // 클라우드에 아직 데이터가 없는 경우 ➔ 로컬 데이터를 업로드
+      return {
+        direction: 'upload',
+        reason: 'no_cloud_data',
+        cloudMeta,
+        lastSyncedTime,
+        localModifiedTime
+      };
+    }
+
+    const cloudTime = new Date(cloudMeta.updatedAt).getTime();
+
+    // 2초 이내의 오차는 네트워크/클라이언트 동일 시점으로 간주
+    const isCloudNewerThanLastSync = (cloudTime - lastSyncedTime) > 2000;
+    const isLocalNewerThanLastSync = (localModifiedTime - lastSyncedTime) > 2000;
+
+    // 상황 1. 양쪽 모두에서 서로 다른 수정이 발생한 경우 (충돌)
+    if (isCloudNewerThanLastSync && isLocalNewerThanLastSync) {
+      return {
+        direction: 'conflict',
+        reason: 'both_modified',
+        cloudMeta,
+        lastSyncedTime,
+        localModifiedTime
+      };
+    }
+
+    // 상황 2. 클라우드가 더 최신이고 로컬에는 변경사항이 없는 경우 (다운로드)
+    if (isCloudNewerThanLastSync && !isLocalNewerThanLastSync) {
+      return {
+        direction: 'download',
+        reason: 'cloud_newer',
+        cloudMeta,
+        lastSyncedTime,
+        localModifiedTime
+      };
+    }
+
+    // 상황 3. 현재 로컬에서 작업했고 클라우드는 이전 상태인 경우 (업로드)
+    if (!isCloudNewerThanLastSync && isLocalNewerThanLastSync) {
+      return {
+        direction: 'upload',
+        reason: 'local_newer',
+        cloudMeta,
+        lastSyncedTime,
+        localModifiedTime
+      };
+    }
+
+    // 상황 4. 클라우드와 로컬이 이미 일치하는 경우
+    return {
+      direction: 'upToDate',
+      reason: 'in_sync',
+      cloudMeta,
+      lastSyncedTime,
+      localModifiedTime
+    };
+  },
+
+  /**
    * 마지막 동기화 일시 조회
    */
   getLastSyncedTime: () => {
