@@ -53,7 +53,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │   ├── Toast.jsx / .css     # 알림 토스트 컴포넌트
     │   ├── CustomDialog.jsx / .css # [신설] 시스템 팝업(confirm/prompt) 대체 전역 모달 다이얼로그 (키보드 지원)
     │   ├── TiptapEditor.jsx / .css # [독립 분리] 공통 리치 텍스트 에디터 엔진 (Zero-Lag 본문 작성, 원고지 매수 상태바)
-    │   ├── tiptapExtensions.js     # [신설] Tiptap 서식 커스텀 확장 (글자색·형광펜·정렬·들여쓰기·줄간격)
+    │   ├── tiptapExtensions.js     # [신설] Tiptap 서식 커스텀 확장 (글자체·글자색·배경색·형광펜·정렬·들여쓰기·줄간격)
     │   ├── ManuscriptImportModal.jsx / .css # [신설] 외부 원고(TXT·MD·DOCX) 가져오기 & 스마트 목차 분할 마법사
     │   └── BookInfoModal.jsx / .css # [신설] 도서 신규 기획 및 기본 정보(제목, 필명, 장르, 6종 테마 표지 등) 통합 수정 모달
     ├── data/                    # [출판 레퍼런스 및 영감 정적 DB]
