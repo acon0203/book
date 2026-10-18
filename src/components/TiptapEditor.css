@@ -482,42 +482,115 @@
   transform: scale(1.05);
 }
 
-/* 🌟 인용구 4가지 스타일 */
-.rich-editor-body .tiptap blockquote {
-  border-left: 3px solid var(--primary);
-  margin: 1.25rem 0;
-  padding: 0.75rem 1.25rem;
-  color: var(--text-muted);
-  background: rgba(139, 90, 43, 0.04);
-  border-radius: 0 6px 6px 0;
-  font-style: italic;
+.first-line-indent-btn {
+  width: auto !important;
+  padding: 0 6px !important;
+  font-size: 0.76rem !important;
 }
-.rich-editor-body .tiptap blockquote.quote-card {
+.first-line-icon-badge {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: inherit;
+}
+.rich-editor-body.with-first-line-indent .tiptap p {
+  text-indent: 1em !important;
+}
+
+/* 🌟 인터랙티브 10x10 테이블 생성 그리드 팝오버 */
+.toolbar-table-grid-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  background: #ffffff;
   border: 1px solid rgba(139, 90, 43, 0.2);
   border-radius: 8px;
-  background: var(--bg-panel);
-  padding: 1.1rem 1.4rem;
-  font-style: normal;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  padding: 10px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+[data-theme="dark"] .toolbar-table-grid-popover {
+  background: #2a241f;
+  border-color: rgba(184, 150, 118, 0.2);
+}
+.table-grid-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.table-grid-row {
+  display: flex;
+  gap: 3px;
+}
+.table-grid-cell {
+  width: 17px;
+  height: 17px;
+  border: 1px solid rgba(139, 90, 43, 0.2);
+  border-radius: 2px;
+  background: #faf8f5;
+  cursor: pointer;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+[data-theme="dark"] .table-grid-cell {
+  background: #241f1a;
+  border-color: rgba(184, 150, 118, 0.25);
+}
+.table-grid-cell.highlighted {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  opacity: 0.85;
+}
+.table-grid-footer {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-main);
+  padding-top: 2px;
+  border-top: 1px solid rgba(139, 90, 43, 0.1);
+}
+
+/* 🌟 인용구 4가지 스타일 (클래식, 서재 카드, 에디토리얼, 점선 메모) */
+.rich-editor-body .tiptap blockquote,
+.rich-editor-body .tiptap blockquote.quote-classic {
+  border-left: 4px solid var(--primary) !important;
+  margin: 1.35rem 0 !important;
+  padding: 0.85rem 1.3rem !important;
+  color: var(--text-muted) !important;
+  background: rgba(139, 90, 43, 0.05) !important;
+  border-radius: 0 8px 8px 0 !important;
+  font-style: italic !important;
+}
+.rich-editor-body .tiptap blockquote.quote-card {
+  border: 1px solid rgba(139, 90, 43, 0.25) !important;
+  border-left: 1px solid rgba(139, 90, 43, 0.25) !important;
+  border-radius: 10px !important;
+  background: var(--bg-card, #ffffff) !important;
+  padding: 1.25rem 1.5rem !important;
+  font-style: normal !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04) !important;
 }
 .rich-editor-body .tiptap blockquote.quote-editorial {
-  border-left: none;
-  border-top: 1px solid rgba(139, 90, 43, 0.2);
-  border-bottom: 1px solid rgba(139, 90, 43, 0.2);
-  padding: 1.3rem 2rem;
-  font-family: var(--font-serif, serif);
-  font-size: 1.12rem;
-  text-align: center;
-  background: transparent;
-  color: var(--text-main);
-  font-style: normal;
+  border-left: none !important;
+  border-top: 2px solid rgba(139, 90, 43, 0.25) !important;
+  border-bottom: 2px solid rgba(139, 90, 43, 0.25) !important;
+  border-radius: 0 !important;
+  padding: 1.4rem 2rem !important;
+  font-family: var(--font-serif, "Noto Serif KR", serif) !important;
+  font-size: 1.15rem !important;
+  text-align: center !important;
+  background: transparent !important;
+  color: var(--text-main) !important;
+  font-style: normal !important;
 }
 .rich-editor-body .tiptap blockquote.quote-dashed {
-  border: 1.5px dashed rgba(139, 90, 43, 0.25);
-  border-radius: 8px;
-  background: rgba(139, 90, 43, 0.02);
-  padding: 1rem 1.3rem;
-  font-style: normal;
+  border: 1.5px dashed rgba(139, 90, 43, 0.35) !important;
+  border-left: 1.5px dashed rgba(139, 90, 43, 0.35) !important;
+  border-radius: 8px !important;
+  background: rgba(139, 90, 43, 0.02) !important;
+  padding: 1.1rem 1.4rem !important;
+  font-style: normal !important;
 }
 
 /* 🌟 테이블 스타일 */
@@ -528,11 +601,11 @@
 }
 .rich-editor-body .tiptap table.editor-user-table th,
 .rich-editor-body .tiptap table.editor-user-table td {
-  border: 1px solid rgba(139, 90, 43, 0.18);
+  border: 1px solid rgba(139, 90, 43, 0.22);
   padding: 8px 12px;
 }
 .rich-editor-body .tiptap table.editor-user-table th {
-  background: rgba(139, 90, 43, 0.06);
+  background: rgba(139, 90, 43, 0.08);
   font-weight: 600;
 }
 

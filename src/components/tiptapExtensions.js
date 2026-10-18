@@ -1,4 +1,4 @@
-import { Extension, Mark, mergeAttributes } from '@tiptap/react';
+import { Extension, Mark, Node, mergeAttributes } from '@tiptap/react';
 
 /**
  * 1. TextColor - 글자 색상 커스텀 마크
@@ -456,4 +456,71 @@ export const BackgroundColor = Mark.create({
     };
   },
 });
+
+/**
+ * 8. CustomBlockquote - 4대 인용문 스타일 지원 (classic, card, editorial, dashed)
+ */
+export const CustomBlockquote = Node.create({
+  name: 'blockquote',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+
+  addAttributes() {
+    return {
+      quoteStyle: {
+        default: 'classic',
+        parseHTML: (element) => {
+          if (element.classList.contains('quote-card')) return 'card';
+          if (element.classList.contains('quote-editorial')) return 'editorial';
+          if (element.classList.contains('quote-dashed')) return 'dashed';
+          return element.getAttribute('data-quote-style') || 'classic';
+        },
+        renderHTML: (attributes) => {
+          const style = attributes.quoteStyle || 'classic';
+          return {
+            'data-quote-style': style,
+            class: `quote-${style}`,
+          };
+        },
+      },
+    };
+  },
+
+  parseHTML() {
+    return [
+      {
+        tag: 'blockquote',
+      },
+    ];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['blockquote', mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addCommands() {
+    return {
+      setBlockquote: (attrs) => ({ commands }) => {
+        return commands.wrapIn(this.name, attrs);
+      },
+      toggleBlockquote: (attrs) => ({ commands }) => {
+        return commands.toggleWrap(this.name, attrs);
+      },
+      setQuoteStyle: (quoteStyle) => ({ commands }) => {
+        return commands.updateAttributes(this.name, { quoteStyle });
+      },
+      unsetBlockquote: () => ({ commands }) => {
+        return commands.lift(this.name);
+      },
+    };
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      'Mod-Shift-b': () => this.editor.commands.toggleBlockquote(),
+    };
+  },
+});
+
 

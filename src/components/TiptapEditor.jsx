@@ -21,7 +21,7 @@ import {
   Omega
 } from 'lucide-react';
 import { sinkListItem, liftListItem } from 'prosemirror-schema-list';
-import { TextColor, Highlight, TextAlign, Indent, LineHeight, FontFamily, BackgroundColor } from './tiptapExtensions';
+import { TextColor, Highlight, TextAlign, Indent, LineHeight, FontFamily, BackgroundColor, CustomBlockquote } from './tiptapExtensions';
 import './TiptapEditor.css';
 
 /**
@@ -68,6 +68,13 @@ const TiptapEditor = forwardRef(function TiptapEditor(
   const [isSpecialCharOpen, setIsSpecialCharOpen] = useState(false);
   const [isQuoteDropdownOpen, setIsQuoteDropdownOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isTablePickerOpen, setIsTablePickerOpen] = useState(false);
+  const [tableHoverSize, setTableHoverSize] = useState({ rows: 1, cols: 1 });
+
+  // 문단 첫 글자 1칸 띄기 (소설/도서 표준 text-indent)
+  const [isFirstLineIndent, setIsFirstLineIndent] = useState(() => {
+    return localStorage.getItem('book_first_line_indent') === 'true';
+  });
 
   const colorPickerRef = useRef(null);
   const bgColorPickerRef = useRef(null);
@@ -75,6 +82,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
   const specialCharRef = useRef(null);
   const quoteDropdownRef = useRef(null);
   const moreMenuRef = useRef(null);
+  const tablePickerRef = useRef(null);
 
   // 실시간 글자수 상태
   const [liveCharCount, setLiveCharCount] = useState(0);
@@ -103,6 +111,9 @@ const TiptapEditor = forwardRef(function TiptapEditor(
       if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
         setIsMoreMenuOpen(false);
       }
+      if (tablePickerRef.current && !tablePickerRef.current.contains(e.target)) {
+        setIsTablePickerOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
@@ -115,15 +126,18 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     if (except !== 'special') setIsSpecialCharOpen(false);
     if (except !== 'quote') setIsQuoteDropdownOpen(false);
     if (except !== 'more') setIsMoreMenuOpen(false);
+    if (except !== 'table') setIsTablePickerOpen(false);
   };
 
-  // extensions 배열 (StarterKit + 글자색 + 배경색 + 글자체 + 형광펜 + 정렬 + 들여쓰기 + 줄간격)
+  // extensions 배열 (StarterKit + 커스텀 인용구 + 글자색 + 배경색 + 글자체 + 형광펜 + 정렬 + 들여쓰기 + 줄간격)
   const extensions = React.useMemo(() => [
     StarterKit.configure({
       heading: {
         levels: [1, 2, 3]
-      }
+      },
+      blockquote: false
     }),
+    CustomBlockquote,
     Placeholder.configure({
       placeholder
     }),
@@ -362,57 +376,54 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     setIsSpecialCharOpen(false);
   };
 
-  // 7. 인용문 스타일 적용
+  // 7. 인용문 스타일 적용 (더미 텍스트 삽입 없이 깔끔하게 토글 & 스타일 즉시 전환)
   const handleApplyQuote = (styleType = 'classic') => {
     if (!editor) return;
     const isBlockquote = editor.isActive('blockquote');
-    const { from, to } = editor.state.selection;
-    const selectedText = editor.state.doc.textBetween(from, to, ' ').trim();
-    const textToInsert = selectedText || '인용할 문장 또는 핵심 발췌문을 입력하세요.';
+    const currentStyle = editor.getAttributes('blockquote')?.quoteStyle || 'classic';
 
-    if (styleType === 'classic') {
-      if (isBlockquote && !selectedText) {
+    if (isBlockquote) {
+      if (currentStyle === styleType) {
+        // 동일 스타일 한 번 더 클릭 시 인용구 해제 (순수 일반 문단으로 복귀)
         editor.chain().focus().toggleBlockquote().run();
       } else {
-        editor.chain().focus().insertContent(`<blockquote><p>${textToInsert}</p></blockquote>`).run();
+        // 다른 스타일 선택 시 인용문 스타일 즉시 전환
+        editor.chain().focus().setQuoteStyle(styleType).run();
       }
-    } else if (styleType === 'card') {
-      editor.chain().focus().insertContent(`<blockquote class="quote-card"><p>${textToInsert}</p></blockquote>`).run();
-    } else if (styleType === 'editorial') {
-      editor.chain().focus().insertContent(`<blockquote class="quote-editorial"><p>${textToInsert}</p></blockquote>`).run();
-    } else if (styleType === 'dashed') {
-      editor.chain().focus().insertContent(`<blockquote class="quote-dashed"><p>${textToInsert}</p></blockquote>`).run();
+    } else {
+      // 신규 인용구 적용 (현재 문단 또는 선택 영역을 해당 스타일 인용구로 wrap)
+      editor.chain().focus().toggleBlockquote({ quoteStyle: styleType }).run();
     }
     setIsQuoteDropdownOpen(false);
   };
 
-  // 8. 테이블 삽입
-  const handleInsertTable = () => {
+  // 8. 인터랙티브 격자 선택 기반 테이블 생성
+  const handleCreateTable = (rows, cols) => {
     if (!editor) return;
+    let theadHtml = '<tr style="background: rgba(139, 90, 43, 0.08);">';
+    for (let c = 1; c <= cols; c++) {
+      theadHtml += `<th style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px; text-align: left; font-weight: 600;">열 ${c}</th>`;
+    }
+    theadHtml += '</tr>';
+
+    let tbodyHtml = '';
+    const bodyRows = Math.max(1, rows - 1);
+    for (let r = 1; r <= bodyRows; r++) {
+      tbodyHtml += '<tr>';
+      for (let c = 1; c <= cols; c++) {
+        tbodyHtml += `<td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">내용</td>`;
+      }
+      tbodyHtml += '</tr>';
+    }
+
     const tableHtml = `
       <table class="editor-user-table" style="width: 100%; border-collapse: collapse; margin: 1.25rem 0; border: 1px solid rgba(139, 90, 43, 0.2);">
-        <thead>
-          <tr style="background: rgba(139, 90, 43, 0.08);">
-            <th style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px; text-align: left; font-weight: 600;">구분</th>
-            <th style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px; text-align: left; font-weight: 600;">내용 및 상세</th>
-            <th style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px; text-align: left; font-weight: 600;">비고</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">항목 1</td>
-            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">상세 설명 1</td>
-            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">참조</td>
-          </tr>
-          <tr>
-            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">항목 2</td>
-            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">상세 설명 2</td>
-            <td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">참조</td>
-          </tr>
-        </tbody>
+        <thead>${theadHtml}</thead>
+        <tbody>${tbodyHtml}</tbody>
       </table>
     `;
     editor.chain().focus().insertContent(tableHtml).run();
+    setIsTablePickerOpen(false);
   };
 
   // 글자색 인디케이터용 현재 색상 추출
@@ -692,7 +703,17 @@ const TiptapEditor = forwardRef(function TiptapEditor(
               {isOrderedList ? <ListOrdered size={14} /> : <List size={14} />}
             </button>
 
-            {/* 내어쓰기 */}
+            {/* 들여쓰기 (순서 1위) */}
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={handleIndent}
+              title="들여쓰기 / 하위 목록 레벨로 낮춤 (Tab)"
+            >
+              <IndentIcon size={14} />
+            </button>
+
+            {/* 내어쓰기 (순서 2위) */}
             <button
               type="button"
               className="tool-btn"
@@ -702,21 +723,31 @@ const TiptapEditor = forwardRef(function TiptapEditor(
               <OutdentIcon size={14} />
             </button>
 
-            {/* 들여쓰기 */}
+            {/* 문단 첫 글자 1칸 띄기 (소설/도서 표준 text-indent 토글) */}
             <button
               type="button"
-              className="tool-btn"
-              onClick={handleIndent}
-              title="들여쓰기 / 하위 목록 레벨로 낮춤 (Tab)"
+              className={`tool-btn first-line-indent-btn ${isFirstLineIndent ? 'active' : ''}`}
+              onClick={() => {
+                setIsFirstLineIndent((prev) => {
+                  const next = !prev;
+                  localStorage.setItem('book_first_line_indent', String(next));
+                  return next;
+                });
+              }}
+              title={
+                isFirstLineIndent
+                  ? '문단 첫 글자 1칸 들여쓰기 ON (클릭 시 해제)'
+                  : '문단 첫 글자 1칸 들여쓰기 OFF (클릭 시 소설·출판 1자 들여쓰기 적용)'
+              }
             >
-              <IndentIcon size={14} />
+              <span className="first-line-icon-badge">↳첫자</span>
             </button>
           </div>
 
           {/* 3번 구분선 */}
           <div className="toolbar-divider" />
 
-          {/* 그룹 4: 특수문자, 서식지우기, 인용블록(드롭다운), 구분선, 코드블록, 테이블, 더보기 */}
+          {/* 그룹 4: 특수문자, 서식지우기, 인용블록(드롭다운), 구분선, 테이블(그리드 팝오버), 더보기 */}
           <div className="toolbar-group">
             {/* 특수문자 팝오버 */}
             <div className="toolbar-popover-wrap" ref={specialCharRef}>
@@ -876,27 +907,53 @@ const TiptapEditor = forwardRef(function TiptapEditor(
               <Minus size={14} />
             </button>
 
-            {/* 코드 블록 */}
-            <button
-              type="button"
-              className={`tool-btn ${editor?.isActive('codeBlock') ? 'active' : ''}`}
-              onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
-              title="코드 블록"
-            >
-              <Code size={14} />
-            </button>
+            {/* 테이블 만들기 (10x10 인터랙티브 그리드 팝오버) */}
+            <div className="toolbar-popover-wrap" ref={tablePickerRef}>
+              <button
+                type="button"
+                className={`tool-btn ${isTablePickerOpen ? 'active' : ''}`}
+                onClick={() => {
+                  setIsTablePickerOpen((prev) => !prev);
+                  closeOtherPopovers('table');
+                }}
+                title="테이블(표) 만들기"
+              >
+                <Table size={14} />
+              </button>
+              {isTablePickerOpen && (
+                <div className="toolbar-table-grid-popover">
+                  <div className="table-grid-matrix">
+                    {Array.from({ length: 10 }).map((_, rIdx) => (
+                      <div key={rIdx} className="table-grid-row">
+                        {Array.from({ length: 10 }).map((_, cIdx) => {
+                          const r = rIdx + 1;
+                          const c = cIdx + 1;
+                          const isHighlighted =
+                            r <= tableHoverSize.rows && c <= tableHoverSize.cols;
+                          return (
+                            <div
+                              key={cIdx}
+                              className={`table-grid-cell ${isHighlighted ? 'highlighted' : ''}`}
+                              onMouseEnter={() =>
+                                setTableHoverSize({ rows: r, cols: c })
+                              }
+                              onClick={() => handleCreateTable(r, c)}
+                            />
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="table-grid-footer">
+                    <span>
+                      {tableHoverSize.rows} × {tableHoverSize.cols}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
 
-            {/* 테이블 만들기 */}
-            <button
-              type="button"
-              className="tool-btn"
-              onClick={handleInsertTable}
-              title="테이블(표) 삽입"
-            >
-              <Table size={14} />
-            </button>
-
-            {/* 더보기 (...) 팝오버: 행간 등 추가 설정 */}
+            {/* 더보기 (...) 팝오버: 코드블록 및 행간 등 추가 설정 */}
             <div className="toolbar-popover-wrap" ref={moreMenuRef}>
               <button
                 type="button"
@@ -905,13 +962,26 @@ const TiptapEditor = forwardRef(function TiptapEditor(
                   setIsMoreMenuOpen((prev) => !prev);
                   closeOtherPopovers('more');
                 }}
-                title="더보기 (행간 및 추가 설정)"
+                title="더보기 (코드 블록, 행간 설정)"
               >
                 <MoreHorizontal size={14} />
               </button>
               {isMoreMenuOpen && (
                 <div className="toolbar-dropdown-menu more-menu-dropdown">
-                  <div className="more-menu-header">줄 간격 (행간)</div>
+                  <div className="more-menu-header">블록 도구</div>
+                  <button
+                    type="button"
+                    className={`dropdown-item ${editor?.isActive('codeBlock') ? 'active' : ''}`}
+                    onClick={() => {
+                      editor?.chain().focus().toggleCodeBlock().run();
+                      setIsMoreMenuOpen(false);
+                    }}
+                  >
+                    <Code size={13} style={{ marginRight: 4 }} />
+                    <span>코드 블록 삽입</span>
+                  </button>
+
+                  <div className="more-menu-header" style={{ marginTop: 6 }}>줄 간격 (행간)</div>
                   {[
                     { label: '표준 행간', val: 'normal' },
                     { label: '140% 행간', val: '1.4' },
@@ -946,7 +1016,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
 
       {/* 본문 에디터 뷰포트 (화이트 시트) */}
       <div className="rich-editor-viewport">
-        <div className="rich-editor-body">
+        <div className={`rich-editor-body ${isFirstLineIndent ? 'with-first-line-indent' : ''}`}>
           {sectionTitle !== undefined && sectionTitle !== '' && (
             <div className="editor-doc-header">
               <div className="v4-sec-caption">
