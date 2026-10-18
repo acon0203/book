@@ -28,8 +28,9 @@ import {
   Split
 } from 'lucide-react';
 import { TableKit } from '@tiptap/extension-table';
+import TextAlign from '@tiptap/extension-text-align';
 import { sinkListItem, liftListItem } from 'prosemirror-schema-list';
-import { TextColor, Highlight, TextAlign, Indent, LineHeight, FontFamily, BackgroundColor, CustomBlockquote } from './tiptapExtensions';
+import { TextColor, Highlight, Indent, LineHeight, FontFamily, BackgroundColor, CustomBlockquote } from './tiptapExtensions';
 import './TiptapEditor.css';
 
 /**
@@ -153,7 +154,11 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     BackgroundColor,
     FontFamily,
     Highlight,
-    TextAlign,
+    TextAlign.configure({
+      types: ['heading', 'paragraph'],
+      alignments: ['left', 'center', 'right', 'justify'],
+      defaultAlignment: 'left',
+    }),
     Indent,
     LineHeight,
     TableKit.configure({
@@ -334,7 +339,11 @@ const TiptapEditor = forwardRef(function TiptapEditor(
       justify: 'left',
     };
     const next = alignOrder[currentAlign] || 'left';
-    editor.chain().focus().setTextAlign(next).run();
+    if (next === 'left') {
+      editor.chain().focus().unsetTextAlign().run();
+    } else {
+      editor.chain().focus().setTextAlign(next).run();
+    }
   };
 
   // 4. 목록 순환 (글머리 기호 ➔ 번호 매기기 ➔ 해제)
@@ -411,10 +420,10 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     setIsQuoteDropdownOpen(false);
   };
 
-  // 8. 인터랙티브 격자 선택 기반 테이블 생성 (Tiptap 정식 table 확장 연동)
+  // 8. 인터랙티브 격자 선택 기반 테이블 생성 (기본은 헤더 없는 순수 일반 표 생성)
   const handleCreateTable = (rows, cols) => {
     if (!editor) return;
-    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: false }).run();
     setIsTablePickerOpen(false);
   };
 
@@ -452,6 +461,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className={`tool-btn heading-cycle-btn ${currentHeadingLevel > 0 ? 'active' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={handleHeadingCycle}
               title={
                 currentHeadingLevel === 3
@@ -478,6 +488,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className={`tool-btn ${editor?.isActive('bold') ? 'active' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor?.chain().focus().toggleBold().run()}
               title="굵게 (Ctrl+B)"
             >
@@ -486,6 +497,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className={`tool-btn ${editor?.isActive('italic') ? 'active' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor?.chain().focus().toggleItalic().run()}
               title="기울임 (Ctrl+I)"
             >
@@ -494,6 +506,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className={`tool-btn ${editor?.isActive('underline') ? 'active' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor?.chain().focus().toggleUnderline().run()}
               title="밑줄 (Ctrl+U)"
             >
@@ -502,6 +515,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className={`tool-btn ${editor?.isActive('strike') ? 'active' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor?.chain().focus().toggleStrike().run()}
               title="취소선"
             >
@@ -663,6 +677,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className={`tool-btn ${currentAlign !== 'left' ? 'active' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={handleAlignCycle}
               title={`현재 정렬: ${
                 currentAlign === 'center'
@@ -689,6 +704,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className={`tool-btn ${isBulletList || isOrderedList ? 'active' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={handleListCycle}
               title={
                 isBulletList
@@ -705,6 +721,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="tool-btn"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={handleIndent}
               title="들여쓰기 / 하위 목록 레벨로 낮춤 (Tab)"
             >
@@ -715,6 +732,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="tool-btn"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={handleOutdent}
               title="내어쓰기 / 상위 목록 레벨 복귀 (Shift+Tab)"
             >
@@ -725,6 +743,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className={`tool-btn first-line-indent-btn ${isFirstLineIndent ? 'active' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 setIsFirstLineIndent((prev) => {
                   const next = !prev;
@@ -1020,9 +1039,10 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="table-action-btn"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor.chain().focus().mergeCells().run()}
               disabled={!editor.can().mergeCells()}
-              title="선택된 셀 병합"
+              title="선택된 복수 셀 병합"
             >
               <Merge size={13} />
               <span>병합</span>
@@ -1030,12 +1050,42 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="table-action-btn"
-              onClick={() => editor.chain().focus().splitCell().run()}
-              disabled={!editor.can().splitCell()}
-              title="병합된 셀 분할"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                if (editor.can().splitCell()) {
+                  editor.chain().focus().splitCell().run();
+                } else {
+                  editor.chain().focus().addColumnAfter().run();
+                }
+              }}
+              title="셀 분할"
             >
               <Split size={13} />
               <span>분할</span>
+            </button>
+          </div>
+
+          <div className="table-controls-divider" />
+
+          {/* 헤더 설정 */}
+          <div className="table-controls-group">
+            <button
+              type="button"
+              className="table-action-btn"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => editor.chain().focus().toggleHeaderRow().run()}
+              title="첫 행을 제목(헤더)으로 지정/해제"
+            >
+              <span>행 헤더</span>
+            </button>
+            <button
+              type="button"
+              className="table-action-btn"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => editor.chain().focus().toggleHeaderColumn().run()}
+              title="첫 열을 제목(헤더)으로 지정/해제"
+            >
+              <span>열 헤더</span>
             </button>
           </div>
 
@@ -1046,6 +1096,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="table-action-btn"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor.chain().focus().addRowBefore().run()}
               title="현재 행 위에 행 추가"
             >
@@ -1055,6 +1106,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="table-action-btn"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor.chain().focus().addRowAfter().run()}
               title="현재 행 아래에 행 추가"
             >
@@ -1064,6 +1116,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="table-action-btn danger-hover"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor.chain().focus().deleteRow().run()}
               title="현재 행 삭제"
             >
@@ -1079,6 +1132,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="table-action-btn"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor.chain().focus().addColumnBefore().run()}
               title="현재 열 왼쪽에 열 추가"
             >
@@ -1088,6 +1142,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="table-action-btn"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor.chain().focus().addColumnAfter().run()}
               title="현재 열 오른쪽에 열 추가"
             >
@@ -1097,6 +1152,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="table-action-btn danger-hover"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor.chain().focus().deleteColumn().run()}
               title="현재 열 삭제"
             >
@@ -1112,6 +1168,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
             <button
               type="button"
               className="table-action-btn danger-hover delete-table-btn"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => editor.chain().focus().deleteTable().run()}
               title="표 전체 삭제"
             >

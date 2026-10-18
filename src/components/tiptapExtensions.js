@@ -134,58 +134,6 @@ export const Highlight = Mark.create({
   },
 });
 
-/**
- * 3. TextAlign - 문단 정렬 (좌측, 가운데, 우측, 양쪽 정렬)
- */
-export const TextAlign = Extension.create({
-  name: 'textAlign',
-
-  addOptions() {
-    return {
-      types: ['heading', 'paragraph', 'tableCell', 'tableHeader'],
-      alignments: ['left', 'center', 'right', 'justify'],
-      defaultAlignment: 'left',
-    };
-  },
-
-  addGlobalAttributes() {
-    return [
-      {
-        types: this.options.types,
-        attributes: {
-          textAlign: {
-            default: this.options.defaultAlignment,
-            parseHTML: (element) => element.style.textAlign || this.options.defaultAlignment,
-            renderHTML: (attributes) => {
-              if (!attributes.textAlign || attributes.textAlign === this.options.defaultAlignment) {
-                return {};
-              }
-              return { style: `text-align: ${attributes.textAlign}` };
-            },
-          },
-        },
-      },
-    ];
-  },
-
-  addCommands() {
-    return {
-      setTextAlign: (alignment) => ({ commands }) => {
-        if (!this.options.alignments.includes(alignment)) {
-          return false;
-        }
-        return this.options.types.every((type) =>
-          commands.updateAttributes(type, { textAlign: alignment })
-        );
-      },
-      unsetTextAlign: () => ({ commands }) => {
-        return this.options.types.every((type) =>
-          commands.resetAttributes(type, 'textAlign')
-        );
-      },
-    };
-  },
-});
 
 /**
  * 4. Indent - 들여쓰기 / 내어쓰기 (24px 단위 margin-left)

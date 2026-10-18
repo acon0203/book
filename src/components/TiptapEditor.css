@@ -618,7 +618,23 @@
 .rich-editor-body .tiptap table th {
   background: rgba(139, 90, 43, 0.08);
   font-weight: 600;
-  text-align: left;
+  text-align: inherit;
+}
+.rich-editor-body .tiptap [style*="text-align: center"],
+.rich-editor-body .tiptap [style*="text-align:center"] {
+  text-align: center !important;
+}
+.rich-editor-body .tiptap [style*="text-align: right"],
+.rich-editor-body .tiptap [style*="text-align:right"] {
+  text-align: right !important;
+}
+.rich-editor-body .tiptap [style*="text-align: justify"],
+.rich-editor-body .tiptap [style*="text-align:justify"] {
+  text-align: justify !important;
+}
+.rich-editor-body .tiptap [style*="text-align: left"],
+.rich-editor-body .tiptap [style*="text-align:left"] {
+  text-align: left !important;
 }
 .rich-editor-body .tiptap table .selectedCell:after {
   z-index: 2;
