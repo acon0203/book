@@ -14,6 +14,10 @@ export const useStore = create((set, get) => {
   const initialFontScale = localStorage.getItem('book_font_scale') || 'normal';
   document.documentElement.setAttribute('data-font-scale', initialFontScale);
 
+  const validViews = ['library', 'studio', 'vault', 'stats', 'settings', 'reader'];
+  const savedView = localStorage.getItem('book_current_view');
+  const initialView = validViews.includes(savedView) ? savedView : 'library';
+
   return {
     // --- 인증 & 클라우드 동기화 상태 ---
     user: null,
@@ -208,13 +212,14 @@ export const useStore = create((set, get) => {
     },
 
     // --- UI 상태 ---
-    currentView: 'library', // 'library' | 'studio' | 'vault' | 'stats' | 'settings' | 'reader'
+    currentView: initialView, // 'library' | 'studio' | 'vault' | 'stats' | 'settings' | 'reader'
     previousView: 'library',
     theme: initialTheme,
     toast: null,
 
     setView: (view) => {
       const current = get().currentView;
+      localStorage.setItem('book_current_view', view);
       set({
         previousView: (current && current !== view) ? current : get().previousView,
         currentView: view
@@ -224,6 +229,7 @@ export const useStore = create((set, get) => {
     closeReader: () => {
       const { previousView } = get();
       const targetView = (previousView && previousView !== 'reader') ? previousView : 'library';
+      localStorage.setItem('book_current_view', targetView);
       set({ currentView: targetView });
     },
 
@@ -345,11 +351,24 @@ export const useStore = create((set, get) => {
           targetBook = books[0];
         }
 
+        const savedChapId = localStorage.getItem('last_active_chapter_id');
+        const savedSecId = localStorage.getItem('last_active_section_id');
+
+        let targetChap = targetBook?.chapters?.find(c => c.id === savedChapId);
+        if (!targetChap && targetBook?.chapters?.length > 0) {
+          targetChap = targetBook.chapters[0];
+        }
+
+        let targetSec = targetChap?.sections?.find(s => s.id === savedSecId);
+        if (!targetSec && targetChap?.sections?.length > 0) {
+          targetSec = targetChap.sections[0];
+        }
+
         set({
           books,
           activeBook: targetBook || null,
-          activeChapterId: targetBook?.chapters?.[0]?.id || null,
-          activeSectionId: targetBook?.chapters?.[0]?.sections?.[0]?.id || null,
+          activeChapterId: targetChap?.id || null,
+          activeSectionId: targetSec?.id || null,
           isBooksLoading: false
         });
       } catch (err) {
@@ -383,6 +402,9 @@ export const useStore = create((set, get) => {
         let firstSecId = book.chapters?.[0]?.sections?.[0]?.id || null;
 
         localStorage.setItem('last_active_book_id', bookId);
+        localStorage.setItem('book_current_view', 'studio');
+        if (firstChapId) localStorage.setItem('last_active_chapter_id', firstChapId);
+        if (firstSecId) localStorage.setItem('last_active_section_id', firstSecId);
 
         set({
           activeBook: book,
@@ -408,6 +430,7 @@ export const useStore = create((set, get) => {
         const targetSecId = book?.chapters?.find(c => c.id === targetChapId)?.sections?.[0]?.id || null;
 
         localStorage.setItem('last_active_book_id', bookId);
+        localStorage.setItem('book_current_view', 'reader');
 
         // 독서 이력(reader_history) 실시간 갱신
         try {
@@ -782,10 +805,16 @@ export const useStore = create((set, get) => {
     setActiveChapterId: (chapterId) => {
       const book = get().activeBook;
       const chap = book?.chapters?.find(c => c.id === chapterId);
-      set({ activeChapterId: chapterId, activeSectionId: chap?.sections?.[0]?.id || null });
+      const secId = chap?.sections?.[0]?.id || null;
+      localStorage.setItem('last_active_chapter_id', chapterId);
+      if (secId) localStorage.setItem('last_active_section_id', secId);
+      set({ activeChapterId: chapterId, activeSectionId: secId });
     },
 
-    setActiveSectionId: (sectionId) => set({ activeSectionId: sectionId }),
+    setActiveSectionId: (sectionId) => {
+      localStorage.setItem('last_active_section_id', sectionId);
+      set({ activeSectionId: sectionId });
+    },
 
     updateActiveSectionContent: (newContent) => {
       const { activeBook, activeChapterId, activeSectionId } = get();
