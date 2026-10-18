@@ -333,7 +333,7 @@ export const useStore = create((set, get) => {
             genre: book.genre || '소설',
             chapterId: targetChapId,
             chapterTitle: targetChap?.title || '1화',
-            coverColor: book.coverColor || '#2563eb',
+            coverColor: book.coverColor || 'linear-gradient(135deg, #1b382b, #0d1e16)',
             readAt: new Date().toISOString()
           };
           const updatedHistory = [newEntry, ...prevHistory.filter(h => h.bookId !== book.id)].slice(0, 30);

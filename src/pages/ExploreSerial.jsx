@@ -117,7 +117,7 @@ export default function ExploreSerial() {
           genre: book.genre || '소설',
           chapterId: firstChap?.id,
           chapterTitle: firstChap?.title || '1화',
-          coverColor: book.coverColor || '#2563eb',
+          coverColor: book.coverColor || 'linear-gradient(135deg, #1b382b, #0d1e16)',
           readAt: new Date().toISOString()
         };
         updatedHistory = [newEntry, ...history.filter(h => h.bookId !== book.id)].slice(0, 30);

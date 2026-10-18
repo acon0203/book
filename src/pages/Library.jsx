@@ -83,6 +83,21 @@ export default function Library() {
   // 최근 독서 도서 (readingHistory 최상단 항목)
   const recentReadingBook = readingHistory.length > 0 ? readingHistory[0] : null;
 
+  // 표지 색상 헬퍼 (동일 도서인 경우 집필/독서 퀵 카드의 표지 색상을 100% 일치시킴)
+  const writingCoverColor = recentWritingBook?.coverColor || 'linear-gradient(135deg, #3d2c1e, #1f140b)';
+  const matchedReadingBook = books.find(b => b.id === recentReadingBook?.bookId || b.title === recentReadingBook?.bookTitle);
+  const readingCoverColor = (() => {
+    if (matchedReadingBook?.coverColor) return matchedReadingBook.coverColor;
+    if (recentWritingBook && (matchedReadingBook?.id === recentWritingBook?.id || recentReadingBook?.bookTitle === recentWritingBook?.title)) {
+      return writingCoverColor;
+    }
+    const stored = recentReadingBook?.coverColor;
+    if (stored && stored !== '#2563eb' && stored !== '#1e3a8a') {
+      return stored;
+    }
+    return 'linear-gradient(135deg, #1b382b, #0d1e16)';
+  })();
+
   // 집필 서재용 최근 작업 챕터 추출 헬퍼
   const getLatestWritingChapter = (book) => {
     if (!book?.chapters || book.chapters.length === 0) return '새 챕터 기획 중';
@@ -295,7 +310,7 @@ export default function Library() {
             >
               <div 
                 className="book-spine-thumb"
-                style={{ background: recentWritingBook?.coverColor || 'linear-gradient(135deg, #3d2c1e, #1f140b)' }}
+                style={{ background: writingCoverColor }}
               >
                 <div className="book-spine-line" />
                 <span className="spine-genre">{recentWritingBook?.genre || '집필'}</span>
@@ -338,11 +353,7 @@ export default function Library() {
             >
               <div 
                 className="book-spine-thumb"
-                style={{ 
-                  background: (books.find(b => b.id === recentReadingBook?.bookId)?.coverColor) 
-                    || recentReadingBook?.coverColor 
-                    || 'linear-gradient(135deg, #1b382b, #0d1e16)' 
-                }}
+                style={{ background: readingCoverColor }}
               >
                 <div className="book-spine-line" />
                 <span className="spine-genre">{recentReadingBook?.genre || '독서'}</span>
