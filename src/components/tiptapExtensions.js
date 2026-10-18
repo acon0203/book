@@ -335,13 +335,14 @@ export const FontFamily = Mark.create({
   addOptions() {
     return {
       fonts: [
-        { label: '기본 서체 (Pretendard)', value: 'inherit' },
-        { label: '나눔명조 (소설·에세이)', value: '"Nanum Myeongjo", serif' },
-        { label: '마루부리 (문학 서체)', value: '"MaruBuri", serif' },
-        { label: '리디바탕 (전자책 최적)', value: '"KoPubWorld Batang", "Ridibatang", serif' },
-        { label: '나눔고딕 (깔끔한 고딕)', value: '"Nanum Gothic", sans-serif' },
-        { label: 'KoPub돋움 (가독성 본문)', value: '"KoPubWorld Dotum", sans-serif' },
-        { label: 'D2Coding (코드·고정폭)', value: '"D2Coding", monospace' },
+        { label: '기본 서체 (시스템 기본)', value: 'inherit' },
+        { label: '맑은 고딕 (Malgun Gothic)', value: '"Malgun Gothic", sans-serif' },
+        { label: '바탕체 (Batang)', value: '"Batang", "BatangChe", serif' },
+        { label: '돋움체 (Dotum)', value: '"Dotum", "DotumChe", sans-serif' },
+        { label: '굴림체 (Gulim)', value: '"Gulim", "GulimChe", sans-serif' },
+        { label: '궁서체 (Gungsuh)', value: '"Gungsuh", "GungsuhChe", serif' },
+        { label: '나눔명조 (출판 명조)', value: '"Nanum Myeongjo", serif' },
+        { label: '나눔고딕 (출판 고딕)', value: '"Nanum Gothic", sans-serif' },
       ],
     };
   },

@@ -15,11 +15,12 @@ import {
   Highlighter,
   ChevronDown,
   MoreHorizontal,
-  Table,
+  Table as TableIcon,
   Minus,
   Code,
   Omega
 } from 'lucide-react';
+import { TableKit } from '@tiptap/extension-table';
 import { sinkListItem, liftListItem } from 'prosemirror-schema-list';
 import { TextColor, Highlight, TextAlign, Indent, LineHeight, FontFamily, BackgroundColor, CustomBlockquote } from './tiptapExtensions';
 import './TiptapEditor.css';
@@ -147,7 +148,12 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     Highlight,
     TextAlign,
     Indent,
-    LineHeight
+    LineHeight,
+    TableKit.configure({
+      table: {
+        resizable: false,
+      },
+    }),
   ], [placeholder]);
 
   const editor = useEditor(
@@ -265,15 +271,16 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     }
   }));
 
-  // 1. 글자체 목록
+  // 1. 글자체 목록 (사용자 지정 표준 8대 무료 서체)
   const fontFamilies = [
-    { label: '기본 서체 (Pretendard)', value: 'inherit' },
-    { label: '나눔명조 (소설·에세이)', value: '"Nanum Myeongjo", serif' },
-    { label: '마루부리 (문학 서체)', value: '"MaruBuri", serif' },
-    { label: '리디바탕 (전자책 최적)', value: '"KoPubWorld Batang", "Ridibatang", serif' },
-    { label: '나눔고딕 (깔끔한 고딕)', value: '"Nanum Gothic", sans-serif' },
-    { label: 'KoPub돋움 (가독성 본문)', value: '"KoPubWorld Dotum", sans-serif' },
-    { label: 'D2Coding (코드·고정폭)', value: '"D2Coding", monospace' },
+    { label: '기본 서체 (시스템 기본)', value: 'inherit' },
+    { label: '맑은 고딕 (Malgun Gothic)', value: '"Malgun Gothic", sans-serif' },
+    { label: '바탕체 (Batang)', value: '"Batang", "BatangChe", serif' },
+    { label: '돋움체 (Dotum)', value: '"Dotum", "DotumChe", sans-serif' },
+    { label: '굴림체 (Gulim)', value: '"Gulim", "GulimChe", sans-serif' },
+    { label: '궁서체 (Gungsuh)', value: '"Gungsuh", "GungsuhChe", serif' },
+    { label: '나눔명조 (출판 명조)', value: '"Nanum Myeongjo", serif' },
+    { label: '나눔고딕 (출판 고딕)', value: '"Nanum Gothic", sans-serif' },
   ];
 
   // 2. 제목 순환 H 버튼 (본문 ➔ 소제목 H3 ➔ 중제목 H2 ➔ 대제목 H1 ➔ 본문)
@@ -397,32 +404,10 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     setIsQuoteDropdownOpen(false);
   };
 
-  // 8. 인터랙티브 격자 선택 기반 테이블 생성
+  // 8. 인터랙티브 격자 선택 기반 테이블 생성 (Tiptap 정식 table 확장 연동)
   const handleCreateTable = (rows, cols) => {
     if (!editor) return;
-    let theadHtml = '<tr style="background: rgba(139, 90, 43, 0.08);">';
-    for (let c = 1; c <= cols; c++) {
-      theadHtml += `<th style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px; text-align: left; font-weight: 600;">열 ${c}</th>`;
-    }
-    theadHtml += '</tr>';
-
-    let tbodyHtml = '';
-    const bodyRows = Math.max(1, rows - 1);
-    for (let r = 1; r <= bodyRows; r++) {
-      tbodyHtml += '<tr>';
-      for (let c = 1; c <= cols; c++) {
-        tbodyHtml += `<td style="border: 1px solid rgba(139, 90, 43, 0.2); padding: 8px 12px;">내용</td>`;
-      }
-      tbodyHtml += '</tr>';
-    }
-
-    const tableHtml = `
-      <table class="editor-user-table" style="width: 100%; border-collapse: collapse; margin: 1.25rem 0; border: 1px solid rgba(139, 90, 43, 0.2);">
-        <thead>${theadHtml}</thead>
-        <tbody>${tbodyHtml}</tbody>
-      </table>
-    `;
-    editor.chain().focus().insertContent(tableHtml).run();
+    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
     setIsTablePickerOpen(false);
   };
 
@@ -918,7 +903,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
                 }}
                 title="테이블(표) 만들기"
               >
-                <Table size={14} />
+                <TableIcon size={14} />
               </button>
               {isTablePickerOpen && (
                 <div className="toolbar-table-grid-popover">

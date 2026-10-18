@@ -593,20 +593,34 @@
   font-style: normal !important;
 }
 
-/* 🌟 테이블 스타일 */
-.rich-editor-body .tiptap table.editor-user-table {
+/* 🌟 테이블 스타일 (Tiptap Table 기본 노드 및 클래스 지원) */
+.rich-editor-body .tiptap table {
   width: 100%;
   border-collapse: collapse;
   margin: 1.4rem 0;
+  table-layout: fixed;
 }
-.rich-editor-body .tiptap table.editor-user-table th,
-.rich-editor-body .tiptap table.editor-user-table td {
+.rich-editor-body .tiptap table th,
+.rich-editor-body .tiptap table td {
   border: 1px solid rgba(139, 90, 43, 0.22);
   padding: 8px 12px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+  min-width: 40px;
 }
-.rich-editor-body .tiptap table.editor-user-table th {
+.rich-editor-body .tiptap table th {
   background: rgba(139, 90, 43, 0.08);
   font-weight: 600;
+  text-align: left;
+}
+.rich-editor-body .tiptap table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(139, 90, 43, 0.1);
+  pointer-events: none;
 }
 
 /* 하단 에디터 상태 바 (글자수 & 원고지 환산 매수) */
