@@ -9,14 +9,17 @@ export const TextColor = Mark.create({
   addOptions() {
     return {
       colors: [
-        { label: '기본 먹색', value: 'inherit' },
-        { label: '챠콜 블랙', value: '#1f2937' },
-        { label: '고서적 브라운', value: '#8b5a2b' },
-        { label: '와인 버건디', value: '#991b1b' },
-        { label: '번트 오렌지', value: '#c2410c' },
-        { label: '딥 포레스트', value: '#15803d' },
-        { label: '네이비 블루', value: '#1d4ed8' },
-        { label: '로열 퍼플', value: '#6b21a8' },
+        { label: '검정', value: '#000000', bg: '#000000' },
+        { label: '챠콜 회색', value: '#374151', bg: '#374151' },
+        { label: '연회색', value: '#9ca3af', bg: '#9ca3af' },
+        { label: '흰색', value: '#ffffff', bg: '#ffffff' },
+        { label: '빨강', value: '#ef4444', bg: '#ef4444' },
+        { label: '주황', value: '#f97316', bg: '#f97316' },
+        { label: '노랑', value: '#eab308', bg: '#eab308' },
+        { label: '초록', value: '#16a34a', bg: '#16a34a' },
+        { label: '파랑', value: '#2563eb', bg: '#2563eb' },
+        { label: '보라', value: '#9333ea', bg: '#9333ea' },
+        { label: '가죽 브라운', value: '#8b5a2b', bg: '#8b5a2b' },
       ],
     };
   },
@@ -139,7 +142,7 @@ export const TextAlign = Extension.create({
 
   addOptions() {
     return {
-      types: ['heading', 'paragraph'],
+      types: ['heading', 'paragraph', 'tableCell', 'tableHeader'],
       alignments: ['left', 'center', 'right', 'justify'],
       defaultAlignment: 'left',
     };
@@ -401,13 +404,16 @@ export const BackgroundColor = Mark.create({
     return {
       colors: [
         { label: '배경색 없음', value: 'transparent', bg: '#ffffff' },
-        { label: '크림 아이보리', value: '#fdfbf7', bg: '#fdfbf7' },
-        { label: '웜 베이지', value: '#f5f0ea', bg: '#f5f0ea' },
-        { label: '페일 그레이', value: '#f3f4f6', bg: '#f3f4f6' },
-        { label: '소프트 레몬', value: '#fef9c3', bg: '#fef9c3' },
-        { label: '민트 아이스', value: '#dcfce7', bg: '#dcfce7' },
-        { label: '스카이 블러시', value: '#e0f2fe', bg: '#e0f2fe' },
-        { label: '로즈 틴트', value: '#ffe4e6', bg: '#ffe4e6' },
+        { label: '순백색', value: '#ffffff', bg: '#ffffff' },
+        { label: '밝은 회색', value: '#f3f4f6', bg: '#f3f4f6' },
+        { label: '어두운 회색', value: '#374151', bg: '#374151' },
+        { label: '검정', value: '#000000', bg: '#000000' },
+        { label: '연한 빨강', value: '#fee2e2', bg: '#fee2e2' },
+        { label: '연한 주황', value: '#ffedd5', bg: '#ffedd5' },
+        { label: '연한 노랑', value: '#fef9c3', bg: '#fef9c3' },
+        { label: '연한 초록', value: '#dcfce7', bg: '#dcfce7' },
+        { label: '연한 파랑', value: '#e0f2fe', bg: '#e0f2fe' },
+        { label: '연한 보라', value: '#f3e8ff', bg: '#f3e8ff' },
       ],
     };
   },

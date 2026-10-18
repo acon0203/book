@@ -603,11 +603,17 @@
 .rich-editor-body .tiptap table th,
 .rich-editor-body .tiptap table td {
   border: 1px solid rgba(139, 90, 43, 0.22);
-  padding: 8px 12px;
-  vertical-align: top;
+  padding: 10px 14px;
+  vertical-align: middle !important; /* 무조건 위/아래가 아닌 중간 정렬 */
   box-sizing: border-box;
   position: relative;
-  min-width: 40px;
+  min-width: 48px;
+  min-height: 40px;
+}
+.rich-editor-body .tiptap table th p,
+.rich-editor-body .tiptap table td p {
+  margin: 0 !important;
+  line-height: 1.5;
 }
 .rich-editor-body .tiptap table th {
   background: rgba(139, 90, 43, 0.08);
@@ -621,6 +627,74 @@
   left: 0; right: 0; top: 0; bottom: 0;
   background: rgba(139, 90, 43, 0.1);
   pointer-events: none;
+}
+
+/* 🌟 표 전용 제어 액션 바 */
+.table-controls-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.32rem 0.65rem;
+  background: #fdfbf7;
+  border: 1px solid rgba(139, 90, 43, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 3px 12px rgba(139, 90, 43, 0.08);
+  margin-top: -0.35rem;
+  user-select: none;
+}
+[data-theme="dark"] .table-controls-bar {
+  background: #2b2520;
+  border-color: rgba(184, 150, 118, 0.25);
+}
+.table-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.table-controls-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--primary);
+  padding: 0 4px;
+  margin-right: 2px;
+}
+.table-controls-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(139, 90, 43, 0.14);
+  margin: 0 0.2rem;
+}
+.table-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  background: transparent;
+  border: 1px solid rgba(139, 90, 43, 0.14);
+  border-radius: 4px;
+  font-size: 0.74rem;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.table-action-btn:hover:not(:disabled) {
+  background: rgba(139, 90, 43, 0.08);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.table-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: transparent;
+}
+.table-action-btn.danger-hover:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+.table-action-btn.delete-table-btn {
+  color: #dc2626;
 }
 
 /* 하단 에디터 상태 바 (글자수 & 원고지 환산 매수) */

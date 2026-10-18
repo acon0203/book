@@ -18,7 +18,14 @@ import {
   Table as TableIcon,
   Minus,
   Code,
-  Omega
+  Omega,
+  ArrowUpToLine,
+  ArrowDownToLine,
+  ArrowLeftToLine,
+  ArrowRightToLine,
+  Trash2,
+  Merge,
+  Split
 } from 'lucide-react';
 import { TableKit } from '@tiptap/extension-table';
 import { sinkListItem, liftListItem } from 'prosemirror-schema-list';
@@ -523,20 +530,23 @@ const TiptapEditor = forwardRef(function TiptapEditor(
               {isColorPickerOpen && (
                 <div className="toolbar-palette-popover">
                   {[
-                    { label: '기본 먹색', color: 'inherit', bg: '#2b231d' },
-                    { label: '챠콜', color: '#1f2937', bg: '#1f2937' },
-                    { label: '고서적 브라운', color: '#8b5a2b', bg: '#8b5a2b' },
-                    { label: '와인 버건디', color: '#991b1b', bg: '#991b1b' },
-                    { label: '번트 오렌지', color: '#c2410c', bg: '#c2410c' },
-                    { label: '딥 포레스트', color: '#15803d', bg: '#15803d' },
-                    { label: '네이비 블루', color: '#1d4ed8', bg: '#1d4ed8' },
-                    { label: '로열 퍼플', color: '#6b21a8', bg: '#6b21a8' },
+                    { label: '검정', color: '#000000', bg: '#000000' },
+                    { label: '챠콜 회색', color: '#374151', bg: '#374151' },
+                    { label: '연회색', color: '#9ca3af', bg: '#9ca3af' },
+                    { label: '흰색', color: '#ffffff', bg: '#ffffff', border: '1px solid #d1d5db' },
+                    { label: '빨강', color: '#ef4444', bg: '#ef4444' },
+                    { label: '주황', color: '#f97316', bg: '#f97316' },
+                    { label: '노랑', color: '#eab308', bg: '#eab308' },
+                    { label: '초록', color: '#16a34a', bg: '#16a34a' },
+                    { label: '파랑', color: '#2563eb', bg: '#2563eb' },
+                    { label: '보라', color: '#9333ea', bg: '#9333ea' },
+                    { label: '가죽 브라운', color: '#8b5a2b', bg: '#8b5a2b' },
                   ].map((item) => (
                     <button
                       key={item.color}
                       type="button"
                       className="palette-color-btn"
-                      style={{ backgroundColor: item.bg }}
+                      style={{ backgroundColor: item.bg, border: item.border || undefined }}
                       title={item.label}
                       onClick={() => {
                         if (item.color === 'inherit') {
@@ -568,20 +578,23 @@ const TiptapEditor = forwardRef(function TiptapEditor(
               {isBgColorPickerOpen && (
                 <div className="toolbar-palette-popover">
                   {[
-                    { label: '배경색 없음', color: 'transparent', bg: '#ffffff' },
-                    { label: '크림 아이보리', color: '#fdfbf7', bg: '#fdfbf7' },
-                    { label: '웜 베이지', color: '#f5f0ea', bg: '#f5f0ea' },
-                    { label: '페일 그레이', color: '#f3f4f6', bg: '#f3f4f6' },
-                    { label: '소프트 레몬', color: '#fef9c3', bg: '#fef9c3' },
-                    { label: '민트 아이스', color: '#dcfce7', bg: '#dcfce7' },
-                    { label: '스카이 블러시', color: '#e0f2fe', bg: '#e0f2fe' },
-                    { label: '로즈 틴트', color: '#ffe4e6', bg: '#ffe4e6' },
+                    { label: '배경색 없음', color: 'transparent', bg: '#ffffff', border: '1px dashed #d1d5db' },
+                    { label: '순백색', color: '#ffffff', bg: '#ffffff', border: '1px solid #d1d5db' },
+                    { label: '밝은 회색', color: '#f3f4f6', bg: '#f3f4f6' },
+                    { label: '어두운 회색', color: '#374151', bg: '#374151' },
+                    { label: '검정', color: '#000000', bg: '#000000' },
+                    { label: '연한 빨강', color: '#fee2e2', bg: '#fee2e2' },
+                    { label: '연한 주황', color: '#ffedd5', bg: '#ffedd5' },
+                    { label: '연한 노랑', color: '#fef9c3', bg: '#fef9c3' },
+                    { label: '연한 초록', color: '#dcfce7', bg: '#dcfce7' },
+                    { label: '연한 파랑', color: '#e0f2fe', bg: '#e0f2fe' },
+                    { label: '연한 보라', color: '#f3e8ff', bg: '#f3e8ff' },
                   ].map((item) => (
                     <button
                       key={item.label}
                       type="button"
                       className="palette-color-btn"
-                      style={{ backgroundColor: item.bg }}
+                      style={{ backgroundColor: item.bg, border: item.border || undefined }}
                       title={item.label}
                       onClick={() => {
                         if (item.color === 'transparent') {
@@ -996,6 +1009,116 @@ const TiptapEditor = forwardRef(function TiptapEditor(
           </div>
 
           {extraToolbarItems}
+        </div>
+      )}
+
+      {/* 표(Table) 활성화 시 즉시 나타나는 정밀 표 편집 바 */}
+      {showToolbar && editor?.isActive('table') && (
+        <div className="table-controls-bar">
+          <div className="table-controls-group">
+            <span className="table-controls-tag">표 도구</span>
+            <button
+              type="button"
+              className="table-action-btn"
+              onClick={() => editor.chain().focus().mergeCells().run()}
+              disabled={!editor.can().mergeCells()}
+              title="선택된 셀 병합"
+            >
+              <Merge size={13} />
+              <span>병합</span>
+            </button>
+            <button
+              type="button"
+              className="table-action-btn"
+              onClick={() => editor.chain().focus().splitCell().run()}
+              disabled={!editor.can().splitCell()}
+              title="병합된 셀 분할"
+            >
+              <Split size={13} />
+              <span>분할</span>
+            </button>
+          </div>
+
+          <div className="table-controls-divider" />
+
+          {/* 행 조작 */}
+          <div className="table-controls-group">
+            <button
+              type="button"
+              className="table-action-btn"
+              onClick={() => editor.chain().focus().addRowBefore().run()}
+              title="현재 행 위에 행 추가"
+            >
+              <ArrowUpToLine size={13} />
+              <span>위 행 추가</span>
+            </button>
+            <button
+              type="button"
+              className="table-action-btn"
+              onClick={() => editor.chain().focus().addRowAfter().run()}
+              title="현재 행 아래에 행 추가"
+            >
+              <ArrowDownToLine size={13} />
+              <span>아래 행 추가</span>
+            </button>
+            <button
+              type="button"
+              className="table-action-btn danger-hover"
+              onClick={() => editor.chain().focus().deleteRow().run()}
+              title="현재 행 삭제"
+            >
+              <Trash2 size={13} />
+              <span>행 삭제</span>
+            </button>
+          </div>
+
+          <div className="table-controls-divider" />
+
+          {/* 열 조작 */}
+          <div className="table-controls-group">
+            <button
+              type="button"
+              className="table-action-btn"
+              onClick={() => editor.chain().focus().addColumnBefore().run()}
+              title="현재 열 왼쪽에 열 추가"
+            >
+              <ArrowLeftToLine size={13} />
+              <span>좌 열 추가</span>
+            </button>
+            <button
+              type="button"
+              className="table-action-btn"
+              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              title="현재 열 오른쪽에 열 추가"
+            >
+              <ArrowRightToLine size={13} />
+              <span>우 열 추가</span>
+            </button>
+            <button
+              type="button"
+              className="table-action-btn danger-hover"
+              onClick={() => editor.chain().focus().deleteColumn().run()}
+              title="현재 열 삭제"
+            >
+              <Trash2 size={13} />
+              <span>열 삭제</span>
+            </button>
+          </div>
+
+          <div className="table-controls-divider" />
+
+          {/* 표 전체 삭제 */}
+          <div className="table-controls-group">
+            <button
+              type="button"
+              className="table-action-btn danger-hover delete-table-btn"
+              onClick={() => editor.chain().focus().deleteTable().run()}
+              title="표 전체 삭제"
+            >
+              <Trash2 size={13} />
+              <span>표 삭제</span>
+            </button>
+          </div>
         </div>
       )}
 
