@@ -21,7 +21,7 @@ export default function BookInfoModal({
   book = null,     // edit 모드 시 수정 대상 도서 객체
   onSuccess        // 완료 후 콜백 (resultBook) => void
 }) {
-  const { user, loadBooks, openBook, showToast, updateBookInfo } = useStore();
+  const { user, loadBooks, openBook, showToast, updateBookInfo, markUnsynced } = useStore();
 
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
@@ -110,6 +110,7 @@ export default function BookInfoModal({
           coverColor
         });
 
+        markUnsynced();
         await loadBooks();
         showToast(`'${newBook.title}' 새 전자책 프로젝트가 시작되었습니다.`, 'success');
         onClose();

@@ -171,8 +171,8 @@ export default function Sidebar() {
                 syncStatus === 'syncing' 
                   ? '클라우드 동기화 진행 중...' 
                   : syncStatus === 'synced' 
-                    ? '클라우드 동기화 완료 (클릭하여 다시 동기화)' 
-                    : '클라우드에 동기화'
+                    ? '클라우드 동기화 완료 (최신 상태)' 
+                    : '클라우드에 동기화 (로컬 변경사항 있음)'
               }
             >
               {syncStatus === 'syncing' ? (

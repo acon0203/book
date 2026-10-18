@@ -18,7 +18,7 @@ import { useStore } from '../store';
 import './ManuscriptImportModal.css';
 
 export default function ManuscriptImportModal({ isOpen, onClose, currentBook = null }) {
-  const { loadBooks, openBook, showToast, user } = useStore();
+  const { loadBooks, openBook, showToast, user, markUnsynced } = useStore();
 
   const [activeTab, setActiveTab] = useState('file'); // 'file' | 'paste'
   const [isDragging, setIsDragging] = useState(false);
@@ -133,6 +133,7 @@ export default function ManuscriptImportModal({ isOpen, onClose, currentBook = n
           chapters: parsedResult.chapters
         });
 
+        markUnsynced();
         await loadBooks();
         showToast(`'${newBook.title}' 도서로 원고가 성공적으로 등록되었습니다.`, 'success');
         onClose();
@@ -146,6 +147,7 @@ export default function ManuscriptImportModal({ isOpen, onClose, currentBook = n
           chapters: combinedChapters
         });
 
+        markUnsynced();
         await loadBooks();
         showToast(`${parsedResult.chapters.length}개 챕터가 현재 도서에 추가되었습니다.`, 'success');
         onClose();

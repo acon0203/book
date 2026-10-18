@@ -101,6 +101,13 @@ export const useStore = create((set, get) => {
       }
     },
 
+    // 로컬 데이터 수정 시 클라우드 동기화 상태를 'idle'(구름 아이콘)로 자동 리셋
+    markUnsynced: () => {
+      if (get().syncStatus === 'synced') {
+        set({ syncStatus: 'idle' });
+      }
+    },
+
     // --- UI 상태 ---
     currentView: 'library', // 'library' | 'studio' | 'vault' | 'stats' | 'settings' | 'reader'
     previousView: 'library',
@@ -375,6 +382,7 @@ export const useStore = create((set, get) => {
         activeBook: (state.activeBook?.id === targetId) ? updatedBook : state.activeBook,
         books: state.books.map(b => b.id === targetId ? updatedBook : b)
       }));
+      get().markUnsynced();
       get().showToast(
         nextCompleted
           ? `'${target.title}' 도서가 완결(완성작)로 등록되었습니다.`
@@ -396,6 +404,7 @@ export const useStore = create((set, get) => {
         activeBook: (state.activeBook?.id === targetId) ? updatedBook : state.activeBook,
         books: state.books.map(b => b.id === targetId ? updatedBook : b)
       }));
+      get().markUnsynced();
       get().showToast(`도서 제목이 '${trimmed}'(으)로 변경되었습니다.`, 'success');
       return updatedBook;
     },
@@ -416,6 +425,7 @@ export const useStore = create((set, get) => {
         activeBook: (state.activeBook?.id === targetId) ? updatedBook : state.activeBook,
         books: state.books.map(b => b.id === targetId ? updatedBook : b)
       }));
+      get().markUnsynced();
       get().showToast('도서 정보가 성공적으로 저장되었습니다.', 'success');
       return updatedBook;
     },
@@ -560,6 +570,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.createBookVersion(activeBook.id, versionName);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         get().showToast(`새 버전 '${versionName}'이(가) 안전하게 보관되었습니다.`, 'success');
         return true;
@@ -576,6 +587,7 @@ export const useStore = create((set, get) => {
         const isFirst = !activeBook.versions || activeBook.versions.length === 0;
         const updatedBook = await bookService.saveOrUpdateLatestVersion(activeBook.id, defaultVersionName);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         if (isFirst) {
           get().showToast(`책 전체가 저장되어 히스토리에 '${defaultVersionName}'(으)로 등록되었습니다!`, 'success');
@@ -602,6 +614,7 @@ export const useStore = create((set, get) => {
           activeChapterId: firstChapId,
           activeSectionId: firstSecId
         });
+        get().markUnsynced();
         get().loadBooks();
         get().showToast('선택한 버전으로 원고가 복원되었습니다!', 'success');
         return true;
@@ -617,6 +630,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.deleteBookVersion(activeBook.id, versionId);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         get().showToast('버전 기록이 삭제되었습니다.', 'info');
         return true;
@@ -633,6 +647,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.updateBookPlanning(activeBook.id, planningData);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
       } catch (err) {
         get().showToast(`창작 기획 저장 실패: ${err.message}`, 'error');
@@ -645,6 +660,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.updateBookCharacters(activeBook.id, characters);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
       } catch (err) {
         get().showToast(`인물 저장 실패: ${err.message}`, 'error');
@@ -657,6 +673,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.updateBookPlotStages(activeBook.id, plotStages);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
       } catch (err) {
         get().showToast(`플롯 저장 실패: ${err.message}`, 'error');
@@ -692,7 +709,10 @@ export const useStore = create((set, get) => {
         };
       });
 
-      set({ activeBook: { ...activeBook, chapters: updatedChapters } });
+      set({ 
+        activeBook: { ...activeBook, chapters: updatedChapters },
+        ...(get().syncStatus === 'synced' ? { syncStatus: 'idle' } : {})
+      });
     },
 
     updateActiveSectionTitle: (newTitle) => {
@@ -710,7 +730,10 @@ export const useStore = create((set, get) => {
         };
       });
 
-      set({ activeBook: { ...activeBook, chapters: updatedChapters } });
+      set({ 
+        activeBook: { ...activeBook, chapters: updatedChapters },
+        ...(get().syncStatus === 'synced' ? { syncStatus: 'idle' } : {})
+      });
     },
 
     saveActiveSection: async () => {
@@ -727,7 +750,10 @@ export const useStore = create((set, get) => {
           content: sec.content,
           status: sec.status
         });
-        set({ activeBook: updatedBook });
+        set({ 
+          activeBook: updatedBook,
+          ...(get().syncStatus === 'synced' ? { syncStatus: 'idle' } : {})
+        });
         get().loadBooks();
         
         // 설정에 따라 자동 클라우드 백업 여부 결정 (디폴트: false 로컬 전용)
@@ -751,6 +777,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.addChapter(activeBook.id, title);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
       } catch (err) {
         get().showToast(`챕터 추가 실패: ${err.message}`, 'error');
@@ -763,6 +790,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.updateChapter(activeBook.id, chapterId, { title: newTitle });
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
       } catch (err) {
         get().showToast(`챕터명 수정 실패: ${err.message}`, 'error');
@@ -781,6 +809,7 @@ export const useStore = create((set, get) => {
           activeChapterId: nextChap?.id || null,
           activeSectionId: nextChap?.sections?.[0]?.id || null
         });
+        get().markUnsynced();
         get().loadBooks();
         get().showToast('챕터가 삭제되었습니다.', 'info');
       } catch (err) {
@@ -794,6 +823,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.setChapterDeadline(activeBook.id, chapterId, deadline);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         get().showToast('마감일이 설정되었습니다.', 'success');
       } catch (err) {
@@ -808,6 +838,7 @@ export const useStore = create((set, get) => {
         const updatedBook = await bookService.toggleChapterPublish(activeBook.id, chapterId);
         const chap = updatedBook.chapters?.find(c => c.id === chapterId);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         if (chap?.status === 'published') {
           get().showToast(`'${chap.title}' 챕터가 연재 발행되었습니다.`, 'success');
@@ -827,6 +858,7 @@ export const useStore = create((set, get) => {
         const chap = updatedBook.chapters?.find(c => c.id === chapterId);
         const sec = chap?.sections?.find(s => s.id === sectionId);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         if (sec?.status === 'published') {
           get().showToast(`'${sec.title}' 소목차가 연재 발행되었습니다.`, 'success');
@@ -845,6 +877,7 @@ export const useStore = create((set, get) => {
         const updatedBook = await bookService.toggleChapterPublishAll(activeBook.id, chapterId);
         const chap = updatedBook.chapters?.find(c => c.id === chapterId);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         if (chap?.status === 'published') {
           get().showToast(`'${chap.title}' 챕터와 하위 소목차가 모두 연재 발행되었습니다.`, 'success');
@@ -862,6 +895,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.toggleBookPublishAll(activeBook.id);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         if (updatedBook.status === 'completed') {
           get().showToast(`'${updatedBook.title}' 도서 전체가 완결 출간(발행)되었습니다.`, 'success');
@@ -879,6 +913,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.updateBatchPublishSections(activeBook.id, publishedSectionIds);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         get().showToast(`선택한 회차(${publishedSectionIds.length}개)의 연재 발행 상태가 저장되었습니다.`, 'success');
       } catch (err) {
@@ -898,6 +933,7 @@ export const useStore = create((set, get) => {
           activeChapterId: chapterId,
           activeSectionId: newSec?.id || null
         });
+        get().markUnsynced();
         get().loadBooks();
       } catch (err) {
         get().showToast(`소목차 추가 실패: ${err.message}`, 'error');
@@ -912,6 +948,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.updateSection(activeBook.id, chapterId, sectionId, { title: trimmed });
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
       } catch (err) {
         get().showToast(`소목차명 수정 실패: ${err.message}`, 'error');
@@ -929,6 +966,7 @@ export const useStore = create((set, get) => {
           activeBook: updatedBook,
           activeSectionId: remainingSections[0]?.id || null
         });
+        get().markUnsynced();
         get().loadBooks();
         get().showToast('소목차가 삭제되었습니다.', 'info');
       } catch (err) {
@@ -955,6 +993,7 @@ export const useStore = create((set, get) => {
       try {
         const updatedBook = await bookService.updateBook(activeBook.id, { chapters: previousChapters });
         set({ activeBook: updatedBook, chapterHistoryStack: newStack });
+        get().markUnsynced();
         get().loadBooks();
         get().showToast('목차 순서가 이전 상태로 되돌려졌습니다.', 'success');
       } catch (err) {
@@ -969,6 +1008,7 @@ export const useStore = create((set, get) => {
         pushChapterHistory(activeBook.chapters);
         const updatedBook = await bookService.moveChapter(activeBook.id, chapterId, direction);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         get().showActionToast('챕터 순서가 이동되었습니다.', () => undoChapterOrder(), null, { yesText: '되돌리기 (Undo)', noText: '닫기' });
       } catch (err) {
@@ -983,6 +1023,7 @@ export const useStore = create((set, get) => {
         pushChapterHistory(activeBook.chapters);
         const updatedBook = await bookService.moveSection(activeBook.id, chapterId, sectionId, direction);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         get().showActionToast('소목차 순서가 이동되었습니다.', () => undoChapterOrder(), null, { yesText: '되돌리기 (Undo)', noText: '닫기' });
       } catch (err) {
@@ -997,6 +1038,7 @@ export const useStore = create((set, get) => {
         pushChapterHistory(activeBook.chapters);
         const updatedBook = await bookService.reorderChapters(activeBook.id, sourceIndex, targetIndex);
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         get().showActionToast('챕터 순서가 변경되었습니다.', () => undoChapterOrder(), null, { yesText: '되돌리기 (Undo)', noText: '닫기' });
       } catch (err) {
@@ -1017,6 +1059,7 @@ export const useStore = create((set, get) => {
           targetIndex
         );
         set({ activeBook: updatedBook });
+        get().markUnsynced();
         get().loadBooks();
         get().showActionToast('소목차 순서가 변경되었습니다.', () => undoChapterOrder(), null, { yesText: '되돌리기 (Undo)', noText: '닫기' });
       } catch (err) {
@@ -1031,6 +1074,7 @@ export const useStore = create((set, get) => {
           books: state.books.filter(b => b.id !== bookId),
           activeBook: state.activeBook?.id === bookId ? null : state.activeBook
         }));
+        get().markUnsynced();
         get().showToast('도서가 삭제되었습니다.', 'info');
       } catch (err) {
         get().showToast(`삭제 실패: ${err.message}`, 'error');
