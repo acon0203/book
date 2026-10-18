@@ -231,6 +231,30 @@ export default function Studio() {
   // 공통 Tiptap 에디터 ref 인스턴스
   const editorRef = useRef(null);
 
+  // 화면 이탈(다른 메뉴 이동 등 언마운트) 시 에디터 내용 자동 저장 세이프가드
+  const activeBookRef = useRef(activeBook);
+  const activeChapterIdRef = useRef(activeChapterId);
+  const activeSectionIdRef = useRef(activeSectionId);
+  activeBookRef.current = activeBook;
+  activeChapterIdRef.current = activeChapterId;
+  activeSectionIdRef.current = activeSectionId;
+
+  useEffect(() => {
+    return () => {
+      if (editorRef.current && activeBookRef.current && activeChapterIdRef.current && activeSectionIdRef.current) {
+        try {
+          const html = editorRef.current.getHTML();
+          if (html) {
+            updateActiveSectionContent(html);
+            saveActiveSection();
+          }
+        } catch (e) {
+          console.warn('Unmount auto save error:', e);
+        }
+      }
+    };
+  }, []);
+
   // 하위 호환성을 위한 editor 안전 프록시 객체 (참조 안정성 보장)
   const editor = React.useMemo(() => ({
     getHTML: () => editorRef.current?.getHTML() || '',
@@ -345,14 +369,14 @@ export default function Studio() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 수동 임시저장 생성 (스냅샷 보관)
-  const handleSaveDraft = (toggleMenu = false) => {
+  // 수동 임시저장 생성 (스냅샷 보관 및 도서 원고 실제 저장)
+  const handleSaveDraft = async (toggleMenu = false) => {
     if (!activeBook?.id || !activeSectionId) return;
     let html = '';
     if (editorMode === 'block') {
       html = paragraphsToHtml(paragraphs);
     } else {
-      html = editor ? editor.getHTML() : localContent;
+      html = editorRef.current ? editorRef.current.getHTML() : (editor ? editor.getHTML() : localContent);
     }
     const plainText = html.replace(/<[^>]*>/g, '').trim();
     const newDraft = {
@@ -372,8 +396,16 @@ export default function Studio() {
     } catch (e) {
       console.warn('임시저장 실패', e);
     }
+
+    // 실제 도서 원고 상태 및 로컬 스토리지에 즉시 확정 저장
+    updateActiveSectionContent(html);
+    if (localTitle) {
+      updateActiveSectionTitle(localTitle);
+    }
+    await saveActiveSection();
+
     setLastSavedTime(Date.now());
-    showToast('현재 소목차 원고가 임시 저장되었습니다.', 'success');
+    showToast('현재 소목차 원고가 안전하게 저장되었습니다.', 'success');
     if (toggleMenu) {
       setIsDraftMenuOpen(prev => !prev);
     }

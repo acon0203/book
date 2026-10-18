@@ -62,6 +62,9 @@ const TiptapEditor = forwardRef(function TiptapEditor(
   // 실시간 글자수 상태
   const [liveCharCount, setLiveCharCount] = useState(0);
 
+  // 커서 이동 및 텍스트 선택 시 툴바 활성 상태(bold, heading 등) 실시간 연동을 위한 틱 상태
+  const [, setSelectionTick] = useState(0);
+
   // 팝오버 외부 클릭 감지
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -108,11 +111,15 @@ const TiptapEditor = forwardRef(function TiptapEditor(
         }, 300);
       },
       onSelectionUpdate: ({ editor }) => {
+        setSelectionTick(t => t + 1);
         if (onSelectText) {
           const { from, to } = editor.state.selection;
           const text = editor.state.doc.textBetween(from, to, ' ').trim();
           onSelectText(text);
         }
+      },
+      onTransaction: () => {
+        setSelectionTick(t => t + 1);
       }
     },
     []
@@ -251,11 +258,27 @@ const TiptapEditor = forwardRef(function TiptapEditor(
               onChange={(e) => {
                 const val = e.target.value;
                 if (!editor) return;
-                if (val === 'h1') editor.chain().focus().toggleHeading({ level: 1 }).run();
-                else if (val === 'h2') editor.chain().focus().toggleHeading({ level: 2 }).run();
-                else if (val === 'h3') editor.chain().focus().toggleHeading({ level: 3 }).run();
-                else if (val === 'blockquote') editor.chain().focus().toggleBlockquote().run();
-                else editor.chain().focus().setParagraph().run();
+                const isBlockquote = editor.isActive('blockquote');
+
+                if (val === 'blockquote') {
+                  if (!isBlockquote) {
+                    editor.chain().focus().clearNodes().toggleBlockquote().run();
+                  }
+                } else if (val === 'h1' || val === 'h2' || val === 'h3') {
+                  const level = val === 'h1' ? 1 : val === 'h2' ? 2 : 3;
+                  if (isBlockquote) {
+                    editor.chain().focus().toggleBlockquote().clearNodes().toggleHeading({ level }).run();
+                  } else {
+                    editor.chain().focus().clearNodes().toggleHeading({ level }).run();
+                  }
+                } else {
+                  // 'p' (본문) 선택 시: 인용구 해제 및 일반 문단 복귀
+                  if (isBlockquote) {
+                    editor.chain().focus().toggleBlockquote().run();
+                  } else {
+                    editor.chain().focus().clearNodes().setParagraph().run();
+                  }
+                }
               }}
               title="단락 서식 (본문 / 제목 / 인용구)"
             >
