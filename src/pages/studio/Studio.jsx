@@ -30,7 +30,7 @@ const cleanTitle = (t) => aiService.cleanOutlineTitle(t);
 
 export default function Studio() {
   const {
-    activeBook, activeChapterId, activeSectionId,
+    activeBook, activeChapterId, activeSectionId, isBooksLoading,
     setActiveChapterId, setActiveSectionId,
     updateActiveSectionContent, updateActiveSectionTitle, saveActiveSection,
     addChapter, updateChapterTitle, deleteChapter, addSection, updateSectionTitle, deleteSection,
@@ -43,6 +43,13 @@ export default function Studio() {
     openReader, setView, showToast, showActionToast,
     openConfirm, openPrompt
   } = useStore();
+
+  // 최초 로드 시 activeBook이 없으면 loadBooks 실행
+  useEffect(() => {
+    if (!activeBook) {
+      loadBooks();
+    }
+  }, [activeBook, loadBooks]);
 
   // 챕터별 소목차 접기/펼치기 상태 (Set<chapterId>)
   const [collapsedChapterIds, setCollapsedChapterIds] = useState(new Set());
@@ -976,8 +983,15 @@ export default function Studio() {
   };
 
   if (!activeBook) {
+    if (isBooksLoading) {
+      return (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', height: '60vh' }}>
+          도서 원고를 불러오는 중입니다...
+        </div>
+      );
+    }
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', height: '60vh' }}>
         도서 프로젝트가 선택되지 않았습니다. <button className="btn btn-primary" onClick={() => setView('library')} style={{ marginLeft: '1rem' }}>내 서재로 이동</button>
       </div>
     );

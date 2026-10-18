@@ -18,10 +18,14 @@ import ExploreComplete from './pages/ExploreComplete';
 export default function App() {
   const currentView = useStore((state) => state.currentView);
   const initAuth = useStore((state) => state.initAuth);
+  const loadBooks = useStore((state) => state.loadBooks);
+  const loadVault = useStore((state) => state.loadVault);
 
   useEffect(() => {
     initAuth();
-  }, [initAuth]);
+    loadBooks();
+    loadVault();
+  }, [initAuth, loadBooks, loadVault]);
 
   const renderPage = () => {
     switch (currentView) {
