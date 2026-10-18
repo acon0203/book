@@ -24,12 +24,6 @@ export const useStore = create((set, get) => {
     initAuth: () => {
       authService.onAuthChange((user) => {
         set({ user, isAuthLoading: false });
-        if (user) {
-          // 인증 토큰 준비 완료 후 백그라운드 동기화
-          setTimeout(() => {
-            get().syncToCloud(false);
-          }, 800);
-        }
       });
     },
 
@@ -38,9 +32,6 @@ export const useStore = create((set, get) => {
         const user = await authService.signInWithGoogle();
         set({ user });
         get().showToast(`환영합니다, ${user.displayName} 작가님!`, 'success');
-        setTimeout(() => {
-          get().syncToCloud(false);
-        }, 800);
       } catch (err) {
         if (err.code !== 'auth/popup-closed-by-user') {
           get().showToast(`로그인 실패: ${err.message}`, 'error');
