@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import './AIAssistant.css';
 import { marked } from 'marked';
 import { bookService } from '../../services/bookService';
 import { getActiveModelQuota } from '../../utils/quotaManager';
 import {
-  Zap, Bot, Lightbulb, Copy, Check, RotateCcw, Clock, Send, Sparkles, X, ChevronRight
+  Zap, Bot, Lightbulb, Copy, Check, RotateCcw, Clock, Send, Sparkles, X, ChevronRight, Bookmark, Layers
 } from 'lucide-react';
 
 const V5_TONE_DATA = {
@@ -145,6 +145,27 @@ export default function AIAssistant({
     }
   }, [chiefMessages, activeAiTab]);
 
+  // 현재 작성 중인 소목차와 매칭되는 창작실 서사 뼈대 단계 및 꼭지 메모 계산
+  const plotContext = useMemo(() => {
+    if (!activeBook?.plotStages || activeBook.plotStages.length === 0) return null;
+    const chapIdx = (activeBook.chapters || []).findIndex(c => c.id === currentChapter?.id);
+    if (chapIdx < 0 || chapIdx >= activeBook.plotStages.length) return null;
+
+    const stage = activeBook.plotStages[chapIdx];
+    const secIdx = (currentChapter?.sections || []).findIndex(s => s.id === currentSection?.id);
+    const subplot = (stage?.subplots && secIdx >= 0 && secIdx < stage.subplots.length) ? stage.subplots[secIdx] : null;
+    const subplotTitle = typeof subplot === 'string' ? subplot : subplot?.title || '';
+    const subplotMemo = typeof subplot === 'object' ? subplot?.memo || '' : '';
+
+    return {
+      standardName: activeBook.plotStandardName || '표준 서사 뼈대',
+      stageTitle: stage.title || `단계 ${chapIdx + 1}`,
+      stageDesc: stage.desc || '',
+      subplotTitle,
+      subplotMemo
+    };
+  }, [activeBook, currentChapter, currentSection]);
+
   // AI 초고 집필 에이전트 실행
   const handleRunDraftAgent = async () => {
     if (!currentSection) {
@@ -174,7 +195,8 @@ export default function AIAssistant({
         existingContent: editor?.getText() || localContent,
         referenceNotes,
         targetAudience: activeBook?.targetAudience || '',
-        genre: activeBook?.genre || ''
+        genre: activeBook?.genre || '',
+        plotContext
       });
 
       setDraftOutput(result.content);
@@ -421,6 +443,34 @@ export default function AIAssistant({
                 <Lightbulb size={15} className="v5-picto" />
                 <span>창작실 연동 ({selectedVaultIds?.length || 0})</span>
               </button>
+
+              {/* 창작실 서사 뼈대 & 꼭지 메모 연동 카드 */}
+              {plotContext && (
+                <div className="v5-plot-guide-card">
+                  <div className="v5-plot-guide-header">
+                    <span className="v5-plot-guide-badge">
+                      <Layers size={11} />
+                      서사 뼈대 연동
+                    </span>
+                    <span className="v5-plot-guide-standard">{plotContext.standardName}</span>
+                  </div>
+                  <div className="v5-plot-guide-body">
+                    <div className="v5-plot-stage-name">{plotContext.stageTitle}</div>
+                    {plotContext.stageDesc && <div className="v5-plot-stage-desc">{plotContext.stageDesc}</div>}
+                    {plotContext.subplotTitle && (
+                      <div className="v5-plot-subplot-row">
+                        <Bookmark size={11} className="v5-sub-icon" />
+                        <span><strong>꼭지 목표:</strong> {plotContext.subplotTitle}</span>
+                      </div>
+                    )}
+                    {plotContext.subplotMemo && (
+                      <div className="v5-plot-memo-row">
+                        <span><strong>기획 메모:</strong> {plotContext.subplotMemo}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* 핵심 키워드 & 소재 (이모지 없음) */}
               <div className="v5-field-group">

@@ -743,14 +743,14 @@ export default function Studio() {
       const content = currentSection.content || '';
       setLocalContent(content);
       if (editorRef.current && editorRef.current.getHTML() !== content) {
-        editorRef.current.setContent(content);
+        editorRef.current.setContent(content, { emitUpdate: false });
       }
       setParagraphs(htmlToParagraphs(content));
     } else {
       setLocalTitle('');
       setLocalContent('');
       if (editorRef.current) {
-        editorRef.current.setContent('');
+        editorRef.current.setContent('', { emitUpdate: false });
       }
       setParagraphs([]);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, Edit2, X, Check, BookOpen, Palette } from 'lucide-react';
 import { useStore } from '../store';
 import { bookService } from '../services/bookService';
+import { OFFICIAL_GENRES } from '../data/genreConstants';
 import './BookInfoModal.css';
 
 // 6종 모던 프리셋 표지 그라디언트 테마
@@ -180,45 +181,17 @@ export default function BookInfoModal({
             {/* 3행: 장르 & 저자명/필명 (2열 그리드) */}
             <div className="book-info-grid">
               <div className="form-group">
-                <label>도서 장르 (출판 표준 8대 장르)</label>
+                <label>도서 장르 (공식 10대 장르)</label>
                 <select
                   className="form-control"
                   value={genre}
                   onChange={(e) => setGenre(e.target.value)}
                 >
-                  <optgroup label="경제 / 경영 / 자기계발">
-                    <option value="자기계발">자기계발</option>
-                    <option value="경제/경영">경제 / 경영</option>
-                    <option value="재테크/투자/부동산">재테크 / 투자 / 부동산</option>
-                  </optgroup>
-                  <optgroup label="문학 / 에세이">
-                    <option value="소설">소설</option>
-                    <option value="시/에세이">시 / 에세이</option>
-                    <option value="웹소설/장르문학">웹소설 / 장르문학</option>
-                  </optgroup>
-                  <optgroup label="인문 / 사회 / 과학">
-                    <option value="인문/철학">인문 / 철학</option>
-                    <option value="역사/문화">역사 / 문화</option>
-                    <option value="사회/정치">사회 / 정치</option>
-                    <option value="자연과학/공학">자연과학 / 공학</option>
-                  </optgroup>
-                  <optgroup label="IT / 테크">
-                    <option value="IT/프로그래밍/AI">IT / 프로그래밍 / AI</option>
-                    <option value="데이터/컴퓨터공학">데이터 / 컴퓨터공학</option>
-                  </optgroup>
-                  <optgroup label="라이프스타일 / 실용">
-                    <option value="건강/요리/다이어트">건강 / 요리 / 다이어트</option>
-                    <option value="취미/실용/스포츠">취미 / 실용 / 스포츠</option>
-                    <option value="여행/레저">여행 / 레저</option>
-                  </optgroup>
-                  <optgroup label="예술 / 대중문화">
-                    <option value="예술/디자인">예술 / 디자인</option>
-                    <option value="음악/영화/대중문화">음악 / 영화 / 대중문화</option>
-                  </optgroup>
-                  <optgroup label="교육 / 어학">
-                    <option value="외국어/어학">외국어 / 어학</option>
-                    <option value="청소년/아동">청소년 / 아동</option>
-                  </optgroup>
+                  {OFFICIAL_GENRES.map((g) => (
+                    <option key={g.id} value={g.label}>
+                      {g.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 

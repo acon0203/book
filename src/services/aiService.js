@@ -3,6 +3,7 @@ import aiModelsDb from '../data/ai-models-db.json';
 import bestsellerDb from '../data/bestseller-db.json';
 import { useStore } from '../store';
 import { recordModelUsage, markModelExhausted } from '../utils/quotaManager';
+import { getAdminAiConfig, getPersonaKeyByGenre } from '../config/personaDefaults';
 
 // Google AI Studio에서 지원하는 실제 활성 모델 목록 조회
 async function fetchGoogleActiveModels(apiKey) {
@@ -24,7 +25,7 @@ async function fetchGoogleActiveModels(apiKey) {
 }
 
 // 단일 Gemini / Gemma 모델 호출
-async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
+async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '', temperature = 0.7) {
   const cleanKey = (apiKey || '').trim().replace(/^["']|["']$/g, '');
   const isGemma = modelId.toLowerCase().startsWith('gemma');
 
@@ -46,7 +47,7 @@ async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
     : {
         contents: [{ role: 'user', parts: [{ text: userText }] }],
         generationConfig: {
-          temperature: 0.7,
+          temperature: parseFloat(temperature) || 0.7,
           maxOutputTokens: 8192
         },
         ...(systemPrompt ? { system_instruction: { parts: [{ text: systemPrompt }] } } : {})
@@ -155,7 +156,7 @@ async function callGeminiSingle(apiKey, modelId, prompt, systemPrompt = '') {
 }
 
 // 스마트 자동 전환(캐스케이드) 엔진
-async function callGeminiWithCascade(apiKey, prompt, systemPrompt = '') {
+async function callGeminiWithCascade(apiKey, prompt, systemPrompt = '', temperature = 0.7) {
   if (!apiKey) throw new Error('Google AI Studio API Key가 설정되지 않았습니다. 설정 화면에서 키를 입력해주세요.');
 
   const config = storageService.getConfig();
@@ -170,7 +171,7 @@ async function callGeminiWithCascade(apiKey, prompt, systemPrompt = '') {
     const targetModel = availableModels.find(m => m.id === selectedModelId) || { id: selectedModelId, name: selectedModelId };
     console.log(`[AI Engine] 🎯 단일 고정 모델 단독 호출: ${targetModel.name} (${targetModel.id})`);
     try {
-      return await callGeminiSingle(apiKey, targetModel.id, prompt, systemPrompt);
+      return await callGeminiSingle(apiKey, targetModel.id, prompt, systemPrompt, temperature);
     } catch (err) {
       console.error(`[AI Engine] ❌ 고정 모델 [${targetModel.name}] 호출 실패:`, err);
 
@@ -180,7 +181,7 @@ async function callGeminiWithCascade(apiKey, prompt, systemPrompt = '') {
         console.warn(`[AI Engine] 🛡️ Gemma 4 31B 서버 일시 오류 감지 ➔ 동일 패밀리 [Gemma 4 26B (gemma-4-26b-a4b-it)]로 자동 백업 시도...`);
         try {
           useStore.getState().showToast('⚡ Gemma 4 31B 구글 서버 오류 ➔ Gemma 4 26B로 자동 연결 중...', 'info', 2500);
-          return await callGeminiSingle(apiKey, 'gemma-4-26b-a4b-it', prompt, systemPrompt);
+          return await callGeminiSingle(apiKey, 'gemma-4-26b-a4b-it', prompt, systemPrompt, temperature);
         } catch (backupErr) {
           console.error('[AI Engine] Gemma 4 26B 백업 호출도 실패:', backupErr);
         }
@@ -202,7 +203,7 @@ async function callGeminiWithCascade(apiKey, prompt, systemPrompt = '') {
 
     try {
       console.log(`[AI Engine] 🚀 [스마트 전환] 시도 중: ${currentModel.name} (${currentModel.id})`);
-      const result = await callGeminiSingle(apiKey, currentModel.id, prompt, systemPrompt);
+      const result = await callGeminiSingle(apiKey, currentModel.id, prompt, systemPrompt, temperature);
       return result;
     } catch (err) {
       lastError = err;
@@ -284,6 +285,57 @@ export const aiService = {
     return callGeminiWithCascade(config.geminiApiKey, prompt, systemPrompt);
   },
 
+  // 관리자 플레이그라운드 전용 커스텀 파라미터 즉석 생성 엔진
+  generateWithCustomSettings: async ({ systemPrompt, userPrompt, temperature = 0.75, modelId = 'smart_cascade', customApiKey = '' }) => {
+    const config = storageService.getConfig();
+    const apiKey = customApiKey || config.geminiApiKey;
+    if (!apiKey) {
+      throw new Error('Google AI Studio API Key가 설정되어 있지 않습니다. 관리자 화면 또는 서재 관리에서 키를 등록해주세요.');
+    }
+
+    // 스마트 자동 전환이 선택된 경우
+    if (modelId === 'smart_cascade') {
+      return callGeminiWithCascade(apiKey, userPrompt, systemPrompt, temperature);
+    }
+
+    // 단일 모델 직접 호출
+    const cleanKey = apiKey.trim().replace(/^["']|["']$/g, '');
+    const isGemma = modelId.toLowerCase().startsWith('gemma');
+    const apiVersion = isGemma ? 'v1' : 'v1beta';
+    const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelId}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+
+    let userText = userPrompt;
+    if (isGemma && systemPrompt) {
+      userText = `[역할 및 집필 지침]:\n${systemPrompt}\n\n[요청 내용]:\n${userPrompt}`;
+    }
+
+    const body = isGemma
+      ? { contents: [{ parts: [{ text: userText }] }] }
+      : {
+          contents: [{ role: 'user', parts: [{ text: userText }] }],
+          generationConfig: {
+            temperature: parseFloat(temperature),
+            maxOutputTokens: 2048
+          },
+          ...(systemPrompt ? { system_instruction: { parts: [{ text: systemPrompt }] } } : {})
+        };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `API 호출 실패 (HTTP ${response.status})`);
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return text;
+  },
+
   // 0. 목차 번호 접두사 자동 정제 (1장, 제1장, 1.1 등 중복 방지)
   cleanOutlineTitle: (text) => {
     if (!text || typeof text !== 'string') return '';
@@ -336,7 +388,92 @@ export const aiService = {
     }));
   },
 
-  // 1-1. AI 총괄 편집장 (Book Editor-in-Chief) 전역 대화형 에이전트
+  // 1-1. 창작실 44종 뼈대 & 기획서 기반 AI 목차 자동 설계
+  generateOutlineFromPlot: async ({
+    bookTitle,
+    bookSubtitle = '',
+    genre = '',
+    proposal = {},
+    characters = [],
+    plotStages = []
+  }) => {
+    const adminConfig = getAdminAiConfig();
+    const cleanFn = aiService.cleanOutlineTitle;
+
+    // 플롯 단계 및 꼭지 텍스트 조립
+    const stagesText = (plotStages || []).map((st, i) => {
+      const subList = (st.subplots || []).map((sp, j) => {
+        const title = typeof sp === 'string' ? sp : sp.title;
+        const memo = typeof sp === 'object' && sp.memo ? ` (작가 아이디어 메모: ${sp.memo})` : '';
+        return `    - 꼭지 ${j + 1}: ${title}${memo}`;
+      }).join('\n');
+      return `[${i + 1}단계: ${st.title}]\n가이드: ${st.desc || '표준 서사 흐름'}\n${subList || '    (세부 꼭지 없음)'}`;
+    }).join('\n\n');
+
+    const charsText = (characters || []).map(c => `- ${c.name} (${c.role}): 목표 [${c.goal || '미정'}], 결핍 [${c.flaw || '미정'}]`).join('\n') || '(등록된 인물 없음)';
+
+    const systemPrompt = `당신은 출판사 단행본 수석 목차 디렉터입니다. 작가가 창작실에서 설계한 표준 서사 뼈대 단계와 세부 꼭지, 작가의 고유 메모를 분석하여, 독자의 구매욕과 몰입을 이끄는 세련된 완성형 출판 목차(대챕터-소목차)를 JSON 배열로만 응답하세요. 마크다운 기호 없이 순수 JSON만 반환해야 합니다.`;
+
+    const prompt = `[작품 기본 정보]
+- 도서 가제: ${bookTitle}
+${bookSubtitle ? `- 부제: ${bookSubtitle}\n` : ''}${genre ? `- 분야/장르: ${genre}\n` : ''}
+[출간 기획서 맥락]
+- 로그라인: ${proposal.logline || '미정'}
+- 기획의도: ${proposal.intention || '미정'}
+- 타깃독자: ${proposal.target || '미정'}
+
+[주요 인물·화자 프로필]
+${charsText}
+
+[창작실에서 작가가 설계한 서사 뼈대 단계 및 세부 꼭지]
+${stagesText}
+
+[목차 설계 원칙]:
+1. 각 챕터와 소목차 제목에 "제1장", "1장", "1.1" 같은 번호 접두사를 '절대로' 붙이지 마세요! 번호 없이 순수한 제목 텍스트만 작성합니다.
+2. 뼈대의 각 단계가 지닌 서사적 목표(갈등, 전환, 해결, 통찰 등)가 도서 제목 및 로그라인과 조화롭게 녹아들도록 매력적인 카피라이팅으로 소제목을 정제하세요.
+3. 작가의 아이디어 메모가 있는 경우, 해당 아이디어를 소목차의 핵심 소재로 적극 반영하세요.
+
+아래 형식의 JSON 배열로만 엄격히 응답하세요:
+[
+  {
+    "title": "챕터 핵심 제목 (번호 없는 순수 제목)",
+    "sections": [
+      { "title": "소목차 제목 (번호 없는 순수 제목)" }
+    ]
+  }
+]`;
+
+    try {
+      const raw = await aiService.generateWithCustomSettings({
+        systemPrompt,
+        userPrompt: prompt,
+        temperature: 0.65,
+        modelId: adminConfig.activeModel || 'smart_cascade',
+        customApiKey: adminConfig.adminApiKey || undefined
+      });
+
+      const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+
+      return parsed.map(c => ({
+        title: cleanFn(c.title),
+        sections: (c.sections || []).map(s => ({
+          title: cleanFn(s.title)
+        }))
+      }));
+    } catch (err) {
+      console.warn('[AI Engine] 플롯 기반 목차 자동 생성 실패 (Fallback 전환):', err);
+      // Fallback: 뼈대 데이터를 기반으로 즉시 조립
+      return (plotStages || []).map((st) => ({
+        title: cleanFn(st.title),
+        sections: (st.subplots || []).map((sp) => ({
+          title: cleanFn(typeof sp === 'string' ? sp : sp.title)
+        }))
+      }));
+    }
+  },
+
+  // 1-2. AI 총괄 편집장 (Book Editor-in-Chief) 전역 대화형 에이전트
   consultEditorChief: async ({ book, message, history = [], vaultNotes = [] }) => {
     const cleanFn = aiService.cleanOutlineTitle;
     const outlineSummary = (book.chapters || []).map((c, i) => {
@@ -366,9 +503,15 @@ export const aiService = {
 - 출판 노하우 팁: ${bestsellerInfo.promptTip || ''}\n`
       : '';
 
-    const systemPrompt = `당신은 출판계에서 20년 경력을 가진 밀리언셀러 총괄 책임 편집장(Editor-in-Chief)입니다.
-작가의 책을 처음부터 끝까지 총괄하며, 책의 기획 의도와 타깃 독자를 지키고, 목차 구조와 챕터의 유기적 흐름을 완벽하게 다듬어주는 든든한 파트너입니다.
-존중과 프로페셔널함을 담은 다정하고 명확한 어조로 작가와 대화하세요.
+    // 관리자 공통 편집장(editor) 페르소나 로드
+    const adminConfig = getAdminAiConfig();
+    const editorPersona = adminConfig.commonPersonas?.editor || {
+      temperature: 0.45,
+      systemPrompt: '당신은 출판계에서 20년 경력을 가진 밀리언셀러 총괄 책임 편집장(Editor-in-Chief)입니다. 작가의 고유 문체를 존중하면서 책의 기획 의도와 유기적 흐름을 완벽하게 다듬어주는 든든한 파트너입니다.'
+    };
+
+    const systemPrompt = `[출판 총괄 편집장 기본 지침]:
+${editorPersona.systemPrompt}
 
 [현재 작업 중인 도서 정보]
 - 도서명: ${book.title}
@@ -413,7 +556,13 @@ ${bestsellerGuide}
 
     const fullPrompt = `${historyContext}작가: ${message}\n\n편집장:`;
 
-    const raw = await aiService.generateText(fullPrompt, systemPrompt);
+    const raw = await aiService.generateWithCustomSettings({
+      systemPrompt,
+      userPrompt: fullPrompt,
+      temperature: editorPersona.temperature || 0.45,
+      modelId: adminConfig.activeModel || 'smart_cascade',
+      customApiKey: adminConfig.adminApiKey || undefined
+    });
 
     // restructure_json 특수 블록 추출
     let restructureData = null;
@@ -457,7 +606,8 @@ ${bestsellerGuide}
     existingContent = '',
     referenceNotes = '',
     targetAudience = '',
-    genre = ''
+    genre = '',
+    plotContext = null
   }) => {
     const TONE_GUIDES = {
       practical: '실무와 실생활에 즉시 활용 가능한 실전 가이드형 어조 (체크리스트, 액션 플랜, 핵심 요약 포함)',
@@ -472,16 +622,31 @@ ${bestsellerGuide}
       deep: '상세한 사례, 깊이 있는 설명, 풍부한 세부 팁을 포함하여 약 2,500~3,500자 분량으로 작성'
     };
 
-    const systemPrompt = `당신은 대한민국 최고의 베스트셀러 전자책 전문 집필 에이전트(Ghostwriter)입니다.
-독자가 끝까지 흥미를 잃지 않고 실질적인 지식과 영감을 얻을 수 있도록 매력적인 문장으로 원고를 완성합니다.
-마크다운 서식(소제목 ###, 글머리 기호 -, 번호 매기기 1., 인용문 >, 핵심 강조 **굵게**)을 시각적으로 가독성 높게 활용하세요.`;
+    // 1) 관리자 공통 집필 페르소나 및 장르별 파라미터 로드
+    const adminConfig = getAdminAiConfig();
+    const personaKey = getPersonaKeyByGenre(genre);
+    const persona = adminConfig.commonPersonas?.[personaKey] || adminConfig.commonPersonas?.novel || {
+      temperature: 0.75,
+      systemPrompt: '당신은 출판 단행본 수준의 서사를 직조하는 전문 집필가입니다.'
+    };
+
+    // 2) 시스템 프롬프트 합성: 1차(관리자 공통 뼈대 페르소나) + 2차(스튜디오 서식 지침)
+    const systemPrompt = `[출판사 공통 집필 지침]:
+${persona.systemPrompt}
+
+[추가 스타일 및 마크다운 규칙]:
+- 독자가 끝까지 흥미를 잃지 않고 실질적인 지식과 영감을 얻을 수 있도록 매력적인 문장으로 원고를 완성합니다.
+- 마크다운 서식(소제목 ###, 글머리 기호 -, 번호 매기기 1., 인용문 >, 핵심 강조 **굵게**)을 시각적으로 가독성 높게 활용하세요.`;
 
     const prompt = `[도서 기본 정보]
 - 도서명: ${bookTitle}
 ${bookSubtitle ? `- 부제: ${bookSubtitle}\n` : ''}${genre ? `- 분야/장르: ${genre}\n` : ''}${targetAudience ? `- 목표 독자층: ${targetAudience} (※ 중요: 이 독자층의 눈높이와 니즈에 맞추어 용어와 설명 난이도를 최적화하세요)\n` : ''}- 현재 챕터: ${chapterTitle}
 - 작성할 소목차: ${sectionTitle}
 
-[집필 핵심 지침]
+${plotContext ? `[창작실 서사 뼈대 단계 및 꼭지 가이드]
+- 적용 뼈대 표준: ${plotContext.standardName || '표준 서사'}
+- 현재 서사 단계: ${plotContext.stageTitle || ''}${plotContext.stageDesc ? ` (${plotContext.stageDesc})` : ''}
+${plotContext.subplotTitle ? `- 세부 꼭지 목표: ${plotContext.subplotTitle}\n` : ''}${plotContext.subplotMemo ? `- 작가 기획 아이디어 메모: ${plotContext.subplotMemo} (※ 이 아이디어를 본문에 적극 반영하세요)\n` : ''}\n` : ''}[집필 핵심 지침]
 ${keywords ? `- 핵심 키워드/소재: ${keywords}\n` : ''}${instruction ? `- 작가 특별 명령어/지시어: ${instruction}\n` : ''}- 집필 톤 & 스타일: ${TONE_GUIDES[tone] || TONE_GUIDES.practical}
 - 분량 목표: ${LENGTH_GUIDES[targetLength] || LENGTH_GUIDES.standard}
 
@@ -489,11 +654,18 @@ ${referenceNotes ? `[참고자료/작가 메모]\n${referenceNotes}\n` : ''}
 ${existingContent ? `[기존 작성된 본문 (이 내용과 중복되지 않고 자연스럽게 이어지도록 집필)]\n${existingContent}\n` : ''}
 위 지침을 충실히 반영하여 바로 출판 가능한 수준의 완성도 높은 소목차 본문 원고를 작성해 주세요.`;
 
-    const content = await aiService.generateText(prompt, systemPrompt);
+    const content = await aiService.generateWithCustomSettings({
+      systemPrompt,
+      userPrompt: prompt,
+      temperature: persona.temperature || 0.75,
+      modelId: adminConfig.activeModel || 'smart_cascade',
+      customApiKey: adminConfig.adminApiKey || undefined
+    });
+
     return { content };
   },
 
-  // 3. AI 문장 교정 / 첨삭
+  // 3. AI 문장 교정 / 첨삭 (공통 편집 페르소나 적용)
   polishContent: async ({ originalText, preset = 'expand', customInstruction = '' }) => {
     const PRESET_INSTRUCTIONS = {
       expand: '원문의 핵심 의미를 유지하면서, 독자의 이해를 돕기 위해 구체적인 사례와 상세한 묘사를 덧붙여 풍부하게 살을 붙여주세요.',
@@ -503,15 +675,34 @@ ${existingContent ? `[기존 작성된 본문 (이 내용과 중복되지 않고
       friendly: '독자와 친근하게 대화하는 듯한 부드럽고 다정한 구어체 어조로 변환하세요.'
     };
 
+    // 1) 관리자 공통 편집장(editor) 페르소나 로드
+    const adminConfig = getAdminAiConfig();
+    const editorPersona = adminConfig.commonPersonas?.editor || {
+      temperature: 0.35,
+      systemPrompt: '당신은 베테랑 단행본 수석 총괄 편집장입니다. 작가의 고유 문체를 존중하면서 비문과 군더더기를 척결하고 가독성을 극대화하십시오.'
+    };
+
     const instruction = customInstruction || PRESET_INSTRUCTIONS[preset] || PRESET_INSTRUCTIONS.clear;
-    const systemPrompt = `당신은 문장 교정 및 윤문 전문가입니다. 다른 설명 없이 오직 교정된 최종 결과 문장만 반환하세요.`;
-    const prompt = `[교정 지침]
+    const systemPrompt = `[출판 총괄 편집장 교정 원칙]:
+${editorPersona.systemPrompt}
+
+[세부 교정 스타일]:
 ${instruction}
 
-[원문]
+[출력 규칙]:
+- 다른 인사말이나 해설, 주석, 머리말 없이 오직 교정된 최종 완성 문장 본문 텍스트만 출력하세요.`;
+
+    const prompt = `[교정할 원문]:
 ${originalText}`;
 
-    const polishedText = await aiService.generateText(prompt, systemPrompt);
+    const polishedText = await aiService.generateWithCustomSettings({
+      systemPrompt,
+      userPrompt: prompt,
+      temperature: editorPersona.temperature || 0.35,
+      modelId: adminConfig.activeModel || 'smart_cascade',
+      customApiKey: adminConfig.adminApiKey || undefined
+    });
+
     return { polishedText: polishedText.trim() };
   }
 };

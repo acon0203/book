@@ -4,14 +4,14 @@ import { useStore } from '../store';
 import { 
   BookOpen, Edit3, Award, Settings, Sun, Moon, 
   Cloud, RefreshCw, LogIn, LogOut, CheckCircle, Check,
-  Flame, BookCheck, Palette, BookMarked
+  Flame, BookCheck, Palette, BookMarked, ShieldCheck
 } from 'lucide-react';
 
 export default function Sidebar() {
   const {
     currentView, setView, theme, toggleTheme,
     activeBook, books, openBook, showToast, showActionToast, setNewBookModalOpen,
-    user, loginWithGoogle, logout, syncStatus, syncToCloud
+    user, loginWithGoogle, logout, syncStatus, syncToCloud, isAdmin
   } = useStore();
 
   // 작가 표시명 (1순위: [서재 관리]의 기본 필명/작가명, 2순위: 구글 로그인명, 3순위: '연재 작가')
@@ -90,7 +90,8 @@ export default function Sidebar() {
       id: 'system-space',
       label: null,
       items: [
-        { id: 'settings', label: '서재 관리', icon: Settings }
+        { id: 'settings', label: '서재 관리', icon: Settings },
+        ...(isAdmin ? [{ id: 'admin', label: '플랫폼 관제실', icon: ShieldCheck, badge: 'Admin' }] : [])
       ]
     }
   ];

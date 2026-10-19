@@ -14,9 +14,11 @@ import Settings from './pages/Settings';
 import Reader from './pages/Reader';
 import ExploreSerial from './pages/ExploreSerial';
 import ExploreComplete from './pages/ExploreComplete';
+import Admin from './pages/Admin';
 
 export default function App() {
   const currentView = useStore((state) => state.currentView);
+  const isAdmin = useStore((state) => state.isAdmin);
   const initAuth = useStore((state) => state.initAuth);
   const loadBooks = useStore((state) => state.loadBooks);
   const loadVault = useStore((state) => state.loadVault);
@@ -29,6 +31,8 @@ export default function App() {
 
   const renderPage = () => {
     switch (currentView) {
+      case 'admin':
+        return isAdmin ? <Admin /> : <Library />;
       case 'reader':
         return <Reader />;
       case 'studio':

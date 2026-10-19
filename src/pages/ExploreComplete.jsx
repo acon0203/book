@@ -16,19 +16,13 @@ import {
   Award
 } from 'lucide-react';
 import { useStore } from '../store';
+import { OFFICIAL_GENRES } from '../data/genreConstants';
 import './ExploreComplete.css';
 
-// 표준 핵심 8대 장르 (자서전, 회고록, 평전 포함)
+// 공식 출판 10대 표준 장르
 const KYOBO_GENRES = [
   { id: 'all', label: '전체 장르' },
-  { id: 'novel', label: '소설', keywords: ['소설', '웹소설', '문학'] },
-  { id: 'essay', label: '시 / 에세이', keywords: ['시', '에세이', '산문', '자서전', '회고록', '일대기'] },
-  { id: 'economy', label: '경제 / 경영', keywords: ['경제', '경영', '재테크', '투자', '비즈니스'] },
-  { id: 'self', label: '자기계발', keywords: ['자기계발', '동기부여', '생산성'] },
-  { id: 'humanities', label: '인문 / 사회', keywords: ['인문', '철학', '역사', '문화', '사회', '정치', '평전', '자서전', '인물'] },
-  { id: 'tech', label: 'IT / 과학', keywords: ['IT', '컴퓨터', '프로그래밍', '과학', '공학', 'AI'] },
-  { id: 'life', label: '라이프 / 실용', keywords: ['건강', '요리', '취미', '실용', '스포츠', '여행'] },
-  { id: 'art', label: '예술 / 문화', keywords: ['예술', '디자인', '대중문화', '음악', '영화'] }
+  ...OFFICIAL_GENRES
 ];
 
 // 단행본 분량 및 큐레이션 필터 탭

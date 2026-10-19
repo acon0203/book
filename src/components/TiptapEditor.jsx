@@ -175,6 +175,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
       content: content || '',
       onUpdate: ({ editor }) => {
         const html = editor.getHTML();
+        if (html === lastHtmlRef.current) return;
         lastHtmlRef.current = html;
         setLiveCharCount(editor.getText().length);
         if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -202,7 +203,7 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     if (!editor) return;
     if (content !== lastHtmlRef.current && content !== editor.getHTML()) {
       lastHtmlRef.current = content || '';
-      editor.commands.setContent(content || '');
+      editor.commands.setContent(content || '', { emitUpdate: false });
       setLiveCharCount(editor.getText().length);
     }
   }, [content, editor]);
@@ -214,8 +215,11 @@ const TiptapEditor = forwardRef(function TiptapEditor(
     getText: () => editor?.getText() || '',
     isEmpty: () => editor?.isEmpty ?? true,
     isFocused: () => editor?.isFocused ?? false,
-    setContent: (newContent) => {
-      if (editor) editor.commands.setContent(newContent || '');
+    setContent: (newContent, options = { emitUpdate: false }) => {
+      if (editor) {
+        lastHtmlRef.current = newContent || '';
+        editor.commands.setContent(newContent || '', options);
+      }
     },
     insertContent: (insertHtml) => {
       if (editor) editor.chain().focus().insertContent(insertHtml).run();

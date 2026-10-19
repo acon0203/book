@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { bookService } from '../services/bookService';
 import { authService } from '../services/authService';
 import { cloudSyncService } from '../services/cloudSyncService';
+import { checkIsAdmin } from '../config/adminSecurity';
 
 export const useStore = create((set, get) => {
   const initialTheme = localStorage.getItem('book_theme') || 'light';
@@ -14,20 +15,32 @@ export const useStore = create((set, get) => {
   const initialFontScale = localStorage.getItem('book_font_scale') || 'normal';
   document.documentElement.setAttribute('data-font-scale', initialFontScale);
 
-  const validViews = ['library', 'studio', 'vault', 'stats', 'settings', 'reader'];
+  const initialIsAdmin = checkIsAdmin(null);
+  const validViews = ['library', 'studio', 'vault', 'stats', 'settings', 'reader', 'serial-explore', 'complete-explore', 'admin'];
   const savedView = localStorage.getItem('book_current_view');
-  const initialView = validViews.includes(savedView) ? savedView : 'library';
+  let initialView = validViews.includes(savedView) ? savedView : 'library';
+  if (initialView === 'admin' && !initialIsAdmin) {
+    initialView = 'library';
+  }
+
+  const lastSyncedTimeStr = cloudSyncService.getLastSyncedTime();
+  const lastSyncedTime = lastSyncedTimeStr ? new Date(lastSyncedTimeStr).getTime() : 0;
+  const localLatestMod = cloudSyncService.getLocalLatestModifiedTime();
+  const initialSyncStatus = (lastSyncedTime > 0 && localLatestMod <= lastSyncedTime + 2000) ? 'synced' : 'idle';
 
   return {
+    // --- 관리자 권한 상태 ---
+    isAdmin: initialIsAdmin,
     // --- 인증 & 클라우드 동기화 상태 ---
     user: null,
     isAuthLoading: true,
-    syncStatus: 'idle', // 'idle' | 'syncing' | 'synced' | 'error'
-    lastSyncedAt: cloudSyncService.getLastSyncedTime(),
+    syncStatus: initialSyncStatus, // 'idle' | 'syncing' | 'synced' | 'error'
+    lastSyncedAt: lastSyncedTimeStr,
 
     initAuth: () => {
       authService.onAuthChange((user) => {
-        set({ user, isAuthLoading: false });
+        const adminStatus = checkIsAdmin(user);
+        set({ user, isAuthLoading: false, isAdmin: adminStatus });
         if (user) {
           setTimeout(() => {
             get().checkCloudOnStartup();
@@ -39,7 +52,8 @@ export const useStore = create((set, get) => {
     loginWithGoogle: async () => {
       try {
         const user = await authService.signInWithGoogle();
-        set({ user });
+        const adminStatus = checkIsAdmin(user);
+        set({ user, isAdmin: adminStatus });
         get().showToast(`환영합니다, ${user.displayName} 작가님!`, 'success');
         setTimeout(() => {
           get().checkCloudOnStartup();
@@ -54,7 +68,11 @@ export const useStore = create((set, get) => {
     logout: async () => {
       try {
         await authService.logout();
-        set({ user: null });
+        const adminStatus = checkIsAdmin(null);
+        set({ user: null, isAdmin: adminStatus });
+        if (get().currentView === 'admin' && !adminStatus) {
+          get().setView('library');
+        }
         get().showToast('로그아웃되었습니다.', 'info');
       } catch (err) {
         get().showToast(`로그아웃 실패: ${err.message}`, 'error');
@@ -218,6 +236,12 @@ export const useStore = create((set, get) => {
     toast: null,
 
     setView: (view) => {
+      // 관리자 권한 없는 사용자가 'admin' 뷰 진입을 시도하면 즉시 'library'로 차단
+      if (view === 'admin' && !get().isAdmin) {
+        get().showToast('접근 권한이 없습니다.', 'error');
+        view = 'library';
+      }
+
       const current = get().currentView;
       localStorage.setItem('book_current_view', view);
       set({
@@ -820,6 +844,11 @@ export const useStore = create((set, get) => {
       const { activeBook, activeChapterId, activeSectionId } = get();
       if (!activeBook || !activeChapterId || !activeSectionId) return;
 
+      const currentChap = activeBook.chapters?.find(c => c.id === activeChapterId);
+      const currentSec = currentChap?.sections?.find(s => s.id === activeSectionId);
+      // 변경 사항이 없으면 불필요한 상태 갱신 및 syncStatus 리셋 방지 (Zero-Lag 원칙)
+      if (currentSec && currentSec.content === newContent) return;
+
       const updatedChapters = activeBook.chapters.map(chap => {
         if (chap.id !== activeChapterId) return chap;
         return {
@@ -846,6 +875,10 @@ export const useStore = create((set, get) => {
     updateActiveSectionTitle: (newTitle) => {
       const { activeBook, activeChapterId, activeSectionId } = get();
       if (!activeBook || !activeChapterId || !activeSectionId) return;
+
+      const currentChap = activeBook.chapters?.find(c => c.id === activeChapterId);
+      const currentSec = currentChap?.sections?.find(s => s.id === activeSectionId);
+      if (currentSec && currentSec.title === newTitle) return;
 
       const updatedChapters = activeBook.chapters.map(chap => {
         if (chap.id !== activeChapterId) return chap;

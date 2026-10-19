@@ -867,13 +867,30 @@
   word-break: keep-all;
 }
 
+.plot-switcher-wrapper {
+  margin-bottom: 0.65rem;
+}
+
 .plot-genre-switcher {
   display: flex;
-  gap: 0.35rem;
-  margin-bottom: 0.65rem;
+  align-items: center;
+  gap: 0.4rem;
   overflow-x: auto;
-  padding-bottom: 0.2rem;
+  padding-bottom: 0.25rem;
+  flex-wrap: wrap;
 }
+
+.plot-rec-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
+
 .plot-genre-btn {
   padding: 0.28rem 0.65rem;
   border-radius: 6px;
@@ -889,11 +906,72 @@
 .plot-genre-btn:hover {
   background: var(--bg-hover);
   color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 .plot-genre-btn.active {
   background: var(--color-primary);
   color: #ffffff;
   border-color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.plot-other-select-container {
+  margin-left: auto;
+  position: relative;
+}
+
+.plot-other-select {
+  padding: 0.28rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+  max-width: 200px;
+}
+.plot-other-select:hover, .plot-other-select:focus {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.plot-other-select.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  font-weight: 700;
+}
+
+.plot-standard-banner {
+  background: var(--color-primary-soft);
+  border: 1px solid var(--border-focus);
+  border-radius: 8px;
+  padding: 0.65rem 0.95rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.plot-banner-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.plot-banner-title {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.plot-banner-flow {
+  color: var(--text-sub);
+  font-size: 0.72rem;
+  font-family: var(--font-serif);
 }
 
 .plot-stages-tree {

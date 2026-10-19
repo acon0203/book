@@ -85,6 +85,9 @@ export const bookService = {
     return chapters;
   },
 
+  // 5-1. 창작실 44종 뼈대 기반 AI 목차 설계
+  generateOutlineFromPlot: async (data) => aiService.generateOutlineFromPlot(data),
+
   // 6. AI 총괄 편집장 상담 & 목차 재구성
   consultEditorChief: async (data) => aiService.consultEditorChief(data),
 

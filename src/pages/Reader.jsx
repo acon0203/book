@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { 
   ArrowLeft, 
@@ -10,18 +10,16 @@ import {
   Eye, 
   Share2, 
   Sliders, 
-  Maximize2, 
-  Minimize2, 
   BookOpen, 
   Scroll, 
   AlignLeft, 
   AlignJustify,
   Send,
-  Sparkles,
   Check,
   Edit2,
   Trash2,
-  X
+  Columns2,
+  Square
 } from 'lucide-react';
 import { useStore } from '../store';
 import './Reader.css';
@@ -32,7 +30,6 @@ export default function Reader() {
   const setReaderChapter = useStore((state) => state.setReaderChapter);
   const setView = useStore((state) => state.setView);
   const closeReader = useStore((state) => state.closeReader);
-  const previousView = useStore((state) => state.previousView);
   const toggleChapterLike = useStore((state) => state.toggleChapterLike);
   const addChapterComment = useStore((state) => state.addChapterComment);
   const editChapterComment = useStore((state) => state.editChapterComment);
@@ -41,17 +38,18 @@ export default function Reader() {
   const showToast = useStore((state) => state.showToast);
   const openConfirm = useStore((state) => state.openConfirm);
 
-  // 1. 독서 설정 상태 (기본 글꼴: 가독성 최상의 'dotum/고딕'으로 설정)
+  // 1. 독서 환경 설정 상태
   const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('reader_font') || 'dotum');
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('reader_font_size')) || 17);
   const [lineHeight, setLineHeight] = useState(() => Number(localStorage.getItem('reader_line_height')) || 180);
   const [readerTheme, setReaderTheme] = useState(() => localStorage.getItem('reader_theme') || 'white');
   const [textAlign, setTextAlign] = useState(() => localStorage.getItem('reader_align') || 'justify');
-  const [viewMode, setViewMode] = useState(() => localStorage.getItem('reader_view_mode') || 'scroll'); // 'scroll' | 'page'
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('reader_view_mode') || 'page'); // 'page' | 'scroll'
+  const [pageSpread, setPageSpread] = useState(() => localStorage.getItem('reader_page_spread') || 'single'); // 'single' (한쪽) | 'double' (두쪽)
   const [isWide, setIsWide] = useState(() => localStorage.getItem('reader_wide') === 'true');
   const [accentColor, setAccentColor] = useState(() => localStorage.getItem('reader_accent_color') || 'default');
 
-  // 2. UI 토글 상태
+  // 2. UI 토글 팝오버 상태
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [commentInput, setCommentInput] = useState('');
@@ -60,10 +58,12 @@ export default function Reader() {
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editingCommentText, setEditingCommentText] = useState('');
 
-  // 4. 페이지 보기 모드 상태 (1페이지 = 1소목차)
-  const [currentPage, setCurrentPage] = useState(0);
+  // 4. 진짜 책 판형 기준 페이지뷰 상태
+  const [currentPage, setCurrentPage] = useState(0); // 0-based column index
+  const [totalPages, setTotalPages] = useState(1);
+  const [stageWidth, setStageWidth] = useState(720);
 
-  // 5. 즉시 반응(Optimistic UI) 로컬 상태
+  // 5. 반응형 로컬 상태
   const [localIsLiked, setLocalIsLiked] = useState(false);
   const [localLikes, setLocalLikes] = useState(0);
   const [localComments, setLocalComments] = useState([]);
@@ -71,6 +71,8 @@ export default function Reader() {
   const containerRef = useRef(null);
   const tocRef = useRef(null);
   const settingsRef = useRef(null);
+  const stageRef = useRef(null);
+  const trackRef = useRef(null);
 
   // 활성 챕터 찾기 (없으면 첫 번째 챕터)
   const chapters = activeBook?.chapters || [];
@@ -78,7 +80,11 @@ export default function Reader() {
   const currentChapterIndex = chapters.findIndex(c => c.id === currentChapter?.id);
   const sections = currentChapter?.sections || [];
 
-  // 챕터 로드 시 실제 조회수 1회 증가 및 로컬 상태 동기화
+  // 다음/이전 챕터
+  const nextChapter = currentChapterIndex >= 0 && currentChapterIndex < chapters.length - 1 ? chapters[currentChapterIndex + 1] : null;
+  const prevChapter = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null;
+
+  // 챕터 로드 시 실제 조회수 증가 및 초기화
   useEffect(() => {
     if (currentChapter) {
       setLocalIsLiked(!!currentChapter.isUserLiked);
@@ -87,7 +93,6 @@ export default function Reader() {
       setCurrentPage(0);
       setEditingCommentId(null);
 
-      // 실제 조회수 증가 호출
       incrementChapterViews(currentChapter.id);
 
       if (containerRef.current) {
@@ -96,7 +101,7 @@ export default function Reader() {
     }
   }, [currentChapter?.id]);
 
-  // 설정값 변경 시 localStorage 동기화
+  // 설정값 localStorage 동기화
   useEffect(() => {
     localStorage.setItem('reader_font', fontFamily);
     localStorage.setItem('reader_font_size', fontSize);
@@ -104,9 +109,10 @@ export default function Reader() {
     localStorage.setItem('reader_theme', readerTheme);
     localStorage.setItem('reader_align', textAlign);
     localStorage.setItem('reader_view_mode', viewMode);
+    localStorage.setItem('reader_page_spread', pageSpread);
     localStorage.setItem('reader_wide', isWide);
     localStorage.setItem('reader_accent_color', accentColor);
-  }, [fontFamily, fontSize, lineHeight, readerTheme, textAlign, viewMode, isWide, accentColor]);
+  }, [fontFamily, fontSize, lineHeight, readerTheme, textAlign, viewMode, pageSpread, isWide, accentColor]);
 
   // 팝오버 외부 클릭 감지
   useEffect(() => {
@@ -122,7 +128,94 @@ export default function Reader() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 페이지 모드 키보드 방향키 이동 지원
+  // 📖 다단 계산에 필요한 간격 및 너비 산출
+  const colGap = pageSpread === 'double' ? 56 : 0;
+  const colWidth = pageSpread === 'double' 
+    ? Math.floor((stageWidth - colGap) / 2)
+    : stageWidth;
+  const stepDistance = pageSpread === 'double' ? (stageWidth + colGap) : (colWidth + 48);
+  const stepPageCount = pageSpread === 'double' ? 2 : 1;
+
+  // 📖 [핵심 엔진]: 실제 화면/판형 기준 정밀 페이지 계산
+  const calculatePages = useCallback(() => {
+    if (viewMode !== 'page' || !stageRef.current || !trackRef.current) return;
+    
+    requestAnimationFrame(() => {
+      const stage = stageRef.current;
+      const track = trackRef.current;
+      if (!stage || !track) return;
+      
+      const width = stage.clientWidth;
+      if (width <= 0) return;
+      setStageWidth(width);
+
+      const currentGap = pageSpread === 'double' ? 56 : 0;
+      const currentColW = pageSpread === 'double' 
+        ? Math.floor((width - currentGap) / 2) 
+        : width;
+
+      const scrollW = track.scrollWidth;
+      // 전체 단(컬럼) 수 계산
+      const calculatedCols = Math.max(1, Math.round((scrollW + (currentGap > 0 ? currentGap / 2 : 0)) / (currentColW + (currentGap > 0 ? currentGap : 0))));
+      setTotalPages(calculatedCols);
+
+      setCurrentPage((prev) => {
+        const maxPage = pageSpread === 'double' 
+          ? Math.max(0, (Math.ceil(calculatedCols / 2) - 1) * 2) 
+          : calculatedCols - 1;
+        return Math.min(prev, maxPage);
+      });
+    });
+  }, [viewMode, pageSpread]);
+
+  // 판형 크기, 글자 크기, 줄간격, 폰트, 챕터, 보기 모드 변경 시 재계산
+  useEffect(() => {
+    if (viewMode !== 'page') return;
+
+    const timer = setTimeout(() => {
+      calculatePages();
+    }, 60);
+
+    return () => clearTimeout(timer);
+  }, [viewMode, pageSpread, currentChapter?.id, sections, fontSize, lineHeight, fontFamily, isWide, calculatePages]);
+
+  // 뷰포트 크기 변화 감지 (ResizeObserver)
+  useEffect(() => {
+    if (viewMode !== 'page' || !stageRef.current) return;
+
+    const ro = new ResizeObserver(() => {
+      calculatePages();
+    });
+    ro.observe(stageRef.current);
+
+    return () => ro.disconnect();
+  }, [viewMode, calculatePages]);
+
+  // 페이지 이동 핸들러 (이전 쪽)
+  const handlePrevPage = useCallback(() => {
+    if (currentPage > 0) {
+      setCurrentPage((prev) => Math.max(0, prev - stepPageCount));
+    } else if (prevChapter) {
+      setReaderChapter(prevChapter.id);
+      showToast(`이전 챕터 '${prevChapter.title || '이전 장'}'으로 이동했습니다.`, 'info', 1800);
+    }
+  }, [currentPage, stepPageCount, prevChapter, setReaderChapter, showToast]);
+
+  // 페이지 이동 핸들러 (다음 쪽)
+  const handleNextPage = useCallback(() => {
+    const isAtEnd = pageSpread === 'double' 
+      ? currentPage + 2 >= totalPages 
+      : currentPage >= totalPages - 1;
+
+    if (!isAtEnd) {
+      setCurrentPage((prev) => prev + stepPageCount);
+    } else if (nextChapter) {
+      setReaderChapter(nextChapter.id);
+      showToast(`다음 챕터 '${nextChapter.title || '다음 장'}'으로 이동했습니다.`, 'info', 1800);
+    }
+  }, [currentPage, totalPages, stepPageCount, pageSpread, nextChapter, setReaderChapter, showToast]);
+
+  // 페이지 모드 키보드 방향키 및 스페이스바 이동
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (viewMode !== 'page') return;
@@ -130,15 +223,43 @@ export default function Reader() {
 
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
         e.preventDefault();
-        setCurrentPage(prev => Math.min(sections.length - 1, prev + 1));
+        handleNextPage();
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
         e.preventDefault();
-        setCurrentPage(prev => Math.max(0, prev - 1));
+        handlePrevPage();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [viewMode, sections.length]);
+  }, [viewMode, handleNextPage, handlePrevPage]);
+
+  // ESC 키 화면 닫기 및 뒤로가기
+  const handleBack = () => {
+    if (window.history.state?.view === 'reader') {
+      window.history.back();
+    } else {
+      closeReader();
+    }
+  };
+
+  useEffect(() => {
+    window.history.pushState({ view: 'reader' }, '');
+    const handlePopState = () => closeReader();
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (isTocOpen) setIsTocOpen(false);
+        else if (isSettingsOpen) setIsSettingsOpen(false);
+        else handleBack();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeReader, isTocOpen, isSettingsOpen]);
 
   if (!activeBook || !currentChapter) {
     return (
@@ -155,15 +276,10 @@ export default function Reader() {
     );
   }
 
-  // 다음/이전 챕터
-  const nextChapter = currentChapterIndex >= 0 && currentChapterIndex < chapters.length - 1 ? chapters[currentChapterIndex + 1] : null;
-  const prevChapter = currentChapterIndex > 0 ? chapters[currentChapterIndex - 1] : null;
-
-  // 실제 조회수 및 작가의 말
   const actualViews = (currentChapter.views || 0) + 1;
-  const authorNote = currentChapter.authorNote || `${activeBook.title}을(를) 읽어주셔서 진심으로 감사드립니다. 다음 편도 기대해 주세요!`;
+  const authorNote = currentChapter.authorNote || `${activeBook.title}을(를) 읽어주셔서 진심으로 감사드립니다.`;
 
-  // 관심(좋아요) 토글 (실제 0부터 시작하는 카운트 연동)
+  // 관심(좋아요) 토글
   const handleLikeToggle = () => {
     const nextLiked = !localIsLiked;
     const nextCount = nextLiked ? localLikes + 1 : Math.max(0, localLikes - 1);
@@ -180,7 +296,7 @@ export default function Reader() {
 
     const newComment = {
       id: 'cmt_' + Date.now(),
-      author: '익명 독자',
+      author: '독자',
       text: trimmed,
       createdAt: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
     };
@@ -190,17 +306,10 @@ export default function Reader() {
     setCommentInput('');
   };
 
-  // 댓글 수정 시작
-  const handleStartEditComment = (cmt) => {
-    setEditingCommentId(cmt.id);
-    setEditingCommentText(cmt.text);
-  };
-
-  // 댓글 수정 저장
+  // 댓글 수정
   const handleSaveEditComment = (commentId) => {
     const trimmed = editingCommentText.trim();
     if (!trimmed) return;
-
     setLocalComments(prev => prev.map(c => c.id === commentId ? { ...c, text: trimmed, editedAt: ' (수정됨)' } : c));
     editChapterComment(currentChapter.id, commentId, trimmed);
     setEditingCommentId(null);
@@ -215,7 +324,6 @@ export default function Reader() {
       confirmText: '삭제'
     });
     if (!ok) return;
-
     setLocalComments(prev => prev.filter(c => c.id !== commentId));
     deleteChapterComment(currentChapter.id, commentId);
   };
@@ -224,72 +332,63 @@ export default function Reader() {
   const handleShare = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
-      showToast('도서 링크가 클립보드에 복사되었습니다! 🔗', 'success');
+      showToast('도서 링크가 클립보드에 복사되었습니다.', 'success');
     } else {
       showToast('링크 공유 준비 완료', 'info');
     }
   };
 
-  // 소목차 이동 클릭 핸들러
-  const handleJumpToSection = (sIdx, secId) => {
+  // 소목차 이동
+  const handleJumpToSection = (secId) => {
     setIsTocOpen(false);
-    if (viewMode === 'page') {
-      setCurrentPage(sIdx);
-    } else {
+    if (viewMode === 'scroll') {
       const el = document.getElementById(`sec-${secId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      const targetEl = document.getElementById(`page-sec-${secId}`);
+      if (targetEl && stageRef.current) {
+        const offsetLeft = targetEl.offsetLeft;
+        const pageCol = Math.floor(offsetLeft / (colWidth + colGap));
+        const targetPage = pageSpread === 'double' ? Math.floor(pageCol / 2) * 2 : pageCol;
+        setCurrentPage(Math.min(totalPages - 1, Math.max(0, targetPage)));
       }
     }
   };
 
   // HTML 살균 헬퍼
   const sanitize = (html) => {
-    if (!html) return '<p style="color: var(--reader-text-muted); font-style: italic;">작성된 본문이 없습니다.</p>';
+    if (!html) return '<p class="reader-empty-p">작성된 본문이 없습니다.</p>';
     return DOMPurify.sanitize(html, {
       ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'h4', 'blockquote', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li', 'br', 'hr', 'code', 'pre', 'img', 'span', 'div'],
       ALLOWED_ATTR: ['src', 'alt', 'class', 'style', 'title', 'data-type']
     });
   };
 
-  // 이전 화면으로 복귀 (스튜디오에서 열었으면 스튜디오로, 서재에서 열었으면 서재로)
-  const handleBack = () => {
-    if (window.history.state?.view === 'reader') {
-      window.history.back();
-    } else {
-      closeReader();
+  // 페이지 표시 라벨 계산 (예: 한쪽: '3 / 24 쪽', 두쪽: '3-4 / 24 쪽')
+  const renderPageIndicator = () => {
+    if (pageSpread === 'single') {
+      return (
+        <>
+          <strong>{currentPage + 1}</strong> / {totalPages} 쪽
+          <span className="page-pct-sub">({Math.round(((currentPage + 1) / totalPages) * 100)}%)</span>
+        </>
+      );
     }
+    const endP = Math.min(totalPages, currentPage + 2);
+    const startP = currentPage + 1;
+    const label = startP === endP ? `${startP}` : `${startP}–${endP}`;
+    return (
+      <>
+        <strong>{label}</strong> / {totalPages} 쪽
+        <span className="page-pct-sub">({Math.round((endP / totalPages) * 100)}%)</span>
+      </>
+    );
   };
 
-  // 브라우저 뒤로가기(popstate) 및 ESC 키 네비게이션
-  useEffect(() => {
-    window.history.pushState({ view: 'reader' }, '');
-
-    const handlePopState = () => {
-      closeReader();
-    };
-
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        if (isTocOpen) {
-          setIsTocOpen(false);
-        } else if (isSettingsOpen) {
-          setIsSettingsOpen(false);
-        } else {
-          handleBack();
-        }
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    window.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [closeReader, isTocOpen, isSettingsOpen]);
+  // 슬라이드 이동 픽셀 계산
+  const slideOffset = pageSpread === 'double'
+    ? Math.floor(currentPage / 2) * stepDistance
+    : currentPage * (colWidth + colGap);
 
   return (
     <div 
@@ -297,12 +396,12 @@ export default function Reader() {
       ref={containerRef}
       style={{
         '--reader-font-size': `${fontSize}px`,
-        '--reader-line-height': `${lineHeight}%`,
+        '--reader-line-height': (lineHeight / 100).toFixed(2), // 순수 배수 단위 (1.6, 1.8, 2.1)로 겹침 버그 완벽 차단!
         '--reader-text-align': textAlign,
         ...(accentColor !== 'default' ? { '--reader-accent-custom': accentColor } : {})
       }}
     >
-      {/* 1. 표준 슬림 상단 바 */}
+      {/* 1. 표준 미니멀 상단 네비게이션 헤더 (52px 고정) */}
       <header className="reader-header">
         <div className="reader-header-left">
           <button 
@@ -310,14 +409,14 @@ export default function Reader() {
             onClick={handleBack}
             title="이전 화면으로 돌아가기 (ESC)"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={17} />
           </button>
           <span className="reader-book-title" title={activeBook.title}>
             {activeBook.title}
           </span>
         </div>
 
-        {/* 중앙: 챕터 & 소목차 드롭다운 점프 네비게이션 */}
+        {/* 중앙: 챕터 & 목차 드롭다운 점프 */}
         <div className="reader-header-center">
           <div className="reader-toc-trigger-wrap" ref={tocRef}>
             <button 
@@ -330,10 +429,9 @@ export default function Reader() {
               <span className="chapter-label">
                 {currentChapter.title || `제 ${currentChapterIndex + 1} 장`}
               </span>
-              <ChevronDown size={15} className={`chevron-icon ${isTocOpen ? 'rotate' : ''}`} />
+              <ChevronDown size={14} className={`chevron-icon ${isTocOpen ? 'rotate' : ''}`} />
             </button>
 
-            {/* 목차 & 소목차 통합 드롭다운 팝오버 */}
             {isTocOpen && (
               <div className="reader-toc-popover">
                 <div className="toc-popover-header">
@@ -350,22 +448,21 @@ export default function Reader() {
                           setIsTocOpen(false);
                         }}
                       >
-                        <span className="toc-item-num">{cIdx + 1}장.</span>
-                        <span className="toc-item-title">{ch.title || `제 ${cIdx + 1} 장`}</span>
-                        {ch.id === currentChapter.id && <span className="toc-item-badge">현재 장</span>}
+                        <span className="ch-num">제 {cIdx + 1} 장</span>
+                        <span className="ch-title">{ch.title}</span>
                       </button>
 
-                      {/* 현재 선택된 챕터의 소목차들 */}
-                      {ch.id === currentChapter.id && ch.sections && ch.sections.length > 0 && (
-                        <div className="toc-subsections-list">
+                      {ch.id === currentChapter.id && Array.isArray(ch.sections) && ch.sections.length > 0 && (
+                        <div className="toc-sections-sublist">
                           {ch.sections.map((sec, sIdx) => (
                             <button
-                              key={sec.id}
-                              className={`toc-subitem-btn ${viewMode === 'page' && currentPage === sIdx ? 'active-section' : ''}`}
-                              onClick={() => handleJumpToSection(sIdx, sec.id)}
+                              key={sec.id || sIdx}
+                              className="toc-item-btn section-btn"
+                              onClick={() => handleJumpToSection(sec.id)}
                             >
-                              <span className="toc-sub-num">{cIdx + 1}.{sIdx + 1}</span>
-                              <span className="toc-sub-title">{sec.title || `소목차 ${sIdx + 1}`}</span>
+                              <span className="sec-dot" />
+                              <span className="sec-num">{cIdx + 1}.{sIdx + 1}</span>
+                              <span className="sec-title">{sec.title}</span>
                             </button>
                           ))}
                         </div>
@@ -378,28 +475,51 @@ export default function Reader() {
           </div>
         </div>
 
-        {/* 우측 도구 바 */}
+        {/* 우측: 읽기 모드 전환 & 두쪽/한쪽 보기 & 보기 설정 */}
         <div className="reader-header-right">
-          {/* 스크롤 ↔ 페이지 보기 토글 */}
-          <button 
-            className={`reader-tool-pill ${viewMode === 'page' ? 'active' : ''}`}
-            onClick={() => setViewMode(prev => prev === 'scroll' ? 'page' : 'scroll')}
-            title={viewMode === 'scroll' ? '한 쪽씩 넘겨보는 페이지 모드로 전환' : '아래로 내려보는 연속 스크롤 모드로 전환'}
-          >
-            {viewMode === 'scroll' ? <Scroll size={15} /> : <BookOpen size={15} />}
-            <span className="tool-pill-txt">{viewMode === 'scroll' ? '스크롤' : '페이지'}</span>
-          </button>
+          {/* 스크롤 모드 ↔ 쪽 모드 전환 */}
+          <div className="reader-view-mode-toggle" title="읽기 방식 전환">
+            <button 
+              className={`mode-toggle-chip ${viewMode === 'scroll' ? 'active' : ''}`}
+              onClick={() => setViewMode('scroll')}
+              title="연속 스크롤 방식"
+            >
+              <Scroll size={13} />
+              <span>스크롤</span>
+            </button>
+            <button 
+              className={`mode-toggle-chip ${viewMode === 'page' ? 'active' : ''}`}
+              onClick={() => setViewMode('page')}
+              title="실제 책장 넘김 방식"
+            >
+              <BookOpen size={13} />
+              <span>책장 넘김</span>
+            </button>
+          </div>
 
-          {/* 기본폭 ↔ 펼침폭 토글 */}
-          <button 
-            className={`reader-tool-btn ${isWide ? 'active' : ''}`}
-            onClick={() => setIsWide(prev => !prev)}
-            title={isWide ? '기본 본문폭(760px)' : '시원한 펼침화면(1080px)'}
-          >
-            {isWide ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-          </button>
+          {/* 📖 책장 넘김 모드일 때: [한쪽 보기] ↔ [두쪽 보기] 즉시 토글 */}
+          {viewMode === 'page' && (
+            <div className="reader-spread-toggle" title="책장 보기 방식 (한쪽 / 두쪽)">
+              <button 
+                className={`spread-toggle-btn ${pageSpread === 'single' ? 'active' : ''}`}
+                onClick={() => setPageSpread('single')}
+                title="한쪽 보기 (1페이지)"
+              >
+                <Square size={12} />
+                <span>한쪽</span>
+              </button>
+              <button 
+                className={`spread-toggle-btn ${pageSpread === 'double' ? 'active' : ''}`}
+                onClick={() => setPageSpread('double')}
+                title="두쪽 보기 (양면 펼침)"
+              >
+                <Columns2 size={13} />
+                <span>두쪽</span>
+              </button>
+            </div>
+          )}
 
-          {/* 표준 미니멀 [보기설정 ▾] 버튼 & 팝오버 */}
+          {/* 보기 설정 팝오버 버튼 */}
           <div className="reader-settings-wrap" ref={settingsRef}>
             <button 
               className={`reader-settings-btn ${isSettingsOpen ? 'active' : ''}`}
@@ -407,81 +527,88 @@ export default function Reader() {
                 setIsSettingsOpen(prev => !prev);
                 setIsTocOpen(false);
               }}
+              title="글꼴, 크기 및 테마 설정"
             >
+              <Sliders size={14} />
               <span>보기설정</span>
-              <ChevronDown size={14} className={`chevron-icon ${isSettingsOpen ? 'rotate' : ''}`} />
+              <ChevronDown size={13} className={`chevron-icon ${isSettingsOpen ? 'rotate' : ''}`} />
             </button>
 
-            {/* 표준 미니멀 설정 팝오버 */}
             {isSettingsOpen && (
               <div className="reader-settings-popover">
                 {/* 1. 폰트 선택 탭 */}
                 <div className="settings-row font-tabs-row">
-                  <button 
-                    className={`font-tab-btn ${fontFamily === 'dotum' ? 'active' : ''}`}
-                    onClick={() => setFontFamily('dotum')}
-                  >
-                    돋움(고딕)
-                  </button>
-                  <button 
-                    className={`font-tab-btn ${fontFamily === 'batang' ? 'active' : ''}`}
-                    onClick={() => setFontFamily('batang')}
-                  >
-                    바탕(명조)
-                  </button>
-                  <button 
-                    className={`font-tab-btn ${fontFamily === 'malgun' ? 'active' : ''}`}
-                    onClick={() => setFontFamily('malgun')}
-                  >
-                    맑은고딕
-                  </button>
+                  <span className="setting-sublabel">글꼴</span>
+                  <div className="font-btn-group">
+                    <button 
+                      className={`font-tab-btn ${fontFamily === 'dotum' ? 'active' : ''}`}
+                      onClick={() => setFontFamily('dotum')}
+                    >
+                      고딕
+                    </button>
+                    <button 
+                      className={`font-tab-btn ${fontFamily === 'batang' ? 'active' : ''}`}
+                      onClick={() => setFontFamily('batang')}
+                    >
+                      명조(바탕)
+                    </button>
+                    <button 
+                      className={`font-tab-btn ${fontFamily === 'malgun' ? 'active' : ''}`}
+                      onClick={() => setFontFamily('malgun')}
+                    >
+                      맑은고딕
+                    </button>
+                  </div>
                 </div>
 
-                {/* 2. 글자 크기 (- 가 +) */}
+                {/* 2. 글자 크기 */}
                 <div className="settings-row font-size-row">
-                  <button 
-                    className="size-stepper-btn" 
-                    onClick={() => setFontSize(prev => Math.max(13, prev - 1))}
-                    title="글자 작게"
-                  >
-                    —
-                  </button>
-                  <span className="size-preview-char" style={{ fontSize: `${Math.min(22, Math.max(14, fontSize))}px` }}>
-                    가
-                  </span>
-                  <button 
-                    className="size-stepper-btn" 
-                    onClick={() => setFontSize(prev => Math.min(26, prev + 1))}
-                    title="글자 크게"
-                  >
-                    +
-                  </button>
-                  <span className="size-number-label">{fontSize}px</span>
+                  <span className="setting-sublabel">크기</span>
+                  <div className="size-stepper-wrap">
+                    <button 
+                      className="size-stepper-btn" 
+                      onClick={() => setFontSize(prev => Math.max(13, prev - 1))}
+                      title="글자 작게"
+                    >
+                      —
+                    </button>
+                    <span className="size-number-label">{fontSize}px</span>
+                    <button 
+                      className="size-stepper-btn" 
+                      onClick={() => setFontSize(prev => Math.min(26, prev + 1))}
+                      title="글자 크게"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
 
-                {/* 3. 테마 컬러 3종 (화이트 / 세피아 / 다크) */}
+                {/* 3. 테마 컬러 3종 */}
                 <div className="settings-row theme-palette-row">
-                  <button 
-                    className={`theme-circle-btn theme-btn-white ${readerTheme === 'white' ? 'active' : ''}`}
-                    onClick={() => setReaderTheme('white')}
-                    title="페이퍼 화이트"
-                  >
-                    {readerTheme === 'white' && <Check size={14} />}
-                  </button>
-                  <button 
-                    className={`theme-circle-btn theme-btn-sepia ${readerTheme === 'sepia' ? 'active' : ''}`}
-                    onClick={() => setReaderTheme('sepia')}
-                    title="아이보리 세피아"
-                  >
-                    {readerTheme === 'sepia' && <Check size={14} />}
-                  </button>
-                  <button 
-                    className={`theme-circle-btn theme-btn-dark ${readerTheme === 'dark' ? 'active' : ''}`}
-                    onClick={() => setReaderTheme('dark')}
-                    title="올레드 다크"
-                  >
-                    {readerTheme === 'dark' && <Check size={14} />}
-                  </button>
+                  <span className="setting-sublabel">테마</span>
+                  <div className="theme-circles-wrap">
+                    <button 
+                      className={`theme-circle-btn theme-btn-white ${readerTheme === 'white' ? 'active' : ''}`}
+                      onClick={() => setReaderTheme('white')}
+                      title="종이책 화이트"
+                    >
+                      {readerTheme === 'white' && <Check size={13} />}
+                    </button>
+                    <button 
+                      className={`theme-circle-btn theme-btn-sepia ${readerTheme === 'sepia' ? 'active' : ''}`}
+                      onClick={() => setReaderTheme('sepia')}
+                      title="클래식 세피아"
+                    >
+                      {readerTheme === 'sepia' && <Check size={13} />}
+                    </button>
+                    <button 
+                      className={`theme-circle-btn theme-btn-dark ${readerTheme === 'dark' ? 'active' : ''}`}
+                      onClick={() => setReaderTheme('dark')}
+                      title="심야 다크"
+                    >
+                      {readerTheme === 'dark' && <Check size={13} />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* 4. 줄간격 및 정렬 */}
@@ -513,58 +640,15 @@ export default function Reader() {
                       onClick={() => setTextAlign('justify')}
                       title="양쪽 정렬"
                     >
-                      <AlignJustify size={15} />
+                      <AlignJustify size={14} />
                     </button>
                     <button 
                       className={`align-btn ${textAlign === 'left' ? 'active' : ''}`}
                       onClick={() => setTextAlign('left')}
                       title="왼쪽 정렬"
                     >
-                      <AlignLeft size={15} />
+                      <AlignLeft size={14} />
                     </button>
-                  </div>
-                </div>
-
-                {/* 5. 강조 포인트 색상 선택기 (기본, 브라운, 그린, 버건디, 블루) */}
-                <div className="settings-row accent-palette-row">
-                  <span className="setting-sublabel">강조 색상</span>
-                  <div className="accent-colors-wrap">
-                    <button
-                      type="button"
-                      className={`accent-chip ${accentColor === 'default' ? 'active' : ''}`}
-                      onClick={() => setAccentColor('default')}
-                      title="기본 테마색 (본문 일치)"
-                    >
-                      기본
-                    </button>
-                    <button
-                      type="button"
-                      className={`accent-dot-btn ${accentColor === '#8b5a2b' ? 'active' : ''}`}
-                      style={{ backgroundColor: '#8b5a2b', color: '#8b5a2b' }}
-                      onClick={() => setAccentColor('#8b5a2b')}
-                      title="클래식 브라운"
-                    />
-                    <button
-                      type="button"
-                      className={`accent-dot-btn ${accentColor === '#2a6f55' ? 'active' : ''}`}
-                      style={{ backgroundColor: '#2a6f55', color: '#2a6f55' }}
-                      onClick={() => setAccentColor('#2a6f55')}
-                      title="딥 포레스트"
-                    />
-                    <button
-                      type="button"
-                      className={`accent-dot-btn ${accentColor === '#8b263e' ? 'active' : ''}`}
-                      style={{ backgroundColor: '#8b263e', color: '#8b263e' }}
-                      onClick={() => setAccentColor('#8b263e')}
-                      title="와인 버건디"
-                    />
-                    <button
-                      type="button"
-                      className={`accent-dot-btn ${accentColor === '#2563eb' ? 'active' : ''}`}
-                      style={{ backgroundColor: '#2563eb', color: '#2563eb' }}
-                      onClick={() => setAccentColor('#2563eb')}
-                      title="로열 블루"
-                    />
                   </div>
                 </div>
               </div>
@@ -574,250 +658,276 @@ export default function Reader() {
       </header>
 
       {/* 2. 본문 뷰포트 영역 */}
-      <main className="reader-viewport">
-        {/* 챕터 메타 지표 헤더 */}
-        <section className="reader-chapter-hero">
-          <h1 className="chapter-hero-title">
-            {currentChapter.title || `제 ${currentChapterIndex + 1} 장`}
-          </h1>
-          <div className="chapter-meta-band">
-            <span className="meta-item meta-date">
-              {currentChapter.publishedAt ? new Date(currentChapter.publishedAt).toLocaleDateString('ko-KR') : '2026. 10. 10.'}
-            </span>
-            <span className="meta-divider">·</span>
-            <span className="meta-item">
-              <Eye size={13} className="meta-icon" />
-              <span>{actualViews.toLocaleString()}</span>
-            </span>
-            <span className="meta-divider">·</span>
-            <span className="meta-item">
-              <Heart size={13} className={`meta-icon ${localIsLiked ? 'text-red' : ''}`} fill={localIsLiked ? 'currentColor' : 'none'} />
-              <span>{localLikes.toLocaleString()}</span>
-            </span>
-            <span className="meta-divider">·</span>
-            <span className="meta-item">
-              <MessageSquare size={13} className="meta-icon" />
-              <span>{localComments.length}</span>
-            </span>
-          </div>
-        </section>
-
-        {/* 본문 렌더링: 스크롤 모드 vs 페이지 모드 분기 */}
+      <main className={`reader-viewport ${viewMode === 'page' ? 'page-mode-active' : 'scroll-mode-active'}`}>
         {viewMode === 'scroll' ? (
-          /* [스크롤 모드]: 모든 소목차가 차례대로 연속 렌더링 */
-          <div className="reader-sections-scroll-flow">
-            {sections.length === 0 ? (
-              <article className="reader-body-content">
-                <p style={{ color: 'var(--reader-text-muted)', fontStyle: 'italic' }}>아직 작성된 본문이 없습니다.</p>
-              </article>
-            ) : (
-              sections.map((sec, sIdx) => (
-                <section key={sec.id || sIdx} id={`sec-${sec.id}`} className="reader-section-block">
-                  <h2 className="section-block-title">
-                    <span className="section-num">{currentChapterIndex + 1}.{sIdx + 1}</span> {sec.title}
-                  </h2>
-                  <article 
-                    className="reader-body-content"
-                    dangerouslySetInnerHTML={{ __html: sanitize(sec.content) }}
-                  />
-                </section>
-              ))
-            )}
-          </div>
-        ) : (
-          /* [페이지 모드]: 한 쪽씩(소목차 1꼭지씩) 분할 렌더링 & 이전/다음 네비게이터 */
-          <div className="reader-page-viewport-wrapper">
-            {sections.length === 0 ? (
-              <article className="reader-body-content">
-                <p style={{ color: 'var(--reader-text-muted)', fontStyle: 'italic' }}>작성된 본문이 없습니다.</p>
-              </article>
-            ) : (
-              <div className="reader-single-page-card">
-                <div className="page-header-info">
-                  <span className="page-chapter-label">{currentChapter.title}</span>
-                  <span className="page-counter-badge">{currentPage + 1} / {sections.length} 쪽</span>
-                </div>
-
-                <h2 className="section-block-title">
-                  <span className="section-num">{currentChapterIndex + 1}.{currentPage + 1}</span> {sections[currentPage]?.title}
-                </h2>
-
-                <article 
-                  className="reader-body-content"
-                  dangerouslySetInnerHTML={{ __html: sanitize(sections[currentPage]?.content) }}
-                />
-
-                {/* 페이지 넘김 하단 컨트롤 바 */}
-                <div className="page-navigation-bar">
-                  <button 
-                    className="page-nav-btn prev"
-                    disabled={currentPage === 0}
-                    onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                  >
-                    <ChevronLeft size={16} />
-                    <span>이전 쪽</span>
-                  </button>
-                  <span className="page-indicator-text">{currentPage + 1} / {sections.length} 쪽</span>
-                  <button 
-                    className="page-nav-btn next"
-                    disabled={currentPage >= sections.length - 1}
-                    onClick={() => setCurrentPage(prev => Math.min(sections.length - 1, prev + 1))}
-                  >
-                    <span>다음 쪽</span>
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
+          /* [스크롤 모드]: 전통적인 웹툰/웹소설식 연속 스크롤 렌더링 */
+          <div className="reader-scroll-container">
+            <section className="reader-chapter-hero">
+              <h1 className="chapter-hero-title">
+                {currentChapter.title || `제 ${currentChapterIndex + 1} 장`}
+              </h1>
+              <div className="chapter-meta-band">
+                <span className="meta-item meta-date">
+                  {currentChapter.publishedAt ? new Date(currentChapter.publishedAt).toLocaleDateString('ko-KR') : '2026. 10. 10.'}
+                </span>
+                <span className="meta-divider">·</span>
+                <span className="meta-item">
+                  <Eye size={13} className="meta-icon" />
+                  <span>{actualViews.toLocaleString()}</span>
+                </span>
+                <span className="meta-divider">·</span>
+                <span className="meta-item">
+                  <Heart size={13} className={`meta-icon ${localIsLiked ? 'text-red' : ''}`} fill={localIsLiked ? 'currentColor' : 'none'} />
+                  <span>{localLikes.toLocaleString()}</span>
+                </span>
+                <span className="meta-divider">·</span>
+                <span className="meta-item">
+                  <MessageSquare size={13} className="meta-icon" />
+                  <span>{localComments.length}</span>
+                </span>
               </div>
-            )}
-          </div>
-        )}
+            </section>
 
-        {/* 3. 본문 하단 소통 및 네비게이션 섹션 */}
-        <footer className="reader-bottom-section">
-          {/* 작가의 말 카드 */}
-          <div className="reader-author-note-card">
-            <div className="author-note-header">
-              <div className="author-note-title">
-                <Sparkles size={16} className="sparkle-icon" />
-                <span>작가의 말</span>
-              </div>
-              <span className="author-name">{activeBook.author || '연재 작가'}</span>
-            </div>
-            <p className="author-note-body">
-              {authorNote}
-            </p>
-          </div>
-
-          {/* 관심(좋아요) & 공유 액션 바 */}
-          <div className="reader-action-bar">
-            <button 
-              className={`action-btn-like ${localIsLiked ? 'liked' : ''}`}
-              onClick={handleLikeToggle}
-            >
-              <Heart size={18} fill={localIsLiked ? 'currentColor' : 'none'} />
-              <span>관심 {localLikes}</span>
-            </button>
-            <button className="action-btn-share" onClick={handleShare}>
-              <Share2 size={17} />
-              <span>공유</span>
-            </button>
-          </div>
-
-          {/* 다음 장 이어보기 퀵 카드 */}
-          {nextChapter && (
-            <div className="reader-next-chapter-card" onClick={() => setReaderChapter(nextChapter.id)}>
-              <div className="next-card-info">
-                <span className="next-card-subtitle">다음 장 이어보기</span>
-                <span className="next-card-title">{nextChapter.title || `제 ${currentChapterIndex + 2} 장`}</span>
-              </div>
-              <div className="next-card-arrow">
-                <span>읽기</span>
-                <ChevronRight size={18} />
-              </div>
-            </div>
-          )}
-
-          {/* 독자 댓글 섹션 */}
-          <section className="reader-comment-section">
-            <div className="comment-header">
-              <h3>
-                <MessageSquare size={17} />
-                <span>독자 댓글</span>
-                <span className="comment-count">({localComments.length})</span>
-              </h3>
-            </div>
-
-            {/* 댓글 입력 폼 */}
-            <form className="comment-input-form" onSubmit={handleCommentSubmit}>
-              <input 
-                type="text" 
-                placeholder="작품과 작가님을 향한 따뜻한 한 줄 응원을 남겨보세요."
-                value={commentInput}
-                onChange={(e) => setCommentInput(e.target.value)}
-                className="comment-input"
-              />
-              <button type="submit" className="comment-submit-btn" disabled={!commentInput.trim()}>
-                <Send size={15} />
-                <span>등록</span>
-              </button>
-            </form>
-
-            {/* 댓글 목록 (수정 / 삭제 기능 탑재) */}
-            <div className="comment-list">
-              {localComments.length === 0 ? (
-                <div className="comment-empty">
-                  첫 번째 응원 댓글의 주인공이 되어보세요! ✨
-                </div>
+            <div className="reader-sections-scroll-flow">
+              {sections.length === 0 ? (
+                <article className="reader-body-content">
+                  <p className="reader-empty-p">작성된 본문이 없습니다.</p>
+                </article>
               ) : (
-                localComments.map((cmt) => (
-                  <div key={cmt.id} className="comment-item">
-                    <div className="comment-item-meta">
-                      <div className="comment-author-group">
-                        <span className="comment-author">{cmt.author}</span>
-                        <span className="comment-date">
-                          {cmt.createdAt}
-                          {cmt.editedAt && <span className="comment-edited-tag">{cmt.editedAt}</span>}
-                        </span>
-                      </div>
-                      {/* 우측 연필(수정) 및 휴지통(삭제) 아이콘 액션 */}
-                      <div className="comment-item-actions">
-                        {editingCommentId !== cmt.id ? (
-                          <>
-                            <button 
-                              className="comment-action-icon-btn" 
-                              onClick={() => handleStartEditComment(cmt)}
-                              title="댓글 수정"
-                            >
-                              <Edit2 size={13} />
-                            </button>
-                            <button 
-                              className="comment-action-icon-btn btn-del" 
-                              onClick={() => handleDeleteComment(cmt.id)}
-                              title="댓글 삭제"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {/* 인라인 수정 폼 vs 텍스트 표시 */}
-                    {editingCommentId === cmt.id ? (
-                      <div className="comment-inline-edit-box">
-                        <input
-                          type="text"
-                          className="comment-edit-input"
-                          value={editingCommentText}
-                          onChange={(e) => setEditingCommentText(e.target.value)}
-                          autoFocus
-                        />
-                        <div className="comment-edit-actions">
-                          <button 
-                            className="btn-edit-save"
-                            onClick={() => handleSaveEditComment(cmt.id)}
-                          >
-                            <Check size={12} />
-                            <span>완료</span>
-                          </button>
-                          <button 
-                            className="btn-edit-cancel"
-                            onClick={() => setEditingCommentId(null)}
-                          >
-                            <X size={12} />
-                            <span>취소</span>
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="comment-text">{cmt.text}</p>
-                    )}
-                  </div>
+                sections.map((sec, sIdx) => (
+                  <section key={sec.id || sIdx} id={`sec-${sec.id}`} className="reader-section-block">
+                    <h2 className="section-block-title">
+                      <span className="section-num">{currentChapterIndex + 1}.{sIdx + 1}</span> {sec.title}
+                    </h2>
+                    <article 
+                      className="reader-body-content"
+                      dangerouslySetInnerHTML={{ __html: sanitize(sec.content) }}
+                    />
+                  </section>
                 ))
               )}
             </div>
-          </section>
-        </footer>
+
+            {/* 하단 챕터 이동 버튼 */}
+            <div className="reader-scroll-chapter-nav">
+              <button 
+                className="scroll-nav-btn prev"
+                disabled={!prevChapter}
+                onClick={() => prevChapter && setReaderChapter(prevChapter.id)}
+              >
+                <ChevronLeft size={16} />
+                <span>이전 장 ({prevChapter?.title || '없음'})</span>
+              </button>
+              <button 
+                className="scroll-nav-btn next"
+                disabled={!nextChapter}
+                onClick={() => nextChapter && setReaderChapter(nextChapter.id)}
+              >
+                <span>다음 장 ({nextChapter?.title || '없음'})</span>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* 📖 [페이지 모드]: 실제 책 판형 기준 Multi-Column 엔진 (한쪽 / 두쪽 보기 완벽 지원) */
+          <div className="reader-book-stage-wrapper">
+            {/* 좌우 클릭 넘김 감지 터치존 */}
+            <div 
+              className="reader-page-click-zone left"
+              onClick={handlePrevPage}
+              title="이전 쪽 (← / PageUp)"
+            >
+              <span className="zone-indicator">
+                <ChevronLeft size={24} />
+              </span>
+            </div>
+            <div 
+              className="reader-page-click-zone right"
+              onClick={handleNextPage}
+              title="다음 쪽 (→ / Space / PageDown)"
+            >
+              <span className="zone-indicator">
+                <ChevronRight size={24} />
+              </span>
+            </div>
+
+            {/* 실제 책 판형 무대 (한쪽: 720px / 두쪽: 1160px) */}
+            <div 
+              className={`reader-book-stage spread-${pageSpread}`} 
+              ref={stageRef}
+            >
+              <div 
+                className={`reader-book-track spread-${pageSpread}`}
+                ref={trackRef}
+                style={{
+                  columnWidth: `${colWidth}px`,
+                  columnGap: `${colGap}px`,
+                  transform: `translateX(-${slideOffset}px)`
+                }}
+              >
+                {/* 챕터 시작 머리글 (1페이지 상단에 정갈하게 안착) */}
+                <section className="reader-chapter-hero page-hero">
+                  <div className="page-chapter-badge">제 {currentChapterIndex + 1} 장</div>
+                  <h1 className="chapter-hero-title">
+                    {currentChapter.title || `제 ${currentChapterIndex + 1} 장`}
+                  </h1>
+                </section>
+
+                {/* 소목차 연속 스트림 (다단 컬럼이 책 크기에 맞춰 자연스럽게 자동 분할) */}
+                {sections.length === 0 ? (
+                  <article className="reader-body-content">
+                    <p className="reader-empty-p">작성된 본문이 없습니다.</p>
+                  </article>
+                ) : (
+                  sections.map((sec, sIdx) => (
+                    <section key={sec.id || sIdx} id={`page-sec-${sec.id}`} className="reader-section-block page-section">
+                      <h2 className="section-block-title">
+                        <span className="section-num">{currentChapterIndex + 1}.{sIdx + 1}</span> {sec.title}
+                      </h2>
+                      <article 
+                        className="reader-body-content"
+                        dangerouslySetInnerHTML={{ __html: sanitize(sec.content) }}
+                      />
+                    </section>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* 실제 책 느낌의 하단 고정 페이지 내비게이션 바 (52px 고정) */}
+            <div className="reader-page-footer">
+              <button 
+                className="page-nav-action-btn prev"
+                disabled={currentPage === 0 && !prevChapter}
+                onClick={handlePrevPage}
+                title="이전 쪽"
+              >
+                <ChevronLeft size={16} />
+                <span>이전 쪽</span>
+              </button>
+
+              <div className="page-footer-center">
+                <div className="page-progress-track">
+                  <div 
+                    className="page-progress-fill" 
+                    style={{ width: `${Math.min(100, Math.round(((currentPage + (pageSpread === 'double' ? 2 : 1)) / totalPages) * 100))}%` }}
+                  />
+                </div>
+                <span className="page-counter-label">
+                  {renderPageIndicator()}
+                </span>
+              </div>
+
+              <button 
+                className="page-nav-action-btn next"
+                disabled={(pageSpread === 'double' ? currentPage + 2 >= totalPages : currentPage >= totalPages - 1) && !nextChapter}
+                onClick={handleNextPage}
+                title="다음 쪽"
+              >
+                <span>다음 쪽</span>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3. 본문 하단 소통 & 댓글 섹션 (스크롤 모드 전용) */}
+        {viewMode === 'scroll' && (
+          <footer className="reader-bottom-section">
+            <div className="reader-author-note-card">
+              <div className="author-note-header">
+                <span className="author-note-tag">작가의 말</span>
+                <span className="author-name">{activeBook.author || '연재 작가'}</span>
+              </div>
+              <p className="author-note-body">{authorNote}</p>
+            </div>
+
+            <div className="reader-action-bar">
+              <button 
+                className={`action-btn-like ${localIsLiked ? 'liked' : ''}`}
+                onClick={handleLikeToggle}
+              >
+                <Heart size={16} fill={localIsLiked ? 'currentColor' : 'none'} />
+                <span>관심 {localLikes}</span>
+              </button>
+              <button className="action-btn-share" onClick={handleShare}>
+                <Share2 size={16} />
+                <span>도서 링크 공유</span>
+              </button>
+            </div>
+
+            <div className="reader-comments-section">
+              <div className="comments-header">
+                <h3>독자 소통 <span className="comment-count">({localComments.length})</span></h3>
+              </div>
+
+              <form className="comment-input-form" onSubmit={handleCommentSubmit}>
+                <input 
+                  type="text" 
+                  className="comment-input-field" 
+                  placeholder="작가님에게 따뜻한 응원의 한마디를 남겨주세요..."
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                />
+                <button type="submit" className="comment-submit-btn" disabled={!commentInput.trim()}>
+                  <Send size={14} />
+                  <span>등록</span>
+                </button>
+              </form>
+
+              <div className="comments-list">
+                {localComments.length === 0 ? (
+                  <p className="empty-comments-text">첫 번째 응원의 댓글을 남겨보세요.</p>
+                ) : (
+                  localComments.map((cmt) => (
+                    <div key={cmt.id} className="comment-card">
+                      <div className="comment-meta">
+                        <span className="comment-author">{cmt.author}</span>
+                        <div className="comment-meta-right">
+                          <span className="comment-date">{cmt.createdAt}{cmt.editedAt}</span>
+                          <button 
+                            className="comment-action-btn edit" 
+                            onClick={() => {
+                              setEditingCommentId(cmt.id);
+                              setEditingCommentText(cmt.text);
+                            }}
+                            title="댓글 수정"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          <button 
+                            className="comment-action-btn delete" 
+                            onClick={() => handleDeleteComment(cmt.id)}
+                            title="댓글 삭제"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {editingCommentId === cmt.id ? (
+                        <div className="comment-edit-wrap">
+                          <input 
+                            type="text" 
+                            className="comment-edit-input" 
+                            value={editingCommentText} 
+                            onChange={(e) => setEditingCommentText(e.target.value)} 
+                          />
+                          <div className="comment-edit-btns">
+                            <button className="edit-btn save" onClick={() => handleSaveEditComment(cmt.id)}>저장</button>
+                            <button className="edit-btn cancel" onClick={() => setEditingCommentId(null)}>취소</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="comment-text">{cmt.text}</p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </footer>
+        )}
       </main>
     </div>
   );

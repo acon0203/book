@@ -11,20 +11,9 @@ import {
   Send, AlertCircle, RefreshCw, Bot, Sparkles, Save, Info, Sliders,
   HelpCircle, Lightbulb, Sun, MessageSquare, Zap
 } from 'lucide-react';
-import { PLOT_TEMPLATES, PIPELINE_STEPS, VAULT_CATEGORIES, GENRE_PLOT_OPTIONS } from '../data/vaultConstants';
-
-// 도서 장르 정규화 헬퍼 (앞서 설정된 도서 장르에 100% 매칭)
-const getNormalizedGenreKey = (book) => {
-  if (!book) return 'essay';
-  if (book.genreKey && GENRE_PLOT_OPTIONS[book.genreKey]) return book.genreKey;
-  const g = (book.genre || '').toLowerCase();
-  if (g.includes('소설') || g.includes('fiction') || g.includes('문학') || g.includes('웹소설')) return 'fiction';
-  if (g.includes('실무') || g.includes('실용') || g.includes('practical') || g.includes('비즈')) return 'practical';
-  if (g.includes('자기계발') || g.includes('성장') || g.includes('self_help')) return 'self_help';
-  if (g.includes('경제') || g.includes('경영') || g.includes('economy')) return 'economy';
-  if (g.includes('인문') || g.includes('철학') || g.includes('역사') || g.includes('humanities')) return 'humanities';
-  return 'essay';
-};
+import { PIPELINE_STEPS, VAULT_CATEGORIES } from '../data/vaultConstants';
+import { OFFICIAL_GENRES, getOfficialGenreId } from '../data/genreConstants';
+import { PLOT_CATEGORIES, PLOT_LIBRARY, GENRE_RECOMMENDED_PLOTS } from '../data/plotLibraryDb';
 
 // 제목 정제 헬퍼 (제1장, 1. 등의 접두사 중복 방지)
 const cleanTitle = (str) => (str || '').replace(/^제?\s*\d+\s*[장회편절단계권]?\s*[\.:\-]?\s*/i, '').trim();
@@ -42,7 +31,7 @@ export default function Vault() {
   // 새 작품 기획 생성 모달
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [newProjectTitle, setNewProjectTitle] = useState('');
-  const [newProjectGenre, setNewProjectGenre] = useState('essay');
+  const [newProjectGenre, setNewProjectGenre] = useState('novel');
 
   // --- Step 0: 아이디어 노트 상태 ---
   const [quickIdeaInput, setQuickIdeaInput] = useState('');
@@ -164,20 +153,31 @@ export default function Vault() {
         setProposalDiff('');
       }
 
-      // 장르 정규화 및 해당 장르 복수 표준 규격 매핑
-      const gKey = getNormalizedGenreKey(activeBook);
+      // 공식 10대 장르 정규화
+      const gKey = getOfficialGenreId(activeBook.genre || activeBook.genreKey);
       setCurrentGenreKey(gKey);
-      const genreOptions = GENRE_PLOT_OPTIONS[gKey] || GENRE_PLOT_OPTIONS.essay;
+
+      // 장르별 추천 뼈대 및 기본 뼈대 도출
+      const recPlotIds = GENRE_RECOMMENDED_PLOTS[gKey] || GENRE_RECOMMENDED_PLOTS.novel;
+      const defaultPlot = PLOT_LIBRARY.find((p) => p.id === recPlotIds[0]) || PLOT_LIBRARY[0];
 
       // 플롯 뼈대 동기화
       if (Array.isArray(activeBook.plotStages) && activeBook.plotStages.length > 0) {
         setPlotStages(structuredClone(activeBook.plotStages));
-        const matched = genreOptions.find(opt => opt.name === activeBook.plotStandardName || opt.id === activeBook.plotStandardId);
-        setSelectedPlotTemplateId(matched ? matched.id : genreOptions[0]?.id || '');
+        const matched = PLOT_LIBRARY.find((p) => p.name === activeBook.plotStandardName || p.id === activeBook.plotStandardId);
+        setSelectedPlotTemplateId(matched ? matched.id : recPlotIds[0]);
       } else {
-        const defaultTpl = genreOptions[0] || PLOT_TEMPLATES.essay;
-        setSelectedPlotTemplateId(defaultTpl.id);
-        setPlotStages(structuredClone(defaultTpl.stages));
+        setSelectedPlotTemplateId(defaultPlot.id);
+        const cloned = defaultPlot.stages.map((st, idx) => ({
+          id: `stage_${idx + 1}`,
+          title: st.title,
+          desc: st.desc || '',
+          subplots: (st.subplots || []).map((sp) => ({
+            title: typeof sp === 'string' ? sp : sp.title,
+            memo: ''
+          }))
+        }));
+        setPlotStages(cloned);
       }
 
       // 가목차 동기화 (기존 draftOutline 또는 스튜디오 목차)
@@ -195,11 +195,10 @@ export default function Vault() {
         setDraftChapters(converted);
       } else {
         // 기본 템플릿 목차
-        const defaultTpl = genreOptions[0] || PLOT_TEMPLATES.essay;
-        const initial = defaultTpl.stages.map((st, idx) => ({
+        const initial = defaultPlot.stages.map((st, idx) => ({
           id: `draft_chap_${idx + 1}`,
           title: `제${idx + 1}장. ${st.title.replace(/^\d+\.\s*/, '')}`,
-          sections: st.subplots.map((sp, spIdx) => ({
+          sections: (st.subplots || []).map((sp, spIdx) => ({
             id: `draft_sec_${idx + 1}_${spIdx + 1}`,
             title: typeof sp === 'string' ? sp : sp.title
           }))
@@ -405,17 +404,25 @@ export default function Vault() {
     }
   };
 
-  // --- Step 3: 장르별 표준 규격 스위칭 및 플롯/꼭지 편집 로직 ---
+  // --- Step 3: 장르별 표준 서사 뼈대 스위칭 및 플롯/꼭지 편집 로직 ---
   const handleSelectPlotTemplate = async (template) => {
     const ok = await openConfirm({
-      title: '장르 표준 규격 변경',
-      message: `'${template.name}' 템플릿으로 플롯 뼈대를 전환하시겠습니까?\n(현재 작성된 뼈대가 선택한 표준 규격 구조로 교체됩니다)`,
-      confirmText: '표준 규격 적용'
+      title: '서사 뼈대 변경',
+      message: `'${template.name}' 구조로 플롯 뼈대를 전환하시겠습니까?\n\n[흐름]: ${template.flow}\n[적합]: ${template.fitFor || '표준 권장'}\n\n(전환 시 기존 플롯 단계가 선택한 구조의 표준 단계로 새로 구성됩니다)`,
+      confirmText: '뼈대 적용'
     });
     if (!ok) return;
 
     setSelectedPlotTemplateId(template.id);
-    const clonedStages = structuredClone(template.stages);
+    const clonedStages = (template.stages || []).map((st, idx) => ({
+      id: `stage_${Date.now()}_${idx + 1}`,
+      title: st.title,
+      desc: st.desc || '',
+      subplots: (st.subplots || []).map((sp) => ({
+        title: typeof sp === 'string' ? sp : sp.title,
+        memo: ''
+      }))
+    }));
     setPlotStages(clonedStages);
     if (activeBook) {
       await bookService.updateBook(activeBook.id, {
@@ -424,7 +431,7 @@ export default function Vault() {
         plotStandardId: template.id
       });
       await updateActiveBookPlotStages(clonedStages);
-      showToast(`'${template.name}' 표준 플롯 규격이 적용되었습니다.`, 'success');
+      showToast(`'${template.name}' 서사 뼈대가 적용되었습니다.`, 'success');
     }
   };
 
@@ -810,23 +817,42 @@ export default function Vault() {
     setIsOutlinePlanModalOpen(true);
   };
 
-  const handleGenerateAiOutline = () => {
-    setIsAiGeneratingOutline(true);
-    setTimeout(() => {
-      const tpl = PLOT_TEMPLATES[currentGenreKey] || PLOT_TEMPLATES.essay;
-      const currentStages = plotStages.length > 0 ? plotStages : tpl.stages;
-      const generated = currentStages.map((st, idx) => ({
-        id: `ai_c_${idx + 1}`,
-        title: `제${idx + 1}장. ${st.title.replace(/^\d+\.\s*/, '')}`,
-        sections: st.subplots.map((sp, spIdx) => ({
-          id: `ai_s_${idx + 1}_${spIdx + 1}`,
-          title: typeof sp === 'string' ? sp : sp.title
+  const handleGenerateAiOutline = async () => {
+    try {
+      setIsAiGeneratingOutline(true);
+      showToast('설계된 뼈대와 기획서를 분석하여 맞춤 목차를 생성 중입니다...', 'info');
+
+      const proposal = {
+        logline: proposalLogline,
+        intention: proposalIntention,
+        target: proposalTarget
+      };
+
+      const generated = await bookService.generateOutlineFromPlot({
+        bookTitle: activeBook?.title || '미정의 작품',
+        bookSubtitle: activeBook?.subtitle || '',
+        genre: activeBook?.genre || '소설',
+        proposal,
+        characters,
+        plotStages
+      });
+
+      const structured = (generated || []).map((c, idx) => ({
+        id: `ai_c_${Date.now()}_${idx + 1}`,
+        title: `제${idx + 1}장. ${c.title.replace(/^제?\s*\d+\s*[장회편절단계권]?\s*[\.:\-]?\s*/i, '')}`,
+        sections: (c.sections || []).map((s, spIdx) => ({
+          id: `ai_s_${Date.now()}_${idx + 1}_${spIdx + 1}`,
+          title: s.title
         }))
       }));
-      setGeneratedAiOutline(generated);
+
+      setGeneratedAiOutline(structured);
+      showToast('인물·서사 뼈대 기반 AI 맞춤 목차가 도출되었습니다.', 'success');
+    } catch (err) {
+      showToast(`목차 도출 실패: ${err.message}`, 'error');
+    } finally {
       setIsAiGeneratingOutline(false);
-      showToast('인물·플롯 뼈대 기반 AI 목차 초안이 도출되었습니다.', 'info');
-    }, 500);
+    }
   };
 
   const handleApplyAiOutline = async () => {
@@ -913,12 +939,29 @@ export default function Vault() {
       return;
     }
     try {
+      const selectedGenre = OFFICIAL_GENRES.find((g) => g.id === newProjectGenre) || OFFICIAL_GENRES[0];
+      const recPlotIds = GENRE_RECOMMENDED_PLOTS[newProjectGenre] || GENRE_RECOMMENDED_PLOTS.novel;
+      const defaultPlot = PLOT_LIBRARY.find((p) => p.id === recPlotIds[0]) || PLOT_LIBRARY[0];
+
+      const initialStages = (defaultPlot.stages || []).map((st, idx) => ({
+        id: `stage_${idx + 1}`,
+        title: st.title,
+        desc: st.desc || '',
+        subplots: (st.subplots || []).map((sp) => ({
+          title: typeof sp === 'string' ? sp : sp.title,
+          memo: ''
+        }))
+      }));
+
       const newBook = await bookService.createBook({
         title: newProjectTitle.trim(),
+        genre: selectedGenre.label,
         genreKey: newProjectGenre,
         proposal: { logline: '', intention: '', target: '', diff: '' },
         characters: [],
-        plotStages: PLOT_TEMPLATES[newProjectGenre]?.stages || PLOT_TEMPLATES.essay.stages
+        plotStandardName: defaultPlot.name,
+        plotStandardId: defaultPlot.id,
+        plotStages: initialStages
       });
       await loadBooks();
       setActiveBook(newBook);
@@ -1371,41 +1414,81 @@ export default function Vault() {
                         </div>
                       </div>
 
-                      {/* 우측: 장르 표준 플롯 규격 & 세부 꼭지별 아이디어 메모 */}
+                      {/* 우측: 장르 표준 서사 뼈대 & 세부 꼭지별 아이디어 메모 */}
                       <div className="story-right-col">
                         <div className="story-panel-header">
                           <h3 className="story-panel-title">
                             <Layers size={15} style={{ color: 'var(--color-primary)' }} />
-                            장르별 표준 출판 규격
+                            장르별 서사 뼈대
                           </h3>
                           <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600 }}>
-                            {activeBook?.genre || '장르 표준'}
+                            {activeBook?.genre || '소설'}
                           </span>
                         </div>
 
-                        {/* 도서 장르 기반 복수 표준 규격 스위처 */}
+                        {/* 도서 장르 기반 추천 뼈대 및 44종 전체 서사 라이브러리 스위처 */}
                         {(() => {
-                          const genreOptions = GENRE_PLOT_OPTIONS[currentGenreKey] || GENRE_PLOT_OPTIONS.essay;
-                          const currentOpt = genreOptions.find((o) => o.id === selectedPlotTemplateId) || genreOptions[0];
+                          const recIds = GENRE_RECOMMENDED_PLOTS[currentGenreKey] || GENRE_RECOMMENDED_PLOTS.novel;
+                          const recommendedPlots = recIds.map((id) => PLOT_LIBRARY.find((p) => p.id === id)).filter(Boolean);
+                          const currentPlot = PLOT_LIBRARY.find((p) => p.id === selectedPlotTemplateId) || recommendedPlots[0] || PLOT_LIBRARY[0];
+                          const isCustomOrOther = !recommendedPlots.some((p) => p.id === selectedPlotTemplateId);
+
                           return (
                             <>
-                              <div className="plot-genre-switcher">
-                                {genreOptions.map((opt) => (
-                                  <button
-                                    key={opt.id}
-                                    type="button"
-                                    className={`plot-genre-btn ${selectedPlotTemplateId === opt.id ? 'active' : ''}`}
-                                    onClick={() => handleSelectPlotTemplate(opt)}
-                                  >
-                                    {opt.name}
-                                  </button>
-                                ))}
+                              <div className="plot-switcher-wrapper">
+                                <div className="plot-genre-switcher">
+                                  <span className="plot-rec-label">추천 뼈대</span>
+                                  {recommendedPlots.map((plot) => (
+                                    <button
+                                      key={plot.id}
+                                      type="button"
+                                      className={`plot-genre-btn ${selectedPlotTemplateId === plot.id ? 'active' : ''}`}
+                                      onClick={() => handleSelectPlotTemplate(plot)}
+                                      title={plot.flow}
+                                    >
+                                      {plot.name}
+                                    </button>
+                                  ))}
+                                  <div className="plot-other-select-container">
+                                    <select
+                                      className={`plot-other-select ${isCustomOrOther ? 'active' : ''}`}
+                                      value={isCustomOrOther ? selectedPlotTemplateId : ''}
+                                      onChange={(e) => {
+                                        if (e.target.value) {
+                                          const found = PLOT_LIBRARY.find((p) => p.id === e.target.value);
+                                          if (found) handleSelectPlotTemplate(found);
+                                        }
+                                      }}
+                                    >
+                                      <option value="" disabled>기타 뼈대 둘러보기 (44종)...</option>
+                                      {PLOT_CATEGORIES.map((cat) => {
+                                        const catPlots = PLOT_LIBRARY.filter((p) => p.category === cat.id);
+                                        return (
+                                          <optgroup key={cat.id} label={cat.name}>
+                                            {catPlots.map((p) => (
+                                              <option key={p.id} value={p.id}>
+                                                {p.name} ({p.fitFor})
+                                              </option>
+                                            ))}
+                                          </optgroup>
+                                        );
+                                      })}
+                                    </select>
+                                  </div>
+                                </div>
                               </div>
 
-                              {currentOpt && (
+                              {currentPlot && (
                                 <div className="plot-standard-banner">
                                   <Info size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
-                                  <span><strong>{currentOpt.standard || currentOpt.badge}</strong> — {currentOpt.desc}</span>
+                                  <div className="plot-banner-content">
+                                    <span className="plot-banner-title">
+                                      <strong>{currentPlot.name}</strong> — {currentPlot.fitFor || '표준 서사 규격'}
+                                    </span>
+                                    <span className="plot-banner-flow">
+                                      [서사 흐름] {currentPlot.flow}
+                                    </span>
+                                  </div>
                                 </div>
                               )}
                             </>
@@ -1932,18 +2015,17 @@ export default function Vault() {
                   />
                 </div>
                 <div className="vault-form-group">
-                  <label>장르 및 표준 서사 뼈대</label>
+                  <label>도서 장르</label>
                   <select
                     className="vault-form-control"
                     value={newProjectGenre}
                     onChange={(e) => setNewProjectGenre(e.target.value)}
                   >
-                    <option value="essay">에세이·수필 (기승전결 4단계 뼈대)</option>
-                    <option value="practical">실무·실용서 (문제정의-원리-솔루션 4단계)</option>
-                    <option value="fiction">소설·웹소설 (발단-전개-위기-절정-결말 5단계)</option>
-                    <option value="self_help">자기계발 (동기부여-마인드셋-실행-습관 4단계)</option>
-                    <option value="economy">경제·경영 (시장진단-사례분석-프레임워크 4단계)</option>
-                    <option value="humanities">인문·교양 (질문던지기-사유-통찰 4단계)</option>
+                    {OFFICIAL_GENRES.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
