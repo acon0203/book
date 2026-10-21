@@ -548,8 +548,8 @@ export const PIPELINE_STEPS = [
   { id: 'ideas', stepNum: 0, title: '아이디어 노트', icon: Lightbulb, desc: '자유로운 발상과 낙서' },
   { id: 'proposal', stepNum: 1, title: '출간 기획서', icon: PenTool, desc: '로그라인 & 타깃 독자' },
   { id: 'materials', stepNum: 2, title: '글감·취재창고', icon: Bookmark, desc: '팩트/통계/인용구 보관' },
-  { id: 'story', stepNum: 3, title: '인물 & 뼈대', icon: Layers, desc: '인물시트 & 표준 플롯' },
-  { id: 'outline', stepNum: 4, title: '목차 조립대', icon: Compass, desc: '가목차 드래그 조립' }
+  { id: 'story', stepNum: 3, title: '작품 설정 & 인물', icon: Layers, desc: '화자·청자·어투 & 인물' },
+  { id: 'outline', stepNum: 4, title: '서사 뼈대 & 목차 조립', icon: Compass, desc: '44종 뼈대 대조 & 목차 조립' }
 ];
 
 // 자료 금고 8대 확장 카테고리 프리셋 (이모티콘 일체 배제, 단정하고 전문적인 분류)

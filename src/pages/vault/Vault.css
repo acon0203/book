@@ -1218,18 +1218,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.85rem 1.15rem;
+  gap: 0.65rem;
+  padding: 0.65rem 0.95rem;
   background: var(--bg-surface);
-  border: 1px solid var(--border-divider);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .btn-plan-outline {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  padding: 0.38rem 0.85rem;
+  height: 32px;
+  padding: 0 0.75rem;
   border-radius: 6px;
   background: linear-gradient(135deg, #8b5a2b, #a66e38);
   color: #ffffff;
@@ -1237,7 +1240,28 @@
   font-weight: 600;
   border: none;
   cursor: pointer;
+  white-space: nowrap;
   box-shadow: 0 1px 4px rgba(139, 90, 43, 0.2);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.btn-plan-outline:hover {
+  background: linear-gradient(135deg, #7a4e25, #935f30);
+  transform: translateY(-1px);
+}
+
+.outline-top-actions .btn-add-idea {
+  height: 32px;
+  padding: 0 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 6px;
+  flex-shrink: 0;
 }
 
 .outline-chap-block {
@@ -1681,3 +1705,626 @@
   border-color: var(--color-primary);
   background: var(--bg-card);
 }
+
+/* =========================================================================
+   Step 4. 작품 서사 설정(화자/청자/어투) & 인물 프로필
+   ========================================================================= */
+.narrative-setting-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.narrative-top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-divider);
+  border-radius: 8px;
+}
+
+.narrative-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.narrative-desc {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.78rem;
+  color: var(--text-sub);
+}
+
+.btn-ai-narrative-fill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-ai-narrative-fill:hover:not(:disabled) {
+  background: rgba(168, 85, 247, 0.16);
+  border-color: var(--color-primary);
+}
+
+.btn-ai-narrative-fill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 필수 3요소 카드 그리드 */
+.essential-trio-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+}
+
+.trio-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-divider);
+  border-radius: 8px;
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.trio-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.trio-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: rgba(168, 85, 247, 0.1);
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+}
+
+.trio-card-title {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.trio-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.trio-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trio-radio-label:hover {
+  background: var(--bg-hover);
+}
+
+.trio-radio-label.active {
+  background: rgba(168, 85, 247, 0.08);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.trio-radio-label input[type="radio"] {
+  accent-color: var(--color-primary);
+  margin: 0;
+}
+
+.trio-radio-text {
+  font-size: 0.78rem;
+  color: var(--text-main);
+}
+
+/* 하단 2열 그리드: 인물 + 더 설정하기 */
+.narrative-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.narrative-char-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.narrative-extra-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.more-settings-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-divider);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.more-settings-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg-surface);
+  border: none;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: background 0.15s ease;
+}
+
+.more-settings-toggle:hover {
+  background: var(--bg-hover);
+}
+
+.more-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--border-divider);
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+}
+
+.more-settings-content {
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border-divider);
+  overflow-y: auto;
+}
+
+.more-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.more-field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.more-textarea {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-divider);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8rem;
+  color: var(--text-main);
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  line-height: 1.5;
+}
+
+.more-textarea:focus {
+  border-color: var(--color-primary);
+  background: var(--bg-card);
+}
+
+.more-input {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-divider);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.82rem;
+  color: var(--text-main);
+  font-family: inherit;
+  outline: none;
+}
+
+.more-input:focus {
+  border-color: var(--color-primary);
+  background: var(--bg-card);
+}
+
+/* =========================================================================
+   Step 5. 뼈대 구성 ➔ 목차 조립대 듀얼 카드 레이아웃 & 중앙 연결 브릿지
+   ========================================================================= */
+.step5-main-layout {
+  display: grid;
+  grid-template-columns: 1fr 36px 1fr;
+  gap: 0.65rem;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+/* 좌/우 독립 카드 섹션 */
+.step5-card-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+/* 각 카드 상단 헤더 */
+.step5-card-header {
+  min-height: 48px;
+  padding: 0.65rem 0.95rem;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-header-title {
+  font-family: var(--font-serif);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.card-genre-pill {
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(139, 90, 43, 0.08);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* 뼈대 ➔ 목차 도출 브릿지 버튼 */
+.btn-bridge-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 32px;
+  padding: 0 0.8rem;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.btn-bridge-action:hover {
+  background: var(--color-primary-hover, #724620);
+  transform: translateY(-1px);
+}
+
+/* 카드 내부 스크롤 바디 */
+.step5-card-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* 중앙 연결 화살표 브릿지 */
+.step5-flow-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  position: relative;
+}
+
+.divider-line {
+  flex: 1;
+  width: 1px;
+  border-left: 1px dashed var(--border-subtle);
+}
+
+.divider-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  margin: 0.5rem 0;
+  z-index: 2;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.divider-badge:hover {
+  transform: scale(1.1);
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+/* 플롯 단계 및 세부 꼭지 카드 스타일 (우측 목차와 1:1 대칭 완성) */
+.plot-stages-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-bottom: 1rem;
+}
+
+.plot-stage-group {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease;
+}
+
+.plot-stage-group:hover {
+  border-color: rgba(139, 90, 43, 0.3);
+}
+
+.plot-stage-bar {
+  background: rgba(139, 90, 43, 0.04);
+  padding: 0.65rem 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.plot-stage-title-text {
+  font-family: var(--font-serif);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.2px;
+}
+
+.plot-stage-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.plot-subplots-list {
+  padding: 0.5rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.plot-subplot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+  transition: all 0.15s ease;
+}
+
+.plot-subplot-card:hover {
+  border-color: var(--color-primary);
+  background: var(--bg-hover);
+}
+
+.plot-subplot-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.plot-subplot-title-text {
+  font-size: 0.82rem;
+  color: var(--text-main);
+  font-weight: 500;
+  flex: 1;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.plot-subplot-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+/* 세련된 발상 메모 칩 버튼 */
+.mini-memo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mini-memo-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.mini-memo-btn.has-memo {
+  background: rgba(217, 119, 6, 0.1);
+  border-color: rgba(217, 119, 6, 0.35);
+  color: #b45309;
+}
+
+/* 등록된 발상 메모 표시 박스 */
+.subplot-memo-display {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  background: rgba(217, 119, 6, 0.05);
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  border-radius: 5px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-main);
+}
+
+.memo-label {
+  color: #b45309;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.memo-text {
+  flex: 1;
+  color: var(--text-main);
+}
+
+.mini-memo-del-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.mini-memo-del-btn:hover {
+  color: var(--color-danger);
+  background: rgba(197, 48, 48, 0.08);
+}
+
+/* 메모 인라인 입력 폼 */
+.subplot-memo-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.2rem;
+}
+
+.subplot-memo-input {
+  flex: 1;
+  height: 28px;
+  padding: 0 0.55rem;
+  font-size: 0.78rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text-main);
+  outline: none;
+}
+
+/* 세부 꼭지 및 단계 추가 점선 버튼 */
+.btn-add-subplot-row {
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-sub);
+  font-size: 0.76rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 0.25rem;
+}
+
+.btn-add-subplot-row:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.btn-add-stage-row {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-sub);
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-top: 0.3rem;
+}
+
+.btn-add-stage-row:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--bg-hover);
+}
+

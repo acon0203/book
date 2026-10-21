@@ -8,7 +8,7 @@ import CustomDialog from './components/CustomDialog';
 // 주요 페이지 (Lotto 스타일 pages 구조)
 import Library from './pages/Library';
 import Studio from './pages/studio/Studio';
-import Vault from './pages/Vault';
+import Vault from './pages/vault/Vault';
 import Stats from './pages/Stats';
 import Settings from './pages/Settings';
 import Reader from './pages/Reader';

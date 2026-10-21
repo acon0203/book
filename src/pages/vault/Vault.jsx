@@ -1,22 +1,134 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import './Vault.css';
-import { useStore } from '../store';
-import { bookService } from '../services/bookService';
-import { aiService } from '../services/aiService';
-import { storageService } from '../services/storageService';
-import ModelQuotasModal from '../components/ai/ModelQuotasModal';
+import { useStore } from '../../store';
+import { bookService } from '../../services/bookService';
+import { aiService } from '../../services/aiService';
+import { storageService } from '../../services/storageService';
+import ModelQuotasModal from '../../components/ai/ModelQuotasModal';
+import VaultModals from './VaultModals';
 import {
   Plus, Trash2, X, Users, BookOpen, Layers, Check, Edit2,
   ChevronLeft, Bookmark, Compass, PenTool, CheckCircle, ChevronRight,
   Send, AlertCircle, RefreshCw, Bot, Sparkles, Save, Info, Sliders,
-  HelpCircle, Lightbulb, Sun, MessageSquare, Zap
+  HelpCircle, Lightbulb, Sun, MessageSquare, Zap, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { PIPELINE_STEPS, VAULT_CATEGORIES } from '../data/vaultConstants';
-import { OFFICIAL_GENRES, getOfficialGenreId } from '../data/genreConstants';
-import { PLOT_CATEGORIES, PLOT_LIBRARY, GENRE_RECOMMENDED_PLOTS } from '../data/plotLibraryDb';
+import { PIPELINE_STEPS, VAULT_CATEGORIES } from '../../data/vaultConstants';
+import { OFFICIAL_GENRES, getOfficialGenreId } from '../../data/genreConstants';
+import { PLOT_CATEGORIES, PLOT_LIBRARY, GENRE_RECOMMENDED_PLOTS } from '../../data/plotLibraryDb';
 
 // 제목 정제 헬퍼 (제1장, 1. 등의 접두사 중복 방지)
 const cleanTitle = (str) => (str || '').replace(/^제?\s*\d+\s*[장회편절단계권]?\s*[\.:\-]?\s*/i, '').trim();
+
+// 장르별 스마트 서사 3요소 기본값 헬퍼
+const getDefaultNarrativeConfig = (genreKey) => {
+  const isFiction = genreKey === 'novel' || genreKey === 'webnovel';
+  const isEssay = genreKey === 'essay';
+
+  if (isFiction) {
+    return {
+      speaker: 'third_limited',
+      listener: 'unspecified_reader',
+      tone: 'past_plain',
+      worldSetting: '',
+      relationshipMemo: '',
+      authorBackground: '',
+      caseStudyMemo: '',
+      coreMessage: ''
+    };
+  }
+
+  if (isEssay) {
+    return {
+      speaker: 'first_author',
+      listener: 'myself',
+      tone: 'plain',
+      worldSetting: '',
+      relationshipMemo: '',
+      authorBackground: '',
+      caseStudyMemo: '',
+      coreMessage: ''
+    };
+  }
+
+  return {
+    speaker: 'expert_objective',
+    listener: 'readers',
+    tone: 'formal_explain',
+    worldSetting: '',
+    relationshipMemo: '',
+    authorBackground: '',
+    caseStudyMemo: '',
+    coreMessage: ''
+  };
+};
+
+// 장르별 필수 3요소 (화자/청자/어투) 선택지 옵션 목록
+const getNarrativeOptions = (genreKey) => {
+  const isFiction = genreKey === 'novel' || genreKey === 'webnovel';
+  const isEssay = genreKey === 'essay';
+
+  if (isFiction) {
+    return {
+      speakers: [
+        { id: 'third_limited', label: '3인칭 제한적 시점' },
+        { id: 'first_protagonist', label: '1인칭 주인공 시점' },
+        { id: 'first_observer', label: '1인칭 관찰자 시점' },
+        { id: 'third_omniscient', label: '3인칭 전지적 시점' }
+      ],
+      listeners: [
+        { id: 'unspecified_reader', label: '불특정 독자' },
+        { id: 'specific_character', label: '특정 청자 (서간체)' },
+        { id: 'future_someone', label: '미래의 누군가' }
+      ],
+      tones: genreKey === 'webnovel' ? [
+        { id: 'present_plain', label: '~한다 (현재형/속도감)' },
+        { id: 'past_plain', label: '~했다 (과거형 서술)' }
+      ] : [
+        { id: 'past_plain', label: '~했다 (과거형 서술)' },
+        { id: 'present_plain', label: '~한다 (현재형/생동감)' }
+      ]
+    };
+  }
+
+  if (isEssay) {
+    return {
+      speakers: [
+        { id: 'first_author', label: "1인칭 작가 ('나')" },
+        { id: 'first_observer', label: "관찰자 ('나')" },
+        { id: 'virtual_speaker', label: '가상의 화자' }
+      ],
+      listeners: [
+        { id: 'myself', label: '나 자신 (독백)' },
+        { id: 'unknown_you', label: '이름 모를 당신' },
+        { id: 'precious_person', label: '소중한 그 사람' }
+      ],
+      tones: [
+        { id: 'plain', label: '~했다 / ~다 (평어체)' },
+        { id: 'polite_soft', label: '~해요 (부드러운 대화체)' },
+        { id: 'polite_formal', label: '~합니다 (정중한 경어체)' }
+      ]
+    };
+  }
+
+  // 비문학 (인문, 사회, 경제, 과학, 자기계발 등)
+  return {
+    speakers: [
+      { id: 'expert_objective', label: '저자/전문가 (객관적 관찰)' },
+      { id: 'friendly_mentor', label: '친근한 멘토 / 길잡이' },
+      { id: 'first_practitioner', label: '1인칭 실천가 (경험담 공유)' }
+    ],
+    listeners: [
+      { id: 'readers', label: "'독자 여러분' (일반 독자)" },
+      { id: 'beginners', label: '초심자 / 입문자' },
+      { id: 'colleagues', label: '동료 실무자 / 전문가' }
+    ],
+    tones: [
+      { id: 'formal_explain', label: '~합니다 / ~입니다 (설명체)' },
+      { id: 'assertive', label: '~이다 / ~한다 (단정체)' },
+      { id: 'friendly_soft', label: '~해요 / ~해보세요 (친근체)' }
+    ]
+  };
+};
 
 export default function Vault() {
   const {
@@ -54,8 +166,21 @@ export default function Vault() {
   const [tagsInput, setTagsInput] = useState('');
   const [isVaultSubmitting, setIsVaultSubmitting] = useState(false);
 
-  // --- Step 3: 인물 & 뼈대 상태 ---
+  // --- Step 3: 작품 설정 & 인물 상태 ---
   const [currentGenreKey, setCurrentGenreKey] = useState('essay');
+  const [narrativeConfig, setNarrativeConfig] = useState({
+    speaker: '',
+    listener: '',
+    tone: '',
+    worldSetting: '',
+    relationshipMemo: '',
+    authorBackground: '',
+    caseStudyMemo: '',
+    coreMessage: ''
+  });
+  const [isMoreSettingsOpen, setIsMoreSettingsOpen] = useState(false);
+  const [isAiGeneratingNarrative, setIsAiGeneratingNarrative] = useState(false);
+
   const [selectedPlotTemplateId, setSelectedPlotTemplateId] = useState('');
   const [plotStages, setPlotStages] = useState([]);
   const [activeMemoKey, setActiveMemoKey] = useState(null); // 'sIdx_spIdx'
@@ -79,7 +204,7 @@ export default function Vault() {
   const [charTraits, setCharTraits] = useState('');
   const [charRelationship, setCharRelationship] = useState('');
 
-  // --- Step 4: 목차 조립대 (가목차 샌드박스) 상태 ---
+  // --- Step 5: 목차 조립대 (가목차 샌드박스) 상태 ---
   const [draftChapters, setDraftChapters] = useState([]);
   const [editingChapId, setEditingChapId] = useState(null);
   const [editingChapTitle, setEditingChapTitle] = useState('');
@@ -88,6 +213,7 @@ export default function Vault() {
 
   // 목차 기획 모달
   const [isOutlinePlanModalOpen, setIsOutlinePlanModalOpen] = useState(false);
+  const [outlinePlanMode, setOutlinePlanMode] = useState('plot'); // 'plot' (뼈대 기반) | 'standard' (기획서/장르 기반)
   const [generatedAiOutline, setGeneratedAiOutline] = useState(null);
   const [isAiGeneratingOutline, setIsAiGeneratingOutline] = useState(false);
 
@@ -156,6 +282,13 @@ export default function Vault() {
       // 공식 10대 장르 정규화
       const gKey = getOfficialGenreId(activeBook.genre || activeBook.genreKey);
       setCurrentGenreKey(gKey);
+
+      // 작품 서사 설정(narrativeConfig) 동기화
+      const defaultNarrative = getDefaultNarrativeConfig(gKey);
+      setNarrativeConfig({
+        ...defaultNarrative,
+        ...(activeBook.narrativeConfig || {})
+      });
 
       // 장르별 추천 뼈대 및 기본 뼈대 도출
       const recPlotIds = GENRE_RECOMMENDED_PLOTS[gKey] || GENRE_RECOMMENDED_PLOTS.novel;
@@ -404,7 +537,92 @@ export default function Vault() {
     }
   };
 
-  // --- Step 3: 장르별 표준 서사 뼈대 스위칭 및 플롯/꼭지 편집 로직 ---
+  // --- Step 3: 작품 서사 설정(화자·청자·어투) 핸들러 ---
+  const handleUpdateNarrativeConfig = async (key, val) => {
+    if (!activeBook) return;
+    const updated = {
+      ...narrativeConfig,
+      [key]: val
+    };
+    setNarrativeConfig(updated);
+    try {
+      const updatedBook = { ...activeBook, narrativeConfig: updated };
+      await bookService.updateBook(activeBook.id, updatedBook);
+      setActiveBook(updatedBook);
+    } catch (err) {
+      console.error('Failed to update narrativeConfig:', err);
+    }
+  };
+
+  // 출간 기획서 기반 AI 초안 채우기 핸들러
+  const handleAiFillNarrativeConfig = async () => {
+    if (!activeBook) return;
+    try {
+      setIsAiGeneratingNarrative(true);
+      showToast('출간 기획서를 바탕으로 작품 설정을 도출하고 있습니다...', 'info');
+
+      const isFiction = currentGenreKey === 'novel' || currentGenreKey === 'webnovel';
+      const isEssay = currentGenreKey === 'essay';
+
+      const prompt = `
+당신은 베테랑 단행본 기획 총괄 편집장입니다.
+아래 작가의 출간 기획서를 심층 분석하여, 이 작품에 가장 적합한 서사 3요소(화자, 청자, 어투)와 보조 설정을 JSON으로 제안하세요.
+
+[도서 제목]: ${activeBook.title || '미정'}
+[장르]: ${activeBook.genre || '소설'}
+[로그라인]: ${proposalLogline || '미정'}
+[기획의도]: ${proposalIntention || '미정'}
+[타깃독자]: ${proposalTarget || '미정'}
+
+아래 항목 중 해당 장르에 맞는 값만 선택하여 오직 JSON 형식으로만 응답하세요(마크다운 코드블록 없이 순수 JSON만 출력):
+
+${isFiction ? `
+- speaker: "third_limited"(3인칭 제한적 시점) 또는 "first_hero"(1인칭 주인공 시점) 또는 "third_omniscient"(3인칭 전지적 시점) 중 택1
+- listener: "unspecified_reader"(불특정 독자) 또는 "specific_character"(극중 특정 인물) 중 택1
+- tone: "past_plain"(~했다 과거형) 또는 "present_plain"(~한다 현재형 웹소설) 중 택1
+- worldSetting: "배경 및 세계관 한 줄 요약"
+- relationshipMemo: "주요 인물 간 긴장 관계 한 줄 요약"
+` : isEssay ? `
+- speaker: "first_author"(1인칭 '나') 또는 "first_humble"(1인칭 '저') 중 택1
+- listener: "myself"(나 자신 독백) 또는 "intimate_friend"(친근한 누군가/편지) 또는 "anonymous_reader"(익명의 독자) 중 택1
+- tone: "plain"(~했다 평어체) 또는 "haeyo"(~해요 대화체) 또는 "formal"(~합니다 경어체) 중 택1
+- worldSetting: "에세이의 주된 공간/계절적 분위기 메모"
+- relationshipMemo: "글에 등장하는 주요 인연들과의 정서적 관계"
+` : `
+- speaker: "expert_objective"(저자/전문가 객관적 서술) 또는 "mentor_first"(1:1 코치/멘토 '나') 중 택1
+- listener: "readers"('독자 여러분') 또는 "you"('당신') 또는 "none"(호칭 생략) 중 택1
+- tone: "formal_explain"(~합니다 설명체) 또는 "assertive_plain"(~이다 단정체) 또는 "coaching"(~해볼까요?) 중 택1
+- authorBackground: "이 책을 서술하는 저자의 전문적 자격/배경"
+- caseStudyMemo: "독자를 설득할 핵심 실사례 및 데이터 메모"
+- coreMessage: "반드시 전달해야 할 한 줄 핵심 메시지"
+`}
+`.trim();
+
+      const responseText = await aiService.generateText(prompt);
+      const cleanJson = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+
+      const updated = {
+        ...narrativeConfig,
+        ...parsed
+      };
+      setNarrativeConfig(updated);
+      setIsMoreSettingsOpen(true); // 채워진 내용 확인하도록 아코디언 자동 오픈
+
+      const updatedBook = { ...activeBook, narrativeConfig: updated };
+      await bookService.updateBook(activeBook.id, updatedBook);
+      setActiveBook(updatedBook);
+
+      showToast('기획서 기반 작품 서사 설정이 완성되었습니다!', 'success');
+    } catch (err) {
+      console.error('[AiFillNarrativeConfig] Error:', err);
+      showToast('AI 설정 도출 중 오류가 발생했습니다. 다시 시도해 주세요.', 'error');
+    } finally {
+      setIsAiGeneratingNarrative(false);
+    }
+  };
+
+  // --- Step 4 & 5: 장르별 표준 서사 뼈대 스위칭 및 플롯/꼭지 편집 로직 ---
   const handleSelectPlotTemplate = async (template) => {
     const ok = await openConfirm({
       title: '서사 뼈대 변경',
@@ -629,7 +847,7 @@ export default function Vault() {
     showToast('인물 프로필이 삭제되었습니다.', 'info');
   };
 
-  // --- Step 4: 목차 조립대 로직 ---
+  // --- Step 5: 목차 조립대 로직 ---
   const saveDraftOutline = async (newDraft) => {
     setDraftChapters(newDraft);
     if (activeBook) {
@@ -811,8 +1029,9 @@ export default function Vault() {
     setDragOverTarget(null);
   };
 
-  // 목차 기획 모달 열기 및 생성
-  const handleOpenOutlinePlanModal = () => {
+  // 목차 기획 모달 열기 및 생성 (mode: 'plot' | 'standard')
+  const handleOpenOutlinePlanModal = (mode = 'plot') => {
+    setOutlinePlanMode(mode);
     setGeneratedAiOutline(null);
     setIsOutlinePlanModalOpen(true);
   };
@@ -820,34 +1039,64 @@ export default function Vault() {
   const handleGenerateAiOutline = async () => {
     try {
       setIsAiGeneratingOutline(true);
-      showToast('설계된 뼈대와 기획서를 분석하여 맞춤 목차를 생성 중입니다...', 'info');
+      const isPlotMode = outlinePlanMode === 'plot';
 
-      const proposal = {
-        logline: proposalLogline,
-        intention: proposalIntention,
-        target: proposalTarget
-      };
+      if (isPlotMode) {
+        showToast('설계된 뼈대와 기획서를 분석하여 맞춤 목차를 생성 중입니다...', 'info');
 
-      const generated = await bookService.generateOutlineFromPlot({
-        bookTitle: activeBook?.title || '미정의 작품',
-        bookSubtitle: activeBook?.subtitle || '',
-        genre: activeBook?.genre || '소설',
-        proposal,
-        characters,
-        plotStages
-      });
+        const proposal = {
+          logline: proposalLogline,
+          intention: proposalIntention,
+          target: proposalTarget
+        };
 
-      const structured = (generated || []).map((c, idx) => ({
-        id: `ai_c_${Date.now()}_${idx + 1}`,
-        title: `제${idx + 1}장. ${c.title.replace(/^제?\s*\d+\s*[장회편절단계권]?\s*[\.:\-]?\s*/i, '')}`,
-        sections: (c.sections || []).map((s, spIdx) => ({
-          id: `ai_s_${Date.now()}_${idx + 1}_${spIdx + 1}`,
-          title: s.title
-        }))
-      }));
+        const generated = await bookService.generateOutlineFromPlot({
+          bookTitle: activeBook?.title || '미정의 작품',
+          bookSubtitle: activeBook?.subtitle || '',
+          genre: activeBook?.genre || '소설',
+          proposal,
+          characters,
+          plotStages,
+          narrativeConfig
+        });
 
-      setGeneratedAiOutline(structured);
-      showToast('인물·서사 뼈대 기반 AI 맞춤 목차가 도출되었습니다.', 'success');
+        const structured = (generated || []).map((c, idx) => ({
+          id: `ai_c_${Date.now()}_${idx + 1}`,
+          title: `제${idx + 1}장. ${c.title.replace(/^제?\s*\d+\s*[장회편절단계권]?\s*[\.:\-]?\s*/i, '')}`,
+          sections: (c.sections || []).map((s, spIdx) => ({
+            id: `ai_s_${Date.now()}_${idx + 1}_${spIdx + 1}`,
+            title: s.title
+          }))
+        }));
+
+        setGeneratedAiOutline(structured);
+        showToast('서사 뼈대 기반 AI 맞춤 목차가 도출되었습니다.', 'success');
+      } else {
+        showToast('출간 기획서와 장르 표준을 기반으로 완성 목차를 생성 중입니다...', 'info');
+
+        const promptData = {
+          title: activeBook?.title || '미정의 작품',
+          subtitle: activeBook?.subtitle || '',
+          genre: activeBook?.genre || '소설',
+          targetAudience: proposalTarget || '',
+          chapterCount: 5,
+          sectionsPerChapter: 3,
+          extraPrompt: `로그라인: ${proposalLogline}\n기획의도: ${proposalIntention}\n차별점: ${proposalDiff}`
+        };
+
+        const rawChapters = await aiService.generateOutline(promptData);
+        const structured = (rawChapters || []).map((c, idx) => ({
+          id: `ai_c_${Date.now()}_${idx + 1}`,
+          title: `제${idx + 1}장. ${(c.title || '').replace(/^제?\s*\d+\s*[장회편절단계권]?\s*[\.:\-]?\s*/i, '')}`,
+          sections: (c.sections || []).map((s, spIdx) => ({
+            id: `ai_s_${Date.now()}_${idx + 1}_${spIdx + 1}`,
+            title: s.title
+          }))
+        }));
+
+        setGeneratedAiOutline(structured);
+        showToast('출간 기획 기반 AI 목차가 도출되었습니다.', 'success');
+      }
     } catch (err) {
       showToast(`목차 도출 실패: ${err.message}`, 'error');
     } finally {
@@ -1337,11 +1586,118 @@ export default function Vault() {
                     </div>
                   )}
 
-                  {/* [STEP 3] 인물 & 뼈대 */}
-                  {activeStep === 'story' && (
-                    <div className="story-container">
-                      {/* 좌측: 인물/화자 프로필 */}
-                      <div className="story-left-col">
+                  {/* [STEP 4] 작품 서사 설정 & 인물 */}
+                  {activeStep === 'story' && (() => {
+                    const narrativeOptions = getNarrativeOptions(currentGenreKey);
+                    const isLiterature = currentGenreKey === 'novel' || currentGenreKey === 'webnovel' || currentGenreKey === 'essay';
+
+                    return (
+                      <div className="narrative-setting-container">
+                        {/* 상단 헤더 & AI 초안 채우기 버튼 */}
+                        <div className="narrative-top-header">
+                          <div className="narrative-header-text">
+                            <h3 className="narrative-title">
+                              <Sliders size={16} style={{ color: 'var(--color-primary)' }} />
+                              작품 서사 설정 & 인물
+                            </h3>
+                            <p className="narrative-desc">
+                              화자·청자·어투 3요소를 확정하고 등장인물 및 작품 설정을 구체화합니다.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-ai-narrative-fill"
+                            onClick={handleAiFillNarrativeConfig}
+                            disabled={isAiGeneratingNarrative}
+                            title="출간 기획서의 로그라인과 타깃을 분석하여 최적의 서사 설정을 자동 채웁니다"
+                          >
+                            <Sparkles size={14} />
+                            {isAiGeneratingNarrative ? 'AI 분석 중...' : '출간 기획서 기반 AI 초안 채우기'}
+                          </button>
+                        </div>
+
+                        {/* 필수 3요소 카드 그리드 (화자, 청자, 어투) */}
+                        <div className="essential-trio-grid">
+                          {/* 1. 화자 (시점) */}
+                          <div className="trio-card">
+                            <div className="trio-card-header">
+                              <span className="trio-badge">필수 1</span>
+                              <h4 className="trio-card-title">화자 (시점)</h4>
+                            </div>
+                            <div className="trio-options-list">
+                              {narrativeOptions.speakers.map((opt) => (
+                                <label
+                                  key={opt.id}
+                                  className={`trio-radio-label ${narrativeConfig.speaker === opt.id ? 'active' : ''}`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="narrative_speaker"
+                                    value={opt.id}
+                                    checked={narrativeConfig.speaker === opt.id}
+                                    onChange={() => handleUpdateNarrativeConfig('speaker', opt.id)}
+                                  />
+                                  <span className="trio-radio-text">{opt.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 2. 청자 (대상 독자) */}
+                          <div className="trio-card">
+                            <div className="trio-card-header">
+                              <span className="trio-badge">필수 2</span>
+                              <h4 className="trio-card-title">청자 (대상 독자)</h4>
+                            </div>
+                            <div className="trio-options-list">
+                              {narrativeOptions.listeners.map((opt) => (
+                                <label
+                                  key={opt.id}
+                                  className={`trio-radio-label ${narrativeConfig.listener === opt.id ? 'active' : ''}`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="narrative_listener"
+                                    value={opt.id}
+                                    checked={narrativeConfig.listener === opt.id}
+                                    onChange={() => handleUpdateNarrativeConfig('listener', opt.id)}
+                                  />
+                                  <span className="trio-radio-text">{opt.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* 3. 어투 (문체/종결형) */}
+                          <div className="trio-card">
+                            <div className="trio-card-header">
+                              <span className="trio-badge">필수 3</span>
+                              <h4 className="trio-card-title">기본 어투 (문체)</h4>
+                            </div>
+                            <div className="trio-options-list">
+                              {narrativeOptions.tones.map((opt) => (
+                                <label
+                                  key={opt.id}
+                                  className={`trio-radio-label ${narrativeConfig.tone === opt.id ? 'active' : ''}`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="narrative_tone"
+                                    value={opt.id}
+                                    checked={narrativeConfig.tone === opt.id}
+                                    onChange={() => handleUpdateNarrativeConfig('tone', opt.id)}
+                                  />
+                                  <span className="trio-radio-text">{opt.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 하단 2열 그리드: 인물/화자 프로필 + 더 설정하기 (선택 사항) */}
+                        <div className="narrative-bottom-grid">
+                          {/* 좌측: 인물·화자 프로필 */}
+                          <div className="narrative-char-col">
                         <div className="story-panel-header">
                           <h3 className="story-panel-title">
                             <Users size={15} style={{ color: 'var(--color-primary)' }} />
@@ -1414,89 +1770,186 @@ export default function Vault() {
                         </div>
                       </div>
 
-                      {/* 우측: 장르 표준 서사 뼈대 & 세부 꼭지별 아이디어 메모 */}
-                      <div className="story-right-col">
-                        <div className="story-panel-header">
-                          <h3 className="story-panel-title">
-                            <Layers size={15} style={{ color: 'var(--color-primary)' }} />
-                            장르별 서사 뼈대
-                          </h3>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--color-primary)', fontWeight: 600 }}>
-                            {activeBook?.genre || '소설'}
-                          </span>
+                      {/* 우측: 더 설정하기 (선택 사항 접힘/펼침 아코디언) */}
+                      <div className="narrative-extra-col">
+
+                          <div className="more-settings-box">
+                            <button
+                              type="button"
+                              className="more-settings-toggle"
+                              onClick={() => setIsMoreSettingsOpen(!isMoreSettingsOpen)}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span className="more-badge">선택 사항</span>
+                                <span style={{ fontWeight: 600, fontSize: '0.84rem' }}>
+                                  {isLiterature ? '배경 및 관계도 더 설정하기' : '저자 전문성 및 핵심 사례 더 설정하기'}
+                                </span>
+                              </div>
+                              {isMoreSettingsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+
+                            {isMoreSettingsOpen && (
+                              <div className="more-settings-content">
+                                {isLiterature ? (
+                                  <>
+                                    <div className="more-field-group">
+                                      <label className="more-field-label">세계관 및 시대적 배경 메모</label>
+                                      <textarea
+                                        className="more-textarea"
+                                        placeholder="공간적 배경, 시대 분위기, 규칙이나 제약 조건 등을 자유롭게 기록하세요."
+                                        rows={4}
+                                        value={narrativeConfig.worldSetting || ''}
+                                        onChange={(e) => handleUpdateNarrativeConfig('worldSetting', e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="more-field-group">
+                                      <label className="more-field-label">인물 관계도 및 핵심 갈등 구도</label>
+                                      <textarea
+                                        className="more-textarea"
+                                        placeholder="주인공과 주변 인물 간의 대립, 조력, 애증 등 핵심 갈등 축을 메모하세요."
+                                        rows={4}
+                                        value={narrativeConfig.relationshipMemo || ''}
+                                        onChange={(e) => handleUpdateNarrativeConfig('relationshipMemo', e.target.value)}
+                                      />
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="more-field-group">
+                                      <label className="more-field-label">저자 전문성 및 집필 배경</label>
+                                      <textarea
+                                        className="more-textarea"
+                                        placeholder="독자에게 신뢰를 줄 수 있는 저자의 현장 경험, 이력, 집필 동기를 메모하세요."
+                                        rows={3}
+                                        value={narrativeConfig.authorBackground || ''}
+                                        onChange={(e) => handleUpdateNarrativeConfig('authorBackground', e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="more-field-group">
+                                      <label className="more-field-label">핵심 실사례 및 데이터/레퍼런스</label>
+                                      <textarea
+                                        className="more-textarea"
+                                        placeholder="본문에 인용하거나 증명에 활용할 대표 사례, 연구 결과, 통계 등을 기록하세요."
+                                        rows={3}
+                                        value={narrativeConfig.caseStudyMemo || ''}
+                                        onChange={(e) => handleUpdateNarrativeConfig('caseStudyMemo', e.target.value)}
+                                      />
+                                    </div>
+                                    <div className="more-field-group">
+                                      <label className="more-field-label">1줄 핵심 메시지</label>
+                                      <input
+                                        type="text"
+                                        className="more-input"
+                                        placeholder="독자가 책을 덮을 때 가슴에 남아야 할 단 하나의 핵심 메시지"
+                                        value={narrativeConfig.coreMessage || ''}
+                                        onChange={(e) => handleUpdateNarrativeConfig('coreMessage', e.target.value)}
+                                      />
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                  {/* [STEP 5] 서사 뼈대 & 목차 조립대 (좌: 뼈대 구성 카드, 우: 목차 조립대 카드) */}
+                  {activeStep === 'outline' && (
+                    <div className="step5-main-layout">
+                      {/* 좌측 카드 섹션: 뼈대 구성 */}
+                      <section className="step5-card-box left-box">
+                        <div className="step5-card-header">
+                          <div className="card-header-left">
+                            <Layers size={16} style={{ color: 'var(--color-primary)' }} />
+                            <h3 className="card-header-title">뼈대 구성</h3>
+                            <span className="card-genre-pill">{activeBook?.genre || '소설'}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-bridge-action"
+                            onClick={() => handleOpenOutlinePlanModal('plot')}
+                            title="현재 설정된 서사 뼈대를 분석하여 완성 목차를 자동 도출합니다"
+                          >
+                            <Sparkles size={13} />
+                            이 뼈대로 목차 기획
+                            <ChevronRight size={13} />
+                          </button>
                         </div>
 
-                        {/* 도서 장르 기반 추천 뼈대 및 44종 전체 서사 라이브러리 스위처 */}
-                        {(() => {
-                          const recIds = GENRE_RECOMMENDED_PLOTS[currentGenreKey] || GENRE_RECOMMENDED_PLOTS.novel;
-                          const recommendedPlots = recIds.map((id) => PLOT_LIBRARY.find((p) => p.id === id)).filter(Boolean);
-                          const currentPlot = PLOT_LIBRARY.find((p) => p.id === selectedPlotTemplateId) || recommendedPlots[0] || PLOT_LIBRARY[0];
-                          const isCustomOrOther = !recommendedPlots.some((p) => p.id === selectedPlotTemplateId);
+                        <div className="step5-card-body">
+                          {/* 도서 장르 기반 추천 뼈대 및 44종 전체 서사 라이브러리 스위처 */}
+                          {(() => {
+                            const recIds = GENRE_RECOMMENDED_PLOTS[currentGenreKey] || GENRE_RECOMMENDED_PLOTS.novel;
+                            const recommendedPlots = recIds.map((id) => PLOT_LIBRARY.find((p) => p.id === id)).filter(Boolean);
+                            const currentPlot = PLOT_LIBRARY.find((p) => p.id === selectedPlotTemplateId) || recommendedPlots[0] || PLOT_LIBRARY[0];
+                            const isCustomOrOther = !recommendedPlots.some((p) => p.id === selectedPlotTemplateId);
 
-                          return (
-                            <>
-                              <div className="plot-switcher-wrapper">
-                                <div className="plot-genre-switcher">
-                                  <span className="plot-rec-label">추천 뼈대</span>
-                                  {recommendedPlots.map((plot) => (
-                                    <button
-                                      key={plot.id}
-                                      type="button"
-                                      className={`plot-genre-btn ${selectedPlotTemplateId === plot.id ? 'active' : ''}`}
-                                      onClick={() => handleSelectPlotTemplate(plot)}
-                                      title={plot.flow}
-                                    >
-                                      {plot.name}
-                                    </button>
-                                  ))}
-                                  <div className="plot-other-select-container">
-                                    <select
-                                      className={`plot-other-select ${isCustomOrOther ? 'active' : ''}`}
-                                      value={isCustomOrOther ? selectedPlotTemplateId : ''}
-                                      onChange={(e) => {
-                                        if (e.target.value) {
-                                          const found = PLOT_LIBRARY.find((p) => p.id === e.target.value);
-                                          if (found) handleSelectPlotTemplate(found);
-                                        }
-                                      }}
-                                    >
-                                      <option value="" disabled>기타 뼈대 둘러보기 (44종)...</option>
-                                      {PLOT_CATEGORIES.map((cat) => {
-                                        const catPlots = PLOT_LIBRARY.filter((p) => p.category === cat.id);
-                                        return (
-                                          <optgroup key={cat.id} label={cat.name}>
-                                            {catPlots.map((p) => (
-                                              <option key={p.id} value={p.id}>
-                                                {p.name} ({p.fitFor})
-                                              </option>
-                                            ))}
-                                          </optgroup>
-                                        );
-                                      })}
-                                    </select>
+                            return (
+                              <>
+                                <div className="plot-switcher-wrapper">
+                                  <div className="plot-genre-switcher">
+                                    <span className="plot-rec-label">추천 뼈대</span>
+                                    {recommendedPlots.map((plot) => (
+                                      <button
+                                        key={plot.id}
+                                        type="button"
+                                        className={`plot-genre-btn ${selectedPlotTemplateId === plot.id ? 'active' : ''}`}
+                                        onClick={() => handleSelectPlotTemplate(plot)}
+                                        title={plot.flow}
+                                      >
+                                        {plot.name}
+                                      </button>
+                                    ))}
+                                    <div className="plot-other-select-container">
+                                      <select
+                                        className={`plot-other-select ${isCustomOrOther ? 'active' : ''}`}
+                                        value={isCustomOrOther ? selectedPlotTemplateId : ''}
+                                        onChange={(e) => {
+                                          if (e.target.value) {
+                                            const found = PLOT_LIBRARY.find((p) => p.id === e.target.value);
+                                            if (found) handleSelectPlotTemplate(found);
+                                          }
+                                        }}
+                                      >
+                                        <option value="" disabled>기타 뼈대 둘러보기 (44종)...</option>
+                                        {PLOT_CATEGORIES.map((cat) => {
+                                          const catPlots = PLOT_LIBRARY.filter((p) => p.category === cat.id);
+                                          return (
+                                            <optgroup key={cat.id} label={cat.name}>
+                                              {catPlots.map((p) => (
+                                                <option key={p.id} value={p.id}>
+                                                  {p.name} ({p.fitFor})
+                                                </option>
+                                              ))}
+                                            </optgroup>
+                                          );
+                                        })}
+                                      </select>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              {currentPlot && (
-                                <div className="plot-standard-banner">
-                                  <Info size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
-                                  <div className="plot-banner-content">
-                                    <span className="plot-banner-title">
-                                      <strong>{currentPlot.name}</strong> — {currentPlot.fitFor || '표준 서사 규격'}
-                                    </span>
-                                    <span className="plot-banner-flow">
-                                      [서사 흐름] {currentPlot.flow}
-                                    </span>
+                                {currentPlot && (
+                                  <div className="plot-standard-banner">
+                                    <Info size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                                    <div className="plot-banner-content">
+                                      <span className="plot-banner-title">
+                                        <strong>{currentPlot.name}</strong> — {currentPlot.fitFor || '표준 서사 규격'}
+                                      </span>
+                                      <span className="plot-banner-flow">
+                                        [서사 흐름] {currentPlot.flow}
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-
-                        {/* 플롯 단계 및 세부 꼭지 트리 (수정, 추가, 삭제 지원) */}
-                        <div className="plot-stages-tree">
+                                )}
+                              </>
+                            );
+                          })()}
+                          {/* 플롯 단계 및 세부 꼭지 트리 (수정, 추가, 삭제 지원) */}
+                          <div className="plot-stages-tree">
                           {plotStages.map((stage, sIdx) => {
                             const isEditingStage = editingStageIdx === sIdx;
                             return (
@@ -1512,203 +1965,140 @@ export default function Vault() {
                                         placeholder="단계명 (예: 1. 발단과 결핍의 일상)"
                                         autoFocus
                                       />
-                                      <input
-                                        type="text"
-                                        className="plot-inline-input"
-                                        value={editingStageDesc}
-                                        onChange={(e) => setEditingStageDesc(e.target.value)}
-                                        placeholder="단계 가이드 설명"
-                                        style={{ flex: 1.5 }}
-                                      />
-                                      <button
-                                        type="button"
-                                        className="btn-add-idea"
-                                        style={{ padding: '0.2rem 0.55rem', fontSize: '0.72rem' }}
-                                        onClick={() => handleCommitEditStage(sIdx)}
-                                      >
-                                        저장
+                                      <button type="button" className="mini-icon-btn" onClick={() => handleSaveEditingStage(sIdx)} title="저장">
+                                        <Check size={12} />
                                       </button>
-                                      <button
-                                        type="button"
-                                        className="btn-idea-action"
-                                        onClick={() => setEditingStageIdx(null)}
-                                      >
-                                        취소
+                                      <button type="button" className="mini-icon-btn" onClick={() => setEditingStageIdx(null)} title="취소">
+                                        <X size={12} />
                                       </button>
                                     </div>
                                   ) : (
                                     <>
-                                      <div className="plot-stage-left">
-                                        <span className="plot-stage-name">{stage.title}</span>
-                                      </div>
-                                      <div className="plot-stage-right-actions">
-                                        <button
-                                          type="button"
-                                          className="mini-icon-btn"
-                                          style={{ width: '22px', height: '22px' }}
-                                          onClick={() => {
-                                            setEditingStageIdx(sIdx);
-                                            setEditingStageTitle(stage.title || '');
-                                            setEditingStageDesc(stage.desc || '');
-                                          }}
-                                          title="단계명 및 설명 수정"
-                                        >
-                                          <Edit2 size={12} />
+                                      <span className="plot-stage-title-text">{stage.title}</span>
+                                      <div className="plot-stage-actions">
+                                        <button type="button" className="mini-icon-btn" onClick={() => handleStartEditingStage(sIdx, stage.title)} title="단계명 수정">
+                                          <Edit2 size={11} />
                                         </button>
-                                        <button
-                                          type="button"
-                                          className="mini-icon-btn danger"
-                                          style={{ width: '22px', height: '22px' }}
-                                          onClick={() => handleDeleteStage(sIdx)}
-                                          title="단계 삭제"
-                                        >
-                                          <Trash2 size={12} />
+                                        <button type="button" className="mini-icon-btn danger" onClick={() => handleDeleteStage(sIdx)} title="단계 삭제">
+                                          <Trash2 size={11} />
                                         </button>
                                       </div>
                                     </>
                                   )}
                                 </div>
 
-                                {stage.desc && !isEditingStage && (
-                                  <div className="plot-stage-guide">
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                      <Info size={13} style={{ flexShrink: 0, color: 'var(--color-primary)' }} />
-                                      <span>{stage.desc}</span>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <div className="plot-stage-sub-list">
+                                {/* 세부 꼭지 목록 및 발상 메모 카드 */}
+                                <div className="plot-subplots-list">
                                   {(stage.subplots || []).map((sub, spIdx) => {
                                     const subTitle = typeof sub === 'string' ? sub : sub.title;
-                                    const subMemo = typeof sub === 'object' && sub !== null ? sub.memo : '';
-                                    const memoKey = `${sIdx}_${spIdx}`;
-                                    const isEditingThisMemo = activeMemoKey === memoKey;
-                                    const isEditingThisSubplot = editingSubplotKey === memoKey;
+                                    const subMemo = typeof sub === 'object' && sub !== null ? sub.memo || '' : '';
+                                    const subKey = `${sIdx}_${spIdx}`;
+                                    const isEditingSub = editingSubplotKey === subKey;
+                                    const isMemoActive = activeMemoKey === subKey;
 
                                     return (
-                                      <div key={spIdx} className="plot-sub-item-wrap">
-                                        {isEditingThisSubplot ? (
-                                          <div className="plot-sub-item" style={{ background: 'var(--bg-hover)' }}>
-                                            <input
-                                              type="text"
-                                              className="plot-inline-input"
-                                              value={editingSubplotTitle}
-                                              onChange={(e) => setEditingSubplotTitle(e.target.value)}
-                                              autoFocus
-                                            />
-                                            <div style={{ display: 'flex', gap: '4px' }}>
-                                              <button
-                                                type="button"
-                                                className="btn-add-idea"
-                                                style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
-                                                onClick={() => handleCommitEditSubplot(sIdx, spIdx)}
-                                              >
-                                                저장
+                                      <div key={subKey} className="plot-subplot-card">
+                                        <div className="plot-subplot-main">
+                                          {isEditingSub ? (
+                                            <div style={{ display: 'flex', gap: '6px', flex: 1, alignItems: 'center' }}>
+                                              <input
+                                                type="text"
+                                                className="plot-inline-input"
+                                                value={editingSubplotTitle}
+                                                onChange={(e) => setEditingSubplotTitle(e.target.value)}
+                                                placeholder="세부 꼭지명 입력"
+                                                autoFocus
+                                              />
+                                              <button type="button" className="mini-icon-btn" onClick={() => handleSaveEditingSubplotTitle(sIdx, spIdx)} title="저장">
+                                                <Check size={12} />
                                               </button>
-                                              <button
-                                                type="button"
-                                                className="btn-idea-action"
-                                                onClick={() => setEditingSubplotKey(null)}
-                                              >
-                                                취소
+                                              <button type="button" className="mini-icon-btn" onClick={() => setEditingSubplotKey(null)} title="취소">
+                                                <X size={12} />
                                               </button>
                                             </div>
-                                          </div>
-                                        ) : (
-                                          <div className="plot-sub-item">
-                                            <span className="plot-sub-title">{subTitle}</span>
-                                            <div className="plot-sub-actions">
-                                              <button
-                                                type="button"
-                                                className="mini-icon-btn"
-                                                style={{ width: '20px', height: '20px' }}
-                                                onClick={() => {
-                                                  setEditingSubplotKey(memoKey);
-                                                  setEditingSubplotTitle(subTitle);
-                                                }}
-                                                title="꼭지명 수정"
-                                              >
-                                                <Edit2 size={11} />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                className="btn-idea-action"
-                                                onClick={() => handleOpenMemoEditor(sIdx, spIdx, subMemo)}
-                                              >
-                                                {subMemo ? '메모 수정' : '+ 메모'}
-                                              </button>
-                                              <button
-                                                type="button"
-                                                className="mini-icon-btn danger"
-                                                style={{ width: '20px', height: '20px' }}
-                                                onClick={() => handleDeleteSubplot(sIdx, spIdx)}
-                                                title="꼭지 삭제"
-                                              >
-                                                <Trash2 size={11} />
-                                              </button>
-                                            </div>
-                                          </div>
-                                        )}
+                                          ) : (
+                                            <>
+                                              <span className="plot-subplot-title-text">{subTitle}</span>
+                                              <div className="plot-subplot-actions">
+                                                <button
+                                                  type="button"
+                                                  className={`mini-memo-btn ${subMemo ? 'has-memo' : ''}`}
+                                                  onClick={() => handleStartEditMemo(sIdx, spIdx, subMemo)}
+                                                  title={subMemo ? '메모 수정' : '발상 메모 추가'}
+                                                >
+                                                  <Lightbulb size={11} />
+                                                  {subMemo ? '메모' : '+ 메모'}
+                                                </button>
+                                                <button type="button" className="mini-icon-btn" onClick={() => handleStartEditingSubplotTitle(sIdx, spIdx, subTitle)} title="꼭지명 수정">
+                                                  <Edit2 size={11} />
+                                                </button>
+                                                <button type="button" className="mini-icon-btn danger" onClick={() => handleDeleteSubplot(sIdx, spIdx)} title="꼭지 삭제">
+                                                  <Trash2 size={11} />
+                                                </button>
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
 
-                                        {/* 아이디어 메모 뱃지 */}
-                                        {subMemo && !isEditingThisMemo && (
-                                          <div className="plot-sub-memo-badge">
-                                            <div className="memo-content">
-                                              <strong>아이디어 구상:</strong> {subMemo}
-                                            </div>
+                                        {/* 기존 저장된 메모 내용 표시 */}
+                                        {subMemo && !isMemoActive && (
+                                          <div className="subplot-memo-display">
+                                            <span className="memo-label">아이디어:</span>
+                                            <span className="memo-text">{subMemo}</span>
                                             <button
                                               type="button"
-                                              className="mini-icon-btn danger"
-                                              style={{ width: '16px', height: '16px' }}
+                                              className="mini-memo-del-btn"
                                               onClick={() => handleDeleteSubplotMemo(sIdx, spIdx)}
                                               title="메모 삭제"
                                             >
-                                              <Trash2 size={10} />
+                                              <X size={10} />
                                             </button>
                                           </div>
                                         )}
 
-                                        {/* 인라인 메모 입력창 */}
-                                        {isEditingThisMemo && (
-                                          <div className="plot-sub-memo-input-wrap">
-                                            <textarea
-                                              className="plot-sub-memo-textarea"
-                                              placeholder="이 꼭지에서 다룰 핵심 질문, 사례, 영감을 메모해 보세요..."
+                                        {/* 메모 인라인 입력창 */}
+                                        {isMemoActive && (
+                                          <div className="subplot-memo-input-wrap">
+                                            <input
+                                              type="text"
+                                              className="subplot-memo-input"
+                                              placeholder="이 꼭지에 담을 나만의 디테일 발상, 복선, 실사례를 메모하세요..."
                                               value={memoInputText}
                                               onChange={(e) => setMemoInputText(e.target.value)}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleSaveSubplotMemo(sIdx, spIdx);
+                                              }}
                                               autoFocus
                                             />
-                                            <div className="plot-memo-btns">
-                                              <button
-                                                type="button"
-                                                className="btn-idea-action"
-                                                onClick={() => setActiveMemoKey(null)}
-                                              >
-                                                취소
-                                              </button>
-                                              <button
-                                                type="button"
-                                                className="btn-add-idea"
-                                                style={{ padding: '0.25rem 0.6rem', fontSize: '0.72rem' }}
-                                                onClick={() => handleSaveSubplotMemo(sIdx, spIdx)}
-                                              >
-                                                저장
-                                              </button>
-                                            </div>
+                                            <button
+                                              type="button"
+                                              className="btn-add-idea"
+                                              style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem' }}
+                                              onClick={() => handleSaveSubplotMemo(sIdx, spIdx)}
+                                            >
+                                              저장
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="btn-idea-action"
+                                              style={{ padding: '0.2rem 0.4rem', fontSize: '0.72rem' }}
+                                              onClick={() => setActiveMemoKey(null)}
+                                            >
+                                              취소
+                                            </button>
                                           </div>
                                         )}
                                       </div>
                                     );
                                   })}
 
-                                  {/* 꼭지 추가 버튼 */}
+                                  {/* 세부 꼭지 추가 버튼 */}
                                   <button
                                     type="button"
-                                    className="btn-add-sub-pill"
+                                    className="btn-add-subplot-row"
                                     onClick={() => handleAddNewSubplot(sIdx)}
                                   >
-                                    <Plus size={12} />
+                                    <Plus size={11} />
                                     세부 꼭지 추가
                                   </button>
                                 </div>
@@ -1727,37 +2117,53 @@ export default function Vault() {
                           </button>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    </section>
 
-                  {/* [STEP 4] 목차 조립대 */}
-                  {activeStep === 'outline' && (
-                    <div className="outline-sandbox-container">
-                      <div className="outline-top-actions">
-                        <div style={{ fontSize: '0.82rem', color: 'var(--text-main)', fontWeight: 600 }}>
-                          <span style={{ color: 'var(--color-primary)', fontFamily: 'var(--font-display)' }}>OUTLINE SANDBOX</span>
-                          <span style={{ marginLeft: '0.4rem', color: 'var(--text-sub)', fontWeight: 'normal' }}>
-                            마우스 드래그로 순서를 재배치하고 호버 시 수정·삭제할 수 있습니다.
-                          </span>
+                    {/* 가운데 연결 화살표 브릿지 */}
+                    <div className="step5-flow-divider">
+                      <div className="divider-line" />
+                      <div className="divider-badge" title="서사 뼈대 구상을 바탕으로 목차를 조립합니다">
+                        <ChevronRight size={18} />
+                      </div>
+                      <div className="divider-line" />
+                    </div>
+
+                    {/* 우측 카드 섹션: 목차 조립대 */}
+                    <section className="step5-card-box right-box">
+                      <div className="step5-card-header">
+                        <div className="card-header-left">
+                          <BookOpen size={16} style={{ color: 'var(--color-primary)' }} />
+                          <h3 className="card-header-title">목차 조립대</h3>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.4rem' }}>
-                          <button type="button" className="btn-plan-outline" onClick={handleOpenOutlinePlanModal}>
+                        <div className="card-header-actions">
+                          <button
+                            type="button"
+                            className="btn-plan-outline"
+                            onClick={() => handleOpenOutlinePlanModal('standard')}
+                            title="뼈대 설정 없이 출간 기획서와 장르 표준을 바탕으로 목차를 바로 기획합니다"
+                          >
                             <Sparkles size={13} />
-                            목차 기획
+                            AI 목차 기획
                           </button>
                           <button type="button" className="btn-add-idea" onClick={handleAddNewChapter}>
                             <Plus size={13} />
                             장 추가
                           </button>
-                          <button type="button" className="btn-add-idea" style={{ background: 'var(--color-reading)' }} onClick={handleApplyDraftToStudio}>
+                          <button
+                            type="button"
+                            className="btn-add-idea"
+                            style={{ background: 'var(--color-reading)' }}
+                            onClick={handleApplyDraftToStudio}
+                          >
                             <Check size={13} />
                             스튜디오 반영
                           </button>
                         </div>
                       </div>
 
-                      {/* 목차 리스트 (노션 스타일 드래그 앤 드롭 영역) */}
-                      <div className="outline-chapters-container">
+                      <div className="step5-card-body">
+                        {/* 목차 리스트 (노션 스타일 드래그 앤 드롭 영역) */}
+                        <div className="outline-chapters-container">
                         {draftChapters.length === 0 ? (
                           <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
                             아직 조립된 챕터가 없습니다. 상단의 [목차 기획] 또는 [장 추가] 버튼을 눌러보세요.
@@ -1904,9 +2310,11 @@ export default function Vault() {
                             );
                           })
                         )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    </section>
+                  </div>
+                )}
                 </>
               )}
             </div>
@@ -1984,294 +2392,60 @@ export default function Vault() {
       </main>
 
       {/* =====================================================================
-          모달 팝업 모음
+          모달 팝업 모음 (VaultModals 컴포넌트로 분리 관리)
           ===================================================================== */}
+      <VaultModals
+        // 1. 새 프로젝트
+        isNewProjectModalOpen={isNewProjectModalOpen}
+        setIsNewProjectModalOpen={setIsNewProjectModalOpen}
+        newProjectTitle={newProjectTitle}
+        setNewProjectTitle={setNewProjectTitle}
+        newProjectGenre={newProjectGenre}
+        setNewProjectGenre={setNewProjectGenre}
+        handleCreateNewProject={handleCreateNewProject}
 
-      {/* 새 기획 프로젝트 생성 모달 */}
-      {isNewProjectModalOpen && (
-        <div className="vault-modal-backdrop" onClick={() => setIsNewProjectModalOpen(false)}>
-          <div className="vault-modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="vault-modal-header">
-              <h3 className="vault-modal-title">
-                <BookOpen size={18} style={{ color: 'var(--color-primary)' }} />
-                새 작품 기획 시작
-              </h3>
-              <button type="button" className="mini-icon-btn" onClick={() => setIsNewProjectModalOpen(false)}>
-                <X size={15} />
-              </button>
-            </div>
-            <form onSubmit={handleCreateNewProject}>
-              <div className="vault-modal-body">
-                <div className="vault-form-group">
-                  <label>작품 가제</label>
-                  <input
-                    type="text"
-                    className="vault-form-control"
-                    placeholder="예: 심야의 문장과 고요한 방"
-                    value={newProjectTitle}
-                    onChange={(e) => setNewProjectTitle(e.target.value)}
-                    autoFocus
-                    required
-                  />
-                </div>
-                <div className="vault-form-group">
-                  <label>도서 장르</label>
-                  <select
-                    className="vault-form-control"
-                    value={newProjectGenre}
-                    onChange={(e) => setNewProjectGenre(e.target.value)}
-                  >
-                    {OFFICIAL_GENRES.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="vault-modal-footer">
-                <button type="button" className="btn-idea-action" onClick={() => setIsNewProjectModalOpen(false)}>
-                  취소
-                </button>
-                <button type="submit" className="btn-add-idea">
-                  기획 시작하기
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+        // 2. 취재 자료
+        isVaultModalOpen={isVaultModalOpen}
+        setIsVaultModalOpen={setIsVaultModalOpen}
+        editingMaterialId={editingMaterialId}
+        vaultCategory={vaultCategory}
+        setVaultCategory={setVaultCategory}
+        vaultTitle={vaultTitle}
+        setVaultTitle={setVaultTitle}
+        vaultContent={vaultContent}
+        setVaultContent={setVaultContent}
+        vaultSource={vaultSource}
+        setVaultSource={setVaultSource}
+        tagsInput={tagsInput}
+        setTagsInput={setTagsInput}
+        isVaultSubmitting={isVaultSubmitting}
+        handleCreateOrUpdateMaterial={handleCreateOrUpdateMaterial}
 
-      {/* 취재 자료 등록 및 수정 모달 */}
-      {isVaultModalOpen && (
-        <div className="vault-modal-backdrop" onClick={() => setIsVaultModalOpen(false)}>
-          <div className="vault-modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="vault-modal-header">
-              <h3 className="vault-modal-title">
-                <Bookmark size={18} style={{ color: 'var(--color-primary)' }} />
-                {editingMaterialId ? '취재 자료 수정' : '취재 자료 등록'}
-              </h3>
-              <button type="button" className="mini-icon-btn" onClick={() => setIsVaultModalOpen(false)}>
-                <X size={15} />
-              </button>
-            </div>
-            <form onSubmit={handleCreateOrUpdateMaterial}>
-              <div className="vault-modal-body">
-                <div className="vault-form-group">
-                  <label>자료 분류</label>
-                  <select
-                    className="vault-form-control"
-                    value={vaultCategory === 'ALL' ? 'quote' : vaultCategory}
-                    onChange={(e) => setVaultCategory(e.target.value)}
-                  >
-                    {VAULT_CATEGORIES.filter((c) => c.id !== 'ALL').map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="vault-form-group">
-                  <label>자료 제목</label>
-                  <input
-                    type="text"
-                    className="vault-form-control"
-                    placeholder="예: 파스칼의 팡세 - 방 안에 머무는 능력"
-                    value={vaultTitle}
-                    onChange={(e) => setVaultTitle(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="vault-form-group">
-                  <label>핵심 내용 / 발췌문</label>
-                  <textarea
-                    className="vault-form-control"
-                    rows={4}
-                    placeholder="인간의 모든 불행은 방 안에 홀로 고요히 머물 줄 모른다는 데서 비롯된다..."
-                    value={vaultContent}
-                    onChange={(e) => setVaultContent(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="vault-form-group">
-                  <label>출처 / 레퍼런스</label>
-                  <input
-                    type="text"
-                    className="vault-form-control"
-                    placeholder="예: 블레즈 파스칼, 《팡세》 139절"
-                    value={vaultSource}
-                    onChange={(e) => setVaultSource(e.target.value)}
-                  />
-                </div>
-                <div className="vault-form-group">
-                  <label>해시태그 (쉼표로 구분)</label>
-                  <input
-                    type="text"
-                    className="vault-form-control"
-                    placeholder="사색, 고독, 회복"
-                    value={tagsInput}
-                    onChange={(e) => setTagsInput(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="vault-modal-footer">
-                <button type="button" className="btn-idea-action" onClick={() => setIsVaultModalOpen(false)}>
-                  취소
-                </button>
-                <button type="submit" className="btn-add-idea" disabled={isVaultSubmitting}>
-                  {editingMaterialId ? '수정 완료' : '등록하기'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+        // 3. 인물
+        isCharModalOpen={isCharModalOpen}
+        setIsCharModalOpen={setIsCharModalOpen}
+        editingCharId={editingCharId}
+        charName={charName}
+        setCharName={setCharName}
+        charRole={charRole}
+        setCharRole={setCharRole}
+        charGoal={charGoal}
+        setCharGoal={setCharGoal}
+        charFlaw={charFlaw}
+        setCharFlaw={setCharFlaw}
+        charTraits={charTraits}
+        setCharTraits={setCharTraits}
+        handleSaveCharacter={handleSaveCharacter}
 
-      {/* 인물 추가/수정 모달 */}
-      {isCharModalOpen && (
-        <div className="vault-modal-backdrop" onClick={() => setIsCharModalOpen(false)}>
-          <div className="vault-modal-box" onClick={(e) => e.stopPropagation()}>
-            <div className="vault-modal-header">
-              <h3 className="vault-modal-title">
-                <Users size={18} style={{ color: 'var(--color-primary)' }} />
-                {editingCharId ? '인물 프로필 수정' : '새 인물·화자 추가'}
-              </h3>
-              <button type="button" className="mini-icon-btn" onClick={() => setIsCharModalOpen(false)}>
-                <X size={15} />
-              </button>
-            </div>
-            <form onSubmit={handleSaveCharacter}>
-              <div className="vault-modal-body">
-                <div className="vault-form-group">
-                  <label>인물 이름 / 화자 호칭</label>
-                  <input
-                    type="text"
-                    className="vault-form-control"
-                    placeholder="예: 서진우 (주인공) / 나 (에세이 1인칭 화자)"
-                    value={charName}
-                    onChange={(e) => setCharName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="vault-form-group">
-                  <label>역할 비중</label>
-                  <select
-                    className="vault-form-control"
-                    value={charRole}
-                    onChange={(e) => setCharRole(e.target.value)}
-                  >
-                    <option value="주인공/화자">주인공 / 1인칭 화자</option>
-                    <option value="조력자/친구">조력자 / 멘토 / 친구</option>
-                    <option value="대립자/갈등원인">대립자 / 갈등 요인</option>
-                    <option value="관찰자/주변인">관찰자 / 주변 인물</option>
-                  </select>
-                </div>
-                <div className="vault-form-group">
-                  <label>핵심 욕망 / 목표 (Goal)</label>
-                  <input
-                    type="text"
-                    className="vault-form-control"
-                    placeholder="이 인물이 궁극적으로 얻고자 하는 가치나 목적"
-                    value={charGoal}
-                    onChange={(e) => setCharGoal(e.target.value)}
-                  />
-                </div>
-                <div className="vault-form-group">
-                  <label>결핍 / 치명적 약점 (Flaw)</label>
-                  <input
-                    type="text"
-                    className="vault-form-control"
-                    placeholder="인물의 내면적 트라우마나 극복해야 할 약점"
-                    value={charFlaw}
-                    onChange={(e) => setCharFlaw(e.target.value)}
-                  />
-                </div>
-                <div className="vault-form-group">
-                  <label>외모 및 성격 특징 (Traits)</label>
-                  <input
-                    type="text"
-                    className="vault-form-control"
-                    placeholder="차분함, 예민한 감각, 밤늦게 차를 마시는 습관 등"
-                    value={charTraits}
-                    onChange={(e) => setCharTraits(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="vault-modal-footer">
-                <button type="button" className="btn-idea-action" onClick={() => setIsCharModalOpen(false)}>
-                  취소
-                </button>
-                <button type="submit" className="btn-add-idea">
-                  저장하기
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 목차 기획 모달 */}
-      {isOutlinePlanModalOpen && (
-        <div className="vault-modal-backdrop" onClick={() => setIsOutlinePlanModalOpen(false)}>
-          <div className="vault-modal-box" style={{ width: '600px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="vault-modal-header">
-              <h3 className="vault-modal-title">
-                <Sparkles size={18} style={{ color: 'var(--color-primary)' }} />
-                출판 표준 플롯 기반 AI 목차 기획
-              </h3>
-              <button type="button" className="mini-icon-btn" onClick={() => setIsOutlinePlanModalOpen(false)}>
-                <X size={15} />
-              </button>
-            </div>
-            <div className="vault-modal-body">
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-sub)', margin: 0 }}>
-                현재 설정된 [인물 & 뼈대]의 표준 서사 단계와 세부 꼭지들을 분석하여 바로 집필 가능한 완성도 높은 가목차 구성을 제안합니다.
-              </p>
-
-              {!generatedAiOutline ? (
-                <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-                  <button
-                    type="button"
-                    className="btn-add-idea"
-                    style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem' }}
-                    onClick={handleGenerateAiOutline}
-                    disabled={isAiGeneratingOutline}
-                  >
-                    <Sparkles size={15} />
-                    {isAiGeneratingOutline ? '목차 생성 및 정렬 중...' : '플롯 기반 목차 자동 도출'}
-                  </button>
-                </div>
-              ) : (
-                <div style={{ maxHeight: '320px', overflowY: 'auto', padding: '0.5rem', background: 'var(--bg-surface)', borderRadius: '8px' }}>
-                  {generatedAiOutline.map((c, i) => (
-                    <div key={i} style={{ marginBottom: '0.85rem' }}>
-                      <strong style={{ fontSize: '0.86rem', color: 'var(--color-primary)' }}>{c.title}</strong>
-                      <div style={{ paddingLeft: '0.75rem', marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                        {c.sections.map((s, si) => (
-                          <div key={si} style={{ fontSize: '0.78rem', color: 'var(--text-main)' }}>
-                            • {s.title}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="vault-modal-footer">
-              <button type="button" className="btn-idea-action" onClick={() => setIsOutlinePlanModalOpen(false)}>
-                닫기
-              </button>
-              {generatedAiOutline && (
-                <button type="button" className="btn-add-idea" onClick={handleApplyAiOutline}>
-                  <Check size={14} />
-                  목차 조립대에 반영
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+        // 4. 목차 기획
+        isOutlinePlanModalOpen={isOutlinePlanModalOpen}
+        setIsOutlinePlanModalOpen={setIsOutlinePlanModalOpen}
+        outlinePlanMode={outlinePlanMode}
+        generatedAiOutline={generatedAiOutline}
+        isAiGeneratingOutline={isAiGeneratingOutline}
+        handleGenerateAiOutline={handleGenerateAiOutline}
+        handleApplyAiOutline={handleApplyAiOutline}
+      />
 
       {/* AI 모델 쿼터 현황 및 전환 모달 */}
       <ModelQuotasModal

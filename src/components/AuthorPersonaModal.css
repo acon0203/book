@@ -1,0 +1,449 @@
+/* ==========================================================================
+   작가 문체 페르소나 설정 모달 (AuthorPersonaModal.css)
+   - 연재서재 고유 테마 변수 및 단정한 라인 기반 픽토그램 스타일 준수
+   ========================================================================== */
+
+.author-persona-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(20, 16, 12, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  animation: personaModalFadeIn 0.2s ease-out;
+}
+
+@keyframes personaModalFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.author-persona-modal-box {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 모달 헤더 */
+.author-persona-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.6rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-card-sub);
+}
+
+.modal-title-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.modal-title-icon {
+  color: var(--primary);
+  margin-top: 0.15rem;
+}
+
+.modal-title-group h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 0.2rem 0;
+}
+
+.modal-title-group p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  padding: 0.35rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-main);
+}
+
+/* 모달 바디 */
+.author-persona-modal-body {
+  padding: 1.5rem 1.6rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  flex: 1;
+}
+
+/* 배너 */
+.persona-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.85rem 1.1rem;
+  background-color: rgba(139, 90, 43, 0.06);
+  border: 1px solid rgba(139, 90, 43, 0.22);
+  border-radius: 8px;
+}
+
+.persona-info-banner .banner-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.persona-info-banner .banner-text strong {
+  display: block;
+  font-size: 0.84rem;
+  color: var(--primary);
+  margin-bottom: 0.2rem;
+}
+
+.persona-info-banner .banner-text p {
+  font-size: 0.78rem;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.persona-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.95rem;
+  background-color: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+/* 섹션 카드 */
+.persona-section-card {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1.2rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-title-left h4 {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.section-icon {
+  color: var(--primary);
+}
+
+.section-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  background-color: var(--bg-active);
+  color: var(--primary);
+  border: 1px solid var(--border-color);
+}
+
+.section-badge.danger {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.section-desc {
+  font-size: 0.79rem;
+  color: var(--text-dim);
+  margin: -0.35rem 0 0 0;
+  line-height: 1.45;
+}
+
+/* 샘플 탭 바 */
+.sample-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sample-tab-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card-sub);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sample-tab-item:hover {
+  background-color: var(--bg-active);
+  color: var(--text-main);
+}
+
+.sample-tab-item.active {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.sample-tab-remove {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.1rem;
+  display: flex;
+  align-items: center;
+  color: inherit;
+  opacity: 0.75;
+  border-radius: 3px;
+}
+
+.sample-tab-remove:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.15);
+}
+
+.btn-add-sample-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  border: 1px dashed var(--border-color);
+  background-color: transparent;
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-add-sample-tab:hover {
+  background-color: var(--bg-active);
+  border-color: var(--primary);
+}
+
+/* 샘플 에디터 */
+.sample-editor-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.3rem;
+}
+
+.sample-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sample-input-row label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.sample-textarea-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sample-char-count {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+
+.persona-input-text {
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.84rem;
+  color: var(--text-main);
+  background-color: #ffffff;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.persona-input-text:focus {
+  border-color: var(--primary);
+}
+
+.persona-textarea {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-main);
+  background-color: #ffffff;
+  box-sizing: border-box;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.persona-textarea:focus {
+  border-color: var(--primary);
+}
+
+/* 칩 클라우드 */
+.persona-chip-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.persona-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card-sub);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.persona-chip-btn:hover {
+  background-color: var(--bg-active);
+  color: var(--text-main);
+  border-color: var(--border-bright);
+}
+
+.persona-chip-btn.selected {
+  background-color: rgba(139, 90, 43, 0.1);
+  color: var(--primary);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.persona-chip-btn.taboo.selected {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+  font-weight: 600;
+}
+
+.chip-check-icon {
+  stroke-width: 2.5;
+}
+
+.chip-del-icon {
+  margin-left: 0.15rem;
+  opacity: 0.7;
+}
+
+.chip-del-icon:hover {
+  opacity: 1;
+}
+
+/* 커스텀 칩 입력 그룹 */
+.persona-custom-input-group {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.persona-input-text-sm {
+  flex: 1;
+  padding: 0.42rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: var(--text-main);
+  background-color: #ffffff;
+  outline: none;
+}
+
+.persona-input-text-sm:focus {
+  border-color: var(--primary);
+}
+
+.btn-add-custom-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card-sub);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-add-custom-tag:hover {
+  background-color: var(--bg-active);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* 모달 푸터 */
+.author-persona-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 1.1rem 1.6rem;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-card-sub);
+}

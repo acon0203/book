@@ -3,7 +3,8 @@ const STORAGE_KEYS = {
   BOOKS: 'bookstudio_books',
   VAULT: 'bookstudio_vault',
   CONFIG: 'bookstudio_config',
-  STATS: 'bookstudio_stats'
+  STATS: 'bookstudio_stats',
+  AUTHOR_PERSONA: 'bookstudio_author_persona'
 };
 
 const DEFAULT_CONFIG = {
@@ -562,7 +563,22 @@ export const storageService = {
     localStorage.setItem(STORAGE_KEYS.STATS, JSON.stringify(stats));
   },
 
-  // --- 5. 전체 로컬 백업 내보내기 & 복원 ---
+  // --- 5. 작가 문체 페르소나 (Author Persona) ---
+  getAuthorPersona: () => {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.AUTHOR_PERSONA);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  saveAuthorPersona: (persona) => {
+    localStorage.setItem(STORAGE_KEYS.AUTHOR_PERSONA, JSON.stringify(persona));
+    return persona;
+  },
+
+  // --- 6. 전체 로컬 백업 내보내기 & 복원 ---
   exportBackupData: () => {
     return {
       version: '1.0',
@@ -570,7 +586,8 @@ export const storageService = {
       books: storageService.getBooks(),
       vault: storageService.getVault(),
       stats: storageService.getStats(),
-      config: storageService.getConfig()
+      config: storageService.getConfig(),
+      authorPersona: storageService.getAuthorPersona()
     };
   },
 
@@ -586,6 +603,9 @@ export const storageService = {
     }
     if (backupObj.config) {
       storageService.saveConfig(backupObj.config);
+    }
+    if (backupObj.authorPersona) {
+      storageService.saveAuthorPersona(backupObj.authorPersona);
     }
     return true;
   }

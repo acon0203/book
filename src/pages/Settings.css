@@ -906,3 +906,273 @@ kbd {
   line-height: 1.4;
 }
 
+/* ==========================================================================
+   작가 문체 페르소나 (Author Persona) 결과 카드 스타일
+   ========================================================================== */
+.persona-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 1. 미등록 빈 상태 카드 */
+.persona-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.2rem 1.5rem;
+  background-color: var(--bg-surface);
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.persona-empty-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: rgba(139, 90, 43, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.2rem;
+}
+
+.persona-empty-card h4 {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.persona-empty-card p {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0 0 0.5rem 0;
+}
+
+/* 2. 등록된 요약 그리드 */
+.persona-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.1rem;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .persona-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.persona-summary-block {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.persona-summary-block.full-width {
+  grid-column: 1 / -1;
+}
+
+.block-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.block-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.block-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  background-color: var(--bg-active);
+  color: var(--primary);
+  border: 1px solid var(--border-color);
+}
+
+.block-badge.danger {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+/* 샘플 칩 리스트 */
+.persona-sample-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.persona-sample-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.75rem;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  gap: 0.5rem;
+}
+
+.persona-sample-chip:hover {
+  border-color: var(--primary);
+  background-color: var(--bg-active);
+}
+
+.sample-title-text {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sample-len-text {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+/* 태그 클라우드 */
+.persona-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.persona-summary-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.persona-summary-tag.style {
+  background-color: rgba(139, 90, 43, 0.08);
+  color: var(--primary);
+  border: 1px solid rgba(139, 90, 43, 0.2);
+}
+
+.persona-summary-tag.taboo {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.empty-tag-hint {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+
+.persona-custom-instruction-text {
+  font-size: 0.82rem;
+  color: var(--text-main);
+  font-style: italic;
+  margin: 0;
+  line-height: 1.5;
+  padding: 0.5rem 0.75rem;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+/* 3. 샘플 미리보기 팝오버 오버레이 */
+.persona-sample-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(20, 16, 12, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1060;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.persona-sample-preview-box {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+}
+
+.persona-sample-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.2rem;
+  background-color: var(--bg-card-sub);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.preview-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.preview-header-left h4 {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.btn-preview-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  padding: 0.2rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.btn-preview-close:hover {
+  color: var(--text-main);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.persona-sample-preview-body {
+  padding: 1.2rem;
+  overflow-y: auto;
+}
+
+.sample-text-pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 0.86rem;
+  line-height: 1.7;
+  color: var(--text-main);
+  margin: 0;
+}
+

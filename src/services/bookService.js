@@ -59,6 +59,8 @@ export const bookService = {
   // 4. 통계 및 설정
   getConfig: async () => storageService.getConfig(),
   saveConfig: async (cfg) => storageService.saveConfig(cfg),
+  getAuthorPersona: async () => storageService.getAuthorPersona(),
+  saveAuthorPersona: async (persona) => storageService.saveAuthorPersona(persona),
   getStats: async () => storageService.getStats(),
   exportBackupData: async () => storageService.exportBackupData(),
   importBackupData: async (data) => storageService.importBackupData(data),

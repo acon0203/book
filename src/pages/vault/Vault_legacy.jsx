@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import './Vault_legacy.css';
-import { useStore } from '../store';
-import { bookService } from '../services/bookService';
+import { useStore } from '../../store';
+import { bookService } from '../../services/bookService';
 import {
   Plus, Trash2, X, Users, BookOpen, Layers, Sparkles, Check, Edit2, Lightbulb,
   ArrowRight, Shield, Award, HelpCircle, UserPlus, FileText, Tag, Link2, Quote,
   BarChart2, Bookmark, FolderPlus, Compass, PenTool, CheckCircle, ChevronRight,
   Send, AlertCircle, RefreshCw, Wand2
 } from 'lucide-react';
-import { PLOT_TEMPLATES, PIPELINE_STEPS, VAULT_CATEGORIES } from '../data/vaultConstants';
+import { PLOT_TEMPLATES, PIPELINE_STEPS, VAULT_CATEGORIES } from '../../data/vaultConstants';
 
 // 제목 정제 헬퍼 (제1장, 1. 등의 접두사 중복 방지)
 const cleanTitle = (str) => (str || '').replace(/^제?\s*\d+\s*[장회편절단계권]?\s*[\.:\-]?\s*/i, '').trim();

@@ -395,7 +395,8 @@ export const aiService = {
     genre = '',
     proposal = {},
     characters = [],
-    plotStages = []
+    plotStages = [],
+    narrativeConfig = null
   }) => {
     const adminConfig = getAdminAiConfig();
     const cleanFn = aiService.cleanOutlineTitle;
@@ -412,6 +413,15 @@ export const aiService = {
 
     const charsText = (characters || []).map(c => `- ${c.name} (${c.role}): 목표 [${c.goal || '미정'}], 결핍 [${c.flaw || '미정'}]`).join('\n') || '(등록된 인물 없음)';
 
+    let narrativeText = '';
+    if (narrativeConfig) {
+      narrativeText = `[작품 서사 설정]
+- 화자(시점): ${narrativeConfig.speaker || '표준'}
+- 청자(독자): ${narrativeConfig.listener || '일반 독자'}
+- 기본 어투: ${narrativeConfig.tone || '표준 어투'}
+${narrativeConfig.coreMessage ? `- 1줄 핵심 메시지: ${narrativeConfig.coreMessage}\n` : ''}${narrativeConfig.worldSetting ? `- 배경/세계관: ${narrativeConfig.worldSetting}\n` : ''}${narrativeConfig.authorBackground ? `- 저자 전문성: ${narrativeConfig.authorBackground}\n` : ''}\n`;
+    }
+
     const systemPrompt = `당신은 출판사 단행본 수석 목차 디렉터입니다. 작가가 창작실에서 설계한 표준 서사 뼈대 단계와 세부 꼭지, 작가의 고유 메모를 분석하여, 독자의 구매욕과 몰입을 이끄는 세련된 완성형 출판 목차(대챕터-소목차)를 JSON 배열로만 응답하세요. 마크다운 기호 없이 순수 JSON만 반환해야 합니다.`;
 
     const prompt = `[작품 기본 정보]
@@ -422,7 +432,7 @@ ${bookSubtitle ? `- 부제: ${bookSubtitle}\n` : ''}${genre ? `- 분야/장르: 
 - 기획의도: ${proposal.intention || '미정'}
 - 타깃독자: ${proposal.target || '미정'}
 
-[주요 인물·화자 프로필]
+${narrativeText}[주요 인물·화자 프로필]
 ${charsText}
 
 [창작실에서 작가가 설계한 서사 뼈대 단계 및 세부 꼭지]
@@ -607,7 +617,9 @@ ${bestsellerGuide}
     referenceNotes = '',
     targetAudience = '',
     genre = '',
-    plotContext = null
+    plotContext = null,
+    narrativeConfig = null,
+    authorPersona = null
   }) => {
     const TONE_GUIDES = {
       practical: '실무와 실생활에 즉시 활용 가능한 실전 가이드형 어조 (체크리스트, 액션 플랜, 핵심 요약 포함)',
@@ -630,11 +642,72 @@ ${bestsellerGuide}
       systemPrompt: '당신은 출판 단행본 수준의 서사를 직조하는 전문 집필가입니다.'
     };
 
-    // 2) 시스템 프롬프트 합성: 1차(관리자 공통 뼈대 페르소나) + 2차(스튜디오 서식 지침)
-    const systemPrompt = `[출판사 공통 집필 지침]:
+    // 2) 작가 고유 페르소나 (서재 관리) 조회 (2순위)
+    const effectiveAuthorPersona = authorPersona || storageService.getAuthorPersona() || null;
+
+    // 3) 4중 프롬프트 계층 합성
+    // [1순위: 작품별 서사 설정 (화자/청자/어투)]
+    let narrativeSection = '';
+    if (narrativeConfig) {
+      const narratorMap = {
+        third_limited: '3인칭 제한적 시점',
+        first_protagonist: '1인칭 주인공 시점',
+        first_observer: '1인칭 관찰자 시점',
+        third_omniscient: '3인칭 전지적 시점',
+        first_author: "1인칭 작가 ('나')",
+        virtual_speaker: '가상의 화자',
+        expert_objective: '저자/전문가 (객관적 관찰)',
+        friendly_mentor: '친근한 멘토 / 길잡이',
+        first_practitioner: '1인칭 실천가 (경험담 공유)'
+      };
+      const listenerMap = {
+        unspecified_reader: '불특정 독자',
+        specific_character: '특정 청자 (서간체)',
+        future_someone: '미래의 누군가',
+        myself: '나 자신 (독백)',
+        unknown_you: '이름 모를 당신',
+        precious_person: '소중한 그 사람',
+        readers: "'독자 여러분' (일반 독자)",
+        beginners: '초심자 / 입문자',
+        colleagues: '동료 실무자 / 전문가'
+      };
+      const toneMap = {
+        past_plain: '~했다 (과거형 서술)',
+        present_plain: '~한다 (현재형/생동감)',
+        plain: '~했다 / ~다 (평어체)',
+        polite_soft: '~해요 (부드러운 대화체)',
+        polite_formal: '~합니다 (정중한 경어체)',
+        formal_explain: '~합니다 / ~입니다 (설명체)',
+        assertive: '~이다 / ~한다 (단정체)',
+        friendly_soft: '~해요 / ~해보세요 (친근체)'
+      };
+
+      narrativeSection = `[1순위 최우선 원칙: 작품 서사 설정]
+- 서술 시점(화자): ${narratorMap[narrativeConfig.speaker] || narrativeConfig.speaker || '장르 표준'}
+- 청자(대상 독자): ${listenerMap[narrativeConfig.listener] || narrativeConfig.listener || '일반 독자'}
+- 기본 종결 어투: ${toneMap[narrativeConfig.tone] || narrativeConfig.tone || '표준 어투'}
+${narrativeConfig.worldSetting ? `- 세계관/배경 설정: ${narrativeConfig.worldSetting}\n` : ''}${narrativeConfig.relationshipMemo ? `- 인물 관계/핵심 갈등: ${narrativeConfig.relationshipMemo}\n` : ''}${narrativeConfig.authorBackground ? `- 저자 전문성 배경: ${narrativeConfig.authorBackground}\n` : ''}${narrativeConfig.caseStudyMemo ? `- 핵심 실사례/데이터: ${narrativeConfig.caseStudyMemo}\n` : ''}${narrativeConfig.coreMessage ? `- 1줄 핵심 메시지: ${narrativeConfig.coreMessage}\n` : ''}※ 위 작품 서사 설정(화자, 청자, 어투)은 모든 규칙 중 가장 높은 우선순위로 적용되어야 합니다.\n\n`;
+    }
+
+    // [2순위: 작가 페르소나 (문체 Few-shot, 금기어, 문체 칩)]
+    let authorSection = '';
+    if (effectiveAuthorPersona) {
+      const samples = (effectiveAuthorPersona.samples || []).filter(s => s && s.content?.trim());
+      const chips = effectiveAuthorPersona.styleChips || [];
+      const forbidden = effectiveAuthorPersona.forbiddenWords || [];
+      const instructions = effectiveAuthorPersona.customInstructions || '';
+
+      if (samples.length > 0 || chips.length > 0 || forbidden.length > 0 || instructions) {
+        authorSection = `[2순위 준수 원칙: 작가 고유 문체 습관]
+${chips.length > 0 ? `- 지향 문체 특성: ${chips.join(', ')}\n` : ''}${forbidden.length > 0 ? `- 금기어/지양 표현 (절대 사용 금지): ${forbidden.join(', ')}\n` : ''}${instructions ? `- 작가 특별 집필 지침: ${instructions}\n` : ''}${samples.length > 0 ? `\n[작가 문체 학습용 대표 샘플 (Few-shot)]\n` + samples.map((s, idx) => `[샘플 ${idx + 1}${s.title ? ` - ${s.title}` : ''}]\n${s.content}`).join('\n\n') + '\n※ 위 샘플의 호흡, 단문/장문 비율, 어휘 선택과 뉘앙스를 철저히 모사하여 집필하세요.\n' : ''}\n`;
+      }
+    }
+
+    // [3순위: 장르 페르소나 & 4순위: 출판사 공통 원칙]
+    const systemPrompt = `${narrativeSection}${authorSection}[3순위: 장르별 집필 지침]:
 ${persona.systemPrompt}
 
-[추가 스타일 및 마크다운 규칙]:
+[4순위: 출판사 공통 서식 및 마크다운 규칙]:
 - 독자가 끝까지 흥미를 잃지 않고 실질적인 지식과 영감을 얻을 수 있도록 매력적인 문장으로 원고를 완성합니다.
 - 마크다운 서식(소제목 ###, 글머리 기호 -, 번호 매기기 1., 인용문 >, 핵심 강조 **굵게**)을 시각적으로 가독성 높게 활용하세요.`;
 
@@ -652,7 +725,7 @@ ${keywords ? `- 핵심 키워드/소재: ${keywords}\n` : ''}${instruction ? `- 
 
 ${referenceNotes ? `[참고자료/작가 메모]\n${referenceNotes}\n` : ''}
 ${existingContent ? `[기존 작성된 본문 (이 내용과 중복되지 않고 자연스럽게 이어지도록 집필)]\n${existingContent}\n` : ''}
-위 지침을 충실히 반영하여 바로 출판 가능한 수준의 완성도 높은 소목차 본문 원고를 작성해 주세요.`;
+위 지침(작품 서사 설정 > 작가 페르소나 > 장르 페르소나 > 공통 원칙)을 충실히 반영하여 바로 출판 가능한 수준의 완성도 높은 소목차 본문 원고를 작성해 주세요.`;
 
     const content = await aiService.generateWithCustomSettings({
       systemPrompt,
@@ -663,6 +736,59 @@ ${existingContent ? `[기존 작성된 본문 (이 내용과 중복되지 않고
     });
 
     return { content };
+  },
+
+  // 4. 출간 기획서 기반 작품 서사 설정(화자, 청자, 어투 등) 초안 도출
+  generateNarrativeDraft: async ({ bookTitle, genreKey, genre, proposal = {}, characters = [] }) => {
+    const isFiction = genreKey === 'novel' || genreKey === 'webnovel';
+    const isEssay = genreKey === 'essay';
+
+    const systemPrompt = `당신은 출판 기획 및 스토리 아키텍처 수석 디렉터입니다.
+작가의 도서 정보와 출간 기획서(로그라인, 기획 의도, 타깃 독자, 차별점) 및 등장인물 구성을 면밀히 분석하여,
+가장 이상적인 작품 서사 설정(화자, 청자, 기본 어투 및 세부 배경/메시지)의 초안을 결정해 주십시오.
+
+반드시 마크다운 코드블록 없이 순수 JSON 형식으로만 응답해야 합니다.
+{
+  "speaker": "${isFiction ? 'third_limited' : isEssay ? 'first_author' : 'expert_objective'}",
+  "listener": "${isFiction ? 'unspecified_reader' : isEssay ? 'myself' : 'readers'}",
+  "tone": "${isFiction ? 'past_plain' : isEssay ? 'plain' : 'formal_explain'}",
+  "worldSetting": "${isFiction ? '작품의 배경 및 분위기 1-2문장' : ''}",
+  "relationshipMemo": "${isFiction ? '핵심 인물 갈등 및 서사 축 1-2문장' : ''}",
+  "authorBackground": "${!isFiction && !isEssay ? '저자의 신뢰할 수 있는 전문성 배경 요약 1-2문장' : ''}",
+  "caseStudyMemo": "${!isFiction && !isEssay ? '인용/활용할 핵심 실사례 및 데이터 방향 1-2문장' : ''}",
+  "coreMessage": "이 책을 관통하는 1줄 핵심 메시지"
+}`;
+
+    const prompt = `[도서 정보]
+- 도서명: ${bookTitle || '무제'}
+- 장르: ${genre || genreKey}
+
+[출간 기획서]
+- 로그라인: ${proposal.logline || '미정'}
+- 기획 의도: ${proposal.intention || '미정'}
+- 타깃 독자: ${proposal.target || '미정'}
+- 차별점/매력: ${proposal.diff || '미정'}
+
+[등록된 인물 수]: ${characters.length}명
+${characters.length > 0 ? characters.map(c => `- ${c.name} (${c.role}): ${c.goal || ''}`).join('\n') : ''}
+
+위 기획서의 성격에 꼭 맞는 최적의 서사 설정 값을 JSON으로 도출하세요.`;
+
+    const adminConfig = getAdminAiConfig();
+    const rawText = await aiService.generateWithCustomSettings({
+      systemPrompt,
+      userPrompt: prompt,
+      temperature: 0.4,
+      modelId: adminConfig.activeModel || 'smart_cascade',
+      customApiKey: adminConfig.adminApiKey || undefined
+    });
+
+    try {
+      const cleaned = (rawText || '').replace(/```json/gi, '').replace(/```/g, '').trim();
+      return JSON.parse(cleaned);
+    } catch {
+      return null;
+    }
   },
 
   // 3. AI 문장 교정 / 첨삭 (공통 편집 페르소나 적용)

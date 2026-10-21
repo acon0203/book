@@ -34,9 +34,15 @@ import {
   Zap,
   Sun,
   Moon,
-  Type
+  Type,
+  Feather,
+  Edit2,
+  Plus,
+  Trash2,
+  Check
 } from 'lucide-react';
 import ModelQuotasModal from '../components/ai/ModelQuotasModal';
+import AuthorPersonaModal from '../components/AuthorPersonaModal';
 
 export default function Settings() {
   const { 
@@ -65,6 +71,11 @@ export default function Settings() {
   const [infoSubView, setInfoSubView] = useState(null); // 'notices' | 'terms' | 'guide' | 'support' | null
   const [isQuotaModalOpen, setIsQuotaModalOpen] = useState(false);
 
+  // 작가 문체 페르소나 (Author Persona) 상태
+  const [authorPersona, setAuthorPersona] = useState(null);
+  const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
+  const [previewSample, setPreviewSample] = useState(null);
+
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -81,6 +92,11 @@ export default function Settings() {
       setSavedApiKey(cfg.geminiApiKey || '');
     }).catch(console.error);
 
+    // 작가 문체 페르소나 로드
+    bookService.getAuthorPersona().then(persona => {
+      setAuthorPersona(persona);
+    }).catch(console.error);
+
     const handleConfigUpdated = (e) => {
       if (e.detail?.geminiModel) {
         setConfig(prev => ({ ...prev, geminiModel: e.detail.geminiModel }));
@@ -89,6 +105,31 @@ export default function Settings() {
     window.addEventListener('ai_config_updated', handleConfigUpdated);
     return () => window.removeEventListener('ai_config_updated', handleConfigUpdated);
   }, [user]);
+
+  // 작가 문체 페르소나 저장 핸들러
+  const handleSaveAuthorPersona = async (newPersona) => {
+    try {
+      await bookService.saveAuthorPersona(newPersona);
+      setAuthorPersona(newPersona);
+      showToast('작가 문체 페르소나가 안전하게 저장되었습니다.', 'success');
+    } catch (err) {
+      showToast(`페르소나 저장 실패: ${err.message}`, 'error');
+    }
+  };
+
+  // 작가 문체 페르소나 초기화 핸들러
+  const handleDeleteAuthorPersona = async () => {
+    const ok = await openConfirm({
+      title: '문체 페르소나 초기화',
+      message: '등록된 작가 문체 페르소나 설정을 초기화하시겠습니까?\n모든 도서 집필 시 기본 공통 지침으로 환원됩니다.',
+      confirmText: '초기화'
+    });
+    if (ok) {
+      await bookService.saveAuthorPersona(null);
+      setAuthorPersona(null);
+      showToast('작가 문체 페르소나가 초기화되었습니다.', 'info');
+    }
+  };
 
   // 전체 설정 저장
   const handleSave = async () => {
@@ -494,6 +535,141 @@ export default function Settings() {
               <span className="form-hint">집필 중 타이핑이 멈췄을 때 로컬 브라우저에 즉각 저장되는 주기입니다.</span>
             </div>
           </div>
+        </section>
+
+        {/* =================================================================
+            꼭지 1-1: 🖋️ 작가 문체 페르소나 (Author Persona)
+            - 작품과 무관한 전역 문체 습관: 문체 샘플 3~5편(Few-Shot), 문체 칩, 금기어
+            - 시점(1인칭/3인칭)은 창작실 Step 3에서 책별로 처리
+            ================================================================= */}
+        <section className="settings-card">
+          <div className="card-header-flex">
+            <div className="card-header-title-group">
+              <Feather size={20} className="section-header-icon text-purple" />
+              <div>
+                <h3>작가 문체 페르소나 (Author Persona)</h3>
+                <p className="card-sub-desc">
+                  작품과 무관한 나만의 고유한 문체 습관, 문체 샘플(3~5편), 금기어 규칙을 관리합니다.
+                </p>
+              </div>
+            </div>
+            {authorPersona && (
+              <div className="persona-card-actions">
+                <button 
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleDeleteAuthorPersona}
+                  title="초기화"
+                >
+                  <Trash2 size={13} />
+                  <span>초기화</span>
+                </button>
+                <button 
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setIsPersonaModalOpen(true)}
+                >
+                  <Edit2 size={13} />
+                  <span>문체 수정</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 결과창: 미등록 시 Empty State vs 등록 시 Summary Grid */}
+          {!authorPersona ? (
+            <div className="persona-empty-card">
+              <div className="persona-empty-icon-wrap">
+                <PenTool size={22} className="text-purple" />
+              </div>
+              <h4>등록된 작가 문체 페르소나가 없습니다.</h4>
+              <p>
+                평소 직접 쓰신 대표 원고 샘플(3~5편)과 지향하는 문체 칩, 금기어 규칙을 등록해 두시면<br />
+                모든 도서 집필 시 AI가 작가님의 고유한 문체와 호흡을 자연스럽게 모사합니다.
+              </p>
+              <button 
+                type="button" 
+                className="btn btn-primary btn-sm"
+                onClick={() => setIsPersonaModalOpen(true)}
+              >
+                <Plus size={14} />
+                <span>작가 페르소나 설정하기</span>
+              </button>
+            </div>
+          ) : (
+            <div className="persona-summary-grid">
+              {/* 1) 등록된 문체 샘플 */}
+              <div className="persona-summary-block">
+                <div className="block-label-row">
+                  <span className="block-label">대표 문체 샘플 (Few-shot)</span>
+                  <span className="block-badge">{authorPersona.samples?.length || 0}편 등록됨</span>
+                </div>
+                <div className="persona-sample-list">
+                  {(authorPersona.samples || []).map((s, idx) => (
+                    <div 
+                      key={s.id || idx} 
+                      className="persona-sample-chip"
+                      onClick={() => setPreviewSample(s)}
+                      title="클릭하여 샘플 본문 확인"
+                    >
+                      <FileText size={13} className="text-purple" />
+                      <span className="sample-title-text">{s.title || `샘플 ${idx + 1}`}</span>
+                      <span className="sample-len-text">{(s.content || '').length}자</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2) 선택된 문체 스타일 칩 */}
+              <div className="persona-summary-block">
+                <div className="block-label-row">
+                  <span className="block-label">문체 스타일 칩</span>
+                  <span className="block-badge">{authorPersona.styleChips?.length || 0}개</span>
+                </div>
+                <div className="persona-tag-cloud">
+                  {(authorPersona.styleChips || []).length === 0 ? (
+                    <span className="empty-tag-hint">선택된 문체 칩 없음</span>
+                  ) : (
+                    authorPersona.styleChips.map((chip, idx) => (
+                      <span key={idx} className="persona-summary-tag style">
+                        <Check size={11} />
+                        {chip}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* 3) 금기어 및 지양 규칙 */}
+              <div className="persona-summary-block">
+                <div className="block-label-row">
+                  <span className="block-label">금기어 및 지양 규칙</span>
+                  <span className="block-badge danger">{authorPersona.taboos?.length || 0}개</span>
+                </div>
+                <div className="persona-tag-cloud">
+                  {(authorPersona.taboos || []).length === 0 ? (
+                    <span className="empty-tag-hint">설정된 금기어 없음</span>
+                  ) : (
+                    authorPersona.taboos.map((taboo, idx) => (
+                      <span key={idx} className="persona-summary-tag taboo">
+                        {taboo}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* 4) 추가 작가 지침 */}
+              {authorPersona.customInstructions && (
+                <div className="persona-summary-block full-width">
+                  <span className="block-label">나만의 작가 집필 지침</span>
+                  <p className="persona-custom-instruction-text">
+                    "{authorPersona.customInstructions}"
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* =================================================================
@@ -963,6 +1139,39 @@ export default function Settings() {
         isOpen={isQuotaModalOpen}
         onClose={() => setIsQuotaModalOpen(false)}
       />
+
+      {/* 작가 문체 페르소나 설정 모달 */}
+      <AuthorPersonaModal
+        isOpen={isPersonaModalOpen}
+        onClose={() => setIsPersonaModalOpen(false)}
+        initialData={authorPersona}
+        onSave={handleSaveAuthorPersona}
+      />
+
+      {/* 등록된 샘플 본문 간이 확인 팝오버 */}
+      {previewSample && (
+        <div className="persona-sample-preview-overlay" onClick={() => setPreviewSample(null)}>
+          <div className="persona-sample-preview-box" onClick={(e) => e.stopPropagation()}>
+            <div className="persona-sample-preview-header">
+              <div className="preview-header-left">
+                <FileText size={16} className="text-purple" />
+                <h4>{previewSample.title || '문체 샘플 본문'}</h4>
+              </div>
+              <button 
+                type="button" 
+                className="btn-preview-close" 
+                onClick={() => setPreviewSample(null)}
+                title="닫기"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="persona-sample-preview-body">
+              <pre className="sample-text-pre">{previewSample.content}</pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
