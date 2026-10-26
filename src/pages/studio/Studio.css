@@ -151,6 +151,11 @@
   border-color: var(--color-primary, #8b5a2b);
   transform: translateY(-1px);
 }
+.top-icon-btn.top-icon-btn-danger:hover {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.4);
+}
 
 .top-deadline-group {
   display: inline-flex;

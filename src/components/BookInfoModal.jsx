@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Edit2, X, Check, BookOpen, Palette } from 'lucide-react';
+import { Sparkles, Edit2, X, Check, BookOpen, Palette, Trash2 } from 'lucide-react';
 import { useStore } from '../store';
 import { bookService } from '../services/bookService';
 import { OFFICIAL_GENRES } from '../data/genreConstants';
@@ -22,7 +22,7 @@ export default function BookInfoModal({
   book = null,     // edit 모드 시 수정 대상 도서 객체
   onSuccess        // 완료 후 콜백 (resultBook) => void
 }) {
-  const { user, loadBooks, openBook, showToast, updateBookInfo, markUnsynced } = useStore();
+  const { user, loadBooks, openBook, showToast, updateBookInfo, markUnsynced, deleteBook, openConfirm, setView } = useStore();
 
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
@@ -126,6 +126,21 @@ export default function BookInfoModal({
       showToast(`저장 실패: ${err.message}`, 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteBook = async () => {
+    if (!book) return;
+    const ok = await openConfirm({
+      title: '도서 프로젝트 삭제',
+      message: `'${book.title}' 프로젝트를 정말 삭제하시겠습니까?\n작성된 모든 챕터와 원고가 영구 삭제됩니다.`,
+      danger: true,
+      confirmText: '삭제'
+    });
+    if (ok) {
+      onClose();
+      await deleteBook(book.id);
+      setView('library');
     }
   };
 
@@ -252,32 +267,46 @@ export default function BookInfoModal({
           </div>
 
           {/* 모달 푸터 */}
-          <div className="modal-footer">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isSubmitting}
-            >
-              {isEditMode ? (
-                <>
-                  <Edit2 size={15} />
-                  <span>{isSubmitting ? '저장 중...' : '변경사항 저장'}</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={16} />
-                  <span>{isSubmitting ? '생성 중...' : '프로젝트 시작'}</span>
-                </>
-              )}
-            </button>
+          <div className="modal-footer" style={{ display: 'flex', justifyContent: isEditMode ? 'space-between' : 'flex-end', alignItems: 'center' }}>
+            {isEditMode && (
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={handleDeleteBook}
+                disabled={isSubmitting}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', padding: '0.45rem 0.85rem' }}
+              >
+                <Trash2 size={14} />
+                <span>프로젝트 삭제</span>
+              </button>
+            )}
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSubmitting}
+              >
+                {isEditMode ? (
+                  <>
+                    <Edit2 size={15} />
+                    <span>{isSubmitting ? '저장 중...' : '변경사항 저장'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    <span>{isSubmitting ? '생성 중...' : '프로젝트 시작'}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

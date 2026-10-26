@@ -30,7 +30,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │   └── theme.css            # 글로벌 디자인 토큰 (다크/라이트 테마 변수, 리셋, 공통 버튼/모달)
     │
     ├── pages/                   # 주요 화면 단위 (JSX + 1:1 일반 CSS 매칭)
-    │   ├── Admin.jsx / .css     # [신설] 플랫폼 관제실 (AI 공통 페르소나 3대 뼈대 관제, 파라미터 조절, 즉석 플레이그라운드 테스트실)
+    │   ├── Admin.jsx / .css     # [신설] 플랫폼 관제실 (AI 공통 페르소나 관제 + 사용자 트래픽 & 출간 성공률 4단계 퍼널 대시보드)
     │   ├── Library.jsx / .css   # 내 서재 (2줄 슬림 작가 통계 & 명언 바 + 새 책 만들기 모달)
     │   ├── studio/              # [스튜디오 패키지] 집필 스튜디오 메인 화면 및 전용 모달 (Zero-Lag 성능 격리)
     │   │   ├── Studio.jsx / .css # 집필 스튜디오 메인 (전역 상단 탑바 + 목차 트리 + 에디터 캔버스 + 3열 통합 AI 어시스턴트)
@@ -70,7 +70,8 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │   ├── paragraphParser.js   # 본문 HTML ↔ 문단 모듈 카드 블록 무손실 변환 유틸리티
     │   ├── authorStats.js       # 작가 레벨 공식(Mission XP) 및 서재 통합 통계 계산
     │   ├── quotaManager.js      # [신설] Gemini 및 AI 모델별 실시간 일일 쿼터 추적 & PST/KST 리셋 카운트다운
-    │   └── manuscriptImporter.js # [신설] 초경량 원고 파서 (.txt, .md, 네이티브 .docx Zip/XML 파싱, 챕터/섹션 자동 분할)
+    │   ├── manuscriptImporter.js # [신설] 초경량 원고 파서 (.txt, .md, 네이티브 .docx Zip/XML 파싱, 챕터/섹션 자동 분할)
+    │   └── trafficTracker.js    # [신설] 사용자 방문 세션 및 플랫폼 트래픽 추적 유틸리티
     │
     ├── config/                  # 글로벌 인프라 설정
     │   ├── firebase.js          # Firebase 초기화 (Google Auth, Cloud Firestore)

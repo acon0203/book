@@ -19,6 +19,40 @@ import { PLOT_CATEGORIES, PLOT_LIBRARY, GENRE_RECOMMENDED_PLOTS } from '../../da
 // 제목 정제 헬퍼 (제1장, 1. 등의 접두사 중복 방지)
 const cleanTitle = (str) => (str || '').replace(/^제?\s*\d+\s*[장회편절단계권]?\s*[\.:\-]?\s*/i, '').trim();
 
+// 도서별 실시간 진행 단계 태그 판별 헬퍼 (기획 / 뼈대 / 목차 / 집필 / 연재 / 완결)
+const getBookStageTag = (b) => {
+  if (!b) return { label: '기획', stage: 'planning' };
+  if (b.isCompleted) return { label: '완결', stage: 'completed' };
+
+  // 1. 연재 발행 회차가 1개 이상 있는지
+  const hasPublished = b.chapters?.some((c) =>
+    c.status === 'published' || c.sections?.some((s) => s.status === 'published')
+  );
+  if (hasPublished) return { label: '연재', stage: 'published' };
+
+  // 2. 본문이 작성된 섹션이 있는지 (태그 제외 텍스트 존재)
+  const hasWriting = b.chapters?.some((c) =>
+    c.sections?.some((s) => (s.content || '').replace(/<[^>]*>/g, '').trim().length > 0)
+  );
+  if (hasWriting) return { label: '집필', stage: 'writing' };
+
+  // 3. 목차가 구조화되어 있는지 (챕터 2개 이상 또는 총 소목차 2개 이상)
+  const totalSections = b.chapters?.reduce((acc, c) => acc + (c.sections?.length || 0), 0) || 0;
+  if ((b.chapters?.length || 0) > 1 || totalSections > 1) {
+    return { label: '목차', stage: 'outline' };
+  }
+
+  // 4. 서사 뼈대 또는 등장인물이 설정되어 있는지
+  const hasCharacters = Array.isArray(b.characters) && b.characters.length > 0;
+  const hasPlot = Array.isArray(b.plotStages) && b.plotStages.length > 0 && b.plotStages.some((st) => st.subplots?.some((sp) => sp.memo));
+  if (hasCharacters || hasPlot) {
+    return { label: '뼈대', stage: 'story' };
+  }
+
+  // 5. 기본 기획 단계
+  return { label: '기획', stage: 'planning' };
+};
+
 // 장르별 스마트 서사 3요소 기본값 헬퍼
 const getDefaultNarrativeConfig = (genreKey) => {
   const isFiction = genreKey === 'novel' || genreKey === 'webnovel';
@@ -133,7 +167,7 @@ const getNarrativeOptions = (genreKey) => {
 export default function Vault() {
   const {
     vault, loadVault, deleteVaultItem, activeTagFilter, setTagFilter, showToast,
-    books, loadBooks, activeBook, setActiveBook, openBook, setView,
+    books, loadBooks, activeBook, setActiveBook, openBook, setView, deleteBook,
     updateActiveBookPlanning, updateActiveBookCharacters, updateActiveBookPlotStages, openConfirm, openPrompt
   } = useStore();
 
@@ -1222,6 +1256,28 @@ ${isFiction ? `
     }
   };
 
+  // 기획 프로젝트 삭제 핸들러
+  const handleDeleteProject = async (e, bookId, bookTitle) => {
+    if (e) e.stopPropagation();
+    const ok = await openConfirm({
+      title: '도서 프로젝트 삭제',
+      message: `'${bookTitle}' 프로젝트를 정말 삭제하시겠습니까?\n기획 내용 및 작성된 모든 원고가 영구 삭제됩니다.`,
+      danger: true,
+      confirmText: '삭제'
+    });
+    if (ok) {
+      await deleteBook(bookId);
+      const remainingBooks = books.filter((b) => b.id !== bookId);
+      if (activeBook?.id === bookId) {
+        if (remainingBooks.length > 0) {
+          setActiveBook(remainingBooks[0]);
+        } else {
+          setActiveBook(null);
+        }
+      }
+    }
+  };
+
   return (
     <div className="vault-page-wrapper" onDragEnd={handleDragEnd}>
 
@@ -1249,6 +1305,17 @@ ${isFiction ? `
         </div>
 
         <div className="preview-right">
+          {activeBook && (
+            <button
+              type="button"
+              className="btn-vault-top-delete"
+              onClick={(e) => handleDeleteProject(e, activeBook.id, activeBook.title)}
+              title="현재 기획 프로젝트 삭제"
+            >
+              <Trash2 size={13} />
+              <span>프로젝트 삭제</span>
+            </button>
+          )}
           <button className="btn-goto-studio" onClick={handleSendToStudio}>
             <PenTool size={14} />
             집필 스튜디오로 이동
@@ -1283,18 +1350,32 @@ ${isFiction ? `
               ) : (
                 books.map((b) => {
                   const isActive = activeBook?.id === b.id;
+                  const stageInfo = getBookStageTag(b);
                   return (
                     <div
                       key={b.id}
                       className={`project-card ${isActive ? 'active' : ''}`}
                       onClick={() => setActiveBook(b)}
                     >
+                      {/* 우측 상단 호버 오버레이 삭제 버튼 */}
+                      <button
+                        type="button"
+                        className="btn-delete-project"
+                        onClick={(e) => handleDeleteProject(e, b.id, b.title)}
+                        title={`'${b.title}' 프로젝트 삭제`}
+                        aria-label="프로젝트 삭제"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+
                       <div className="project-cover-bar" />
                       <div className="project-meta-wrap">
-                        <span className="project-title">{b.title}</span>
+                        <span className="project-title" title={b.title}>{b.title}</span>
                         <div className="project-sub-row">
                           <span className="project-genre">{b.genreKey ? PLOT_TEMPLATES[b.genreKey]?.name.split(' ')[0] : (b.genre || '에세이')}</span>
-                          <span className="project-step-badge">기획</span>
+                          <span className={`project-step-badge stage-${stageInfo.stage}`}>
+                            {stageInfo.label}
+                          </span>
                         </div>
                       </div>
                     </div>

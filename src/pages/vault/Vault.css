@@ -268,6 +268,7 @@
 }
 
 .project-card {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -314,6 +315,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-right: 1.25rem; /* 우측 상단 오버레이 삭제 버튼과의 겹침 방지 */
 }
 
 .project-sub-row {
@@ -328,13 +330,102 @@
   font-weight: 500;
 }
 
+/* 프로젝트별 실시간 진행 단계 태그 (기획, 뼈대, 목차, 집필, 연재, 완결) */
 .project-step-badge {
   font-size: 0.66rem;
   padding: 1px 5px;
   border-radius: 3px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
   font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 0.15s ease;
+}
+
+.project-step-badge.stage-planning {
+  background: rgba(139, 90, 43, 0.08);
+  color: #8b5a2b;
+}
+
+.project-step-badge.stage-story {
+  background: rgba(13, 148, 136, 0.1);
+  color: #0d9488;
+}
+
+.project-step-badge.stage-outline {
+  background: rgba(217, 119, 6, 0.1);
+  color: #b45309;
+}
+
+.project-step-badge.stage-writing {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.project-step-badge.stage-published {
+  background: rgba(234, 88, 12, 0.1);
+  color: #ea580c;
+}
+
+.project-step-badge.stage-completed {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+/* 프로젝트 카드 우측 상단 호버 오버레이 삭제 버튼 */
+.btn-delete-project {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.project-card:hover .btn-delete-project,
+.btn-delete-project:focus {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.btn-delete-project:hover {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.35);
+  color: #dc2626;
+  transform: scale(1.08);
+}
+
+/* 상단 탑바 프로젝트 삭제 버튼 */
+.btn-vault-top-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.72rem;
+  border-radius: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-vault-top-delete:hover {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #dc2626;
 }
 
 /* =========================================================================

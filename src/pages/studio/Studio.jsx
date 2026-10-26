@@ -39,7 +39,7 @@ export default function Studio() {
     updateBatchPublishSections,
     vault, loadVault, selectedVaultIds, toggleSelectVaultId, clearSelectedVaultIds,
     createBookVersion, saveOrUpdateLatestVersion, restoreBookVersion, deleteBookVersion,
-    toggleBookCompleted,
+    toggleBookCompleted, deleteBook,
     openReader, setView, showToast, showActionToast,
     openConfirm, openPrompt
   } = useStore();
@@ -1061,9 +1061,23 @@ export default function Studio() {
     }
   };
 
+  const handleDeleteBook = async () => {
+    if (!activeBook) return;
+    const ok = await openConfirm({
+      title: '도서 프로젝트 삭제',
+      message: `'${activeBook.title}' 프로젝트를 정말 삭제하시겠습니까?\n작성된 모든 챕터와 원고가 영구 삭제됩니다.`,
+      danger: true,
+      confirmText: '삭제'
+    });
+    if (ok) {
+      await deleteBook(activeBook.id);
+      setView('library');
+    }
+  };
+
   return (
     <div className="studio-container">
-      {/* 🌟 전역 최상단 탑바: < 내 서재로 | 도서명 (좌측) | 연재중/완결 드롭다운 | ✏️ 💾 🕒 | 📅 마감 D-Day (우측 끝) */}
+      {/* 🌟 전역 최상단 탑바: < 내 서재로 | 도서명 (좌측) | 연재중/완결 드롭다운 | ✏️ 💾 🕒 🗑️ | 📅 마감 D-Day (우측 끝) */}
       <header className="studio-top-bar">
         <div className="top-bar-left">
           <button className="preview-back-btn" onClick={() => setView('library')}>
@@ -1120,6 +1134,14 @@ export default function Studio() {
               title="버전 관리 (히스토리)"
             >
               <History size={13} />
+            </button>
+            <button
+              type="button"
+              className="top-icon-btn top-icon-btn-danger"
+              onClick={handleDeleteBook}
+              title="프로젝트 삭제"
+            >
+              <Trash2 size={13} />
             </button>
           </div>
 

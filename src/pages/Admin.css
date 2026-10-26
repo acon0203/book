@@ -594,45 +594,307 @@
   margin-top: 0.2rem;
 }
 
-/* KPI 세부 진단 바 */
-.kpi-diagnostics-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.2rem;
+/* ==========================================================================
+   출간 성공률 퍼널 카드 (Funnel)
+   ========================================================================== */
+.kpi-funnel-card {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.3rem 1.6rem;
+  margin-bottom: 1.8rem;
 }
 
-@media (max-width: 768px) {
-  .kpi-diagnostics-row {
+.funnel-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+
+.funnel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.funnel-title-wrap h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.funnel-sub-badge {
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  background-color: #ffffff;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+}
+
+.funnel-steps-grid {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 860px) {
+  .funnel-steps-grid {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .funnel-arrow-divider {
+    transform: rotate(90deg);
+    margin: 0.3rem auto;
+  }
+}
+
+.funnel-step-item {
+  flex: 1;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: all 0.15s ease;
+}
+
+.funnel-step-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.funnel-step-item.highlight-completed {
+  border-color: rgba(5, 150, 105, 0.3);
+  background-color: rgba(16, 185, 129, 0.02);
+}
+
+.funnel-step-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.step-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background-color: var(--bg-card-sub);
+  color: var(--text-muted);
+}
+
+.step-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.funnel-step-val {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.funnel-step-val strong {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.funnel-step-val span {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.funnel-progress-wrap {
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0.2rem 0;
+}
+
+.funnel-progress-bar {
+  height: 100%;
+  background-color: var(--color-primary, #8b5a2b);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.funnel-progress-bar.bar-completed {
+  background-color: var(--success, #059669);
+}
+
+.funnel-rate-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.funnel-rate-tag.tag-completed {
+  color: #059669;
+}
+
+.funnel-arrow-divider {
+  font-size: 1rem;
+  color: var(--text-dim);
+  opacity: 0.6;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   하단 2열 상세 분석 (독자 반응 + 장르별 성과)
+   ========================================================================== */
+.kpi-detail-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem;
+}
+
+@media (max-width: 860px) {
+  .kpi-detail-2col {
     grid-template-columns: 1fr;
   }
 }
 
-.diag-sub-box {
+.kpi-detail-box {
   background-color: #ffffff;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem 1.2rem;
-}
-.diag-sub-box h4 {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-main);
-  margin: 0 0 0.6rem 0;
-}
-.diag-list {
+  border-radius: 12px;
+  padding: 1.3rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  font-size: 0.78rem;
+}
+
+.detail-box-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-box-header h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+/* 독자 인터랙션 리스트 */
+.audience-metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.audience-metric-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  background-color: var(--bg-card-sub);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.aud-item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.aud-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.aud-desc {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.aud-item-val {
+  font-size: 0.88rem;
   color: var(--text-muted);
 }
-.diag-list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.3rem 0;
-  border-bottom: 1px dashed var(--border-color);
+
+.aud-item-val strong {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-primary, #8b5a2b);
+  margin-right: 0.2rem;
 }
-.diag-list-item:last-child {
-  border-bottom: none;
+
+/* 장르별 출간 현황 리스트 */
+.genre-performance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.genre-empty-text {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  padding: 2rem 0;
+}
+
+.genre-perf-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.genre-perf-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+}
+
+.genre-name {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.genre-counts {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.genre-counts .bullet {
+  color: var(--text-dim);
+}
+
+.genre-counts .highlight-comp {
+  font-weight: 700;
+  color: #059669;
+}
+
+.genre-bar-track {
+  height: 6px;
+  background-color: var(--bg-card-sub);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.genre-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary, #8b5a2b), #c48a54);
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }

@@ -4,6 +4,7 @@ import { useStore } from './store';
 import Sidebar from './components/Sidebar';
 import Toast from './components/Toast';
 import CustomDialog from './components/CustomDialog';
+import { trafficTracker } from './utils/trafficTracker';
 
 // 주요 페이지 (Lotto 스타일 pages 구조)
 import Library from './pages/Library';
@@ -27,6 +28,7 @@ export default function App() {
     initAuth();
     loadBooks();
     loadVault();
+    trafficTracker.recordVisit();
   }, [initAuth, loadBooks, loadVault]);
 
   const renderPage = () => {

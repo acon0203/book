@@ -5,11 +5,14 @@ import {
   ShieldCheck, Cpu, Play, Save, RotateCcw, 
   BookOpen, Feather, FileText, Sparkles, Key, 
   BarChart3, RefreshCw, CheckCircle, Database, Layers,
-  Activity, Users, Zap, CheckSquare
+  Activity, Users, Zap, CheckSquare, Award, TrendingUp,
+  Eye, Heart, ArrowRight
 } from 'lucide-react';
 import { DEFAULT_ADMIN_CONFIG, DEFAULT_EDITOR_PERSONA } from '../config/personaDefaults';
 import { aiService } from '../services/aiService';
 import { calcAuthorStats } from '../utils/authorStats';
+import { trafficTracker } from '../utils/trafficTracker';
+import { OFFICIAL_GENRES } from '../data/genreConstants';
 
 export default function Admin() {
   const { showToast, books = [], user, syncStatus, lastSyncedAt } = useStore();
@@ -238,17 +241,108 @@ export default function Admin() {
     }
   };
 
-  // KPI 통계 산출 (플랫폼 전체 지표)
-  const stats = calcAuthorStats(books);
-  const totalCharacters = books.reduce((acc, b) => {
-    let bChars = 0;
-    b.chapters?.forEach(c => {
-      c.sections?.forEach(s => {
-        bChars += (s.content ? s.content.trim().length : 0);
-      });
+  // ─────────────────────────────────────────────
+  // 6. 플랫폼 종합 KPI & 사용자 행동/출간 성과 지표 산출
+  // ─────────────────────────────────────────────
+  const traffic = trafficTracker.getSummary(books.length);
+
+  // 1) 도서 기본 수량 및 단계별 집계
+  const totalBooks = books.length;
+
+  // 본문 집필 돌입 도서: 글자수 있는 섹션이 1개 이상 존재하는 도서
+  const writingBooks = books.filter(b => 
+    (b.chapters || []).some(c => (c.sections || []).some(s => (s.content || '').replace(/<[^>]*>/g, '').trim().length > 0))
+  );
+  const writingBooksCount = writingBooks.length;
+
+  // 공식 연재 도서: published 챕터 또는 섹션이 1개 이상 존재하는 도서
+  const serialBooks = books.filter(b =>
+    (b.chapters || []).some(c => c.status === 'published' || (c.sections || []).some(s => s.status === 'published'))
+  );
+  const serialBooksCount = serialBooks.length;
+
+  // 완결 도서: isCompleted === true
+  const completedBooks = books.filter(b => b.isCompleted);
+  const completedBooksCount = completedBooks.length;
+
+  // 전체 출간 도서 (연재 또는 완결)
+  const totalPublishedBooks = books.filter(b => 
+    b.isCompleted || (b.chapters || []).some(c => c.status === 'published' || (c.sections || []).some(s => s.status === 'published'))
+  );
+  const totalPublishedBooksCount = totalPublishedBooks.length;
+
+  // 2) 출간 성공률 및 퍼널 전환율 (%)
+  const writingRate = totalBooks > 0 ? Math.round((writingBooksCount / totalBooks) * 100) : 0;
+  const serialRate = totalBooks > 0 ? Math.round((serialBooksCount / totalBooks) * 100) : 0;
+  const completionRate = totalBooks > 0 ? Math.round((completedBooksCount / totalBooks) * 100) : 0;
+  const overallPublishSuccessRate = totalBooks > 0 ? Math.round((totalPublishedBooksCount / totalBooks) * 100) : 0;
+
+  // 3) 작가 분석 (기획 작가 vs 실제 출간 작가)
+  const allAuthorsMap = new Map();
+  books.forEach(b => {
+    const authorName = (b.author || '익명 작가').trim();
+    const isPub = b.isCompleted || (b.chapters || []).some(c => c.status === 'published' || (c.sections || []).some(s => s.status === 'published'));
+    if (!allAuthorsMap.has(authorName)) {
+      allAuthorsMap.set(authorName, { totalBooks: 0, publishedBooks: 0, completedBooks: 0 });
+    }
+    const info = allAuthorsMap.get(authorName);
+    info.totalBooks++;
+    if (isPub) info.publishedBooks++;
+    if (b.isCompleted) info.completedBooks++;
+  });
+
+  const totalAuthorsCount = Math.max(allAuthorsMap.size, totalBooks > 0 ? 1 : 0);
+  let publishedAuthorsCount = 0;
+  allAuthorsMap.forEach(info => {
+    if (info.publishedBooks > 0) publishedAuthorsCount++;
+  });
+  const authorSuccessRate = totalAuthorsCount > 0 ? Math.round((publishedAuthorsCount / totalAuthorsCount) * 100) : 0;
+
+  // 4) 독자 인터랙션 & 반응 지표
+  let totalViews = 0;
+  let totalLikes = 0;
+  let totalComments = 0;
+  let totalPublishedChapters = 0;
+
+  books.forEach(b => {
+    (b.chapters || []).forEach(c => {
+      if (c.status === 'published') {
+        totalPublishedChapters++;
+      }
+      totalViews += (c.views || 0);
+      totalLikes += (c.likes || 0);
+      totalComments += (c.comments?.length || 0);
     });
-    return acc + bChars;
-  }, 0);
+  });
+
+  // 독서 서재(reader_history) 담김 수
+  let savedToShelfCount = 0;
+  try {
+    const rawHistory = localStorage.getItem('reader_history') || '[]';
+    const parsed = JSON.parse(rawHistory);
+    savedToShelfCount = Array.isArray(parsed) ? parsed.length : 0;
+  } catch {}
+
+  // 5) 장르별 출간 비중 및 성공률
+  const genreGroup = {};
+  OFFICIAL_GENRES.forEach(g => {
+    genreGroup[g.label] = { label: g.label, total: 0, published: 0, completed: 0 };
+  });
+
+  books.forEach(b => {
+    const gLabel = b.genre || '소설';
+    if (!genreGroup[gLabel]) {
+      genreGroup[gLabel] = { label: gLabel, total: 0, published: 0, completed: 0 };
+    }
+    genreGroup[gLabel].total++;
+    const isPub = (b.chapters || []).some(c => c.status === 'published' || (c.sections || []).some(s => s.status === 'published'));
+    if (isPub) genreGroup[gLabel].published++;
+    if (b.isCompleted) genreGroup[gLabel].completed++;
+  });
+
+  const topGenreList = Object.values(genreGroup)
+    .filter(g => g.total > 0)
+    .sort((a, b) => b.total - a.total);
 
   const editorData = config.editorPersona || DEFAULT_EDITOR_PERSONA;
 
@@ -655,108 +749,246 @@ export default function Admin() {
         </div>
       </section>
 
-      {/* 3. 하단 신설 섹션: 📊 플랫폼 종합 KPI 통계 관제소 */}
+      {/* 3. 하단 신설 섹션: 플랫폼 종합 KPI (사용자 행동 & 출간 성공률 관제소) */}
       <section className="admin-card-kpi">
         <div className="unified-card-header">
           <div className="card-header-left-group">
             <BarChart3 size={20} className="text-primary-icon" />
             <div>
-              <h2>플랫폼 종합 KPI & 운영 상태 모니터링</h2>
-              <p className="card-sub-desc">서재의 전체 집필 데이터 볼륨 및 동기화 무결성을 한눈에 점검합니다.</p>
+              <h2>사용자 지표 및 출간 성공률 종합 관제</h2>
+              <p className="card-sub-desc">플랫폼 방문객 규모, 활성 출간 작가 수, 기획 대비 출간 성공률 및 독자 인터랙션을 실시간으로 모니터링합니다.</p>
             </div>
           </div>
-          <span className="card-status-badge">Platform Health: 100%</span>
+          <span className="card-status-badge">Analytics Active</span>
         </div>
 
-        {/* 4대 핵심 지표 그리드 */}
+        {/* 1) 상단 4대 핵심 비즈니스 KPI 카드 */}
         <div className="kpi-stat-grid-4">
+          {/* 타일 1: 누적 방문객 & 트래픽 */}
+          <div className="kpi-metric-tile">
+            <div className="metric-label-row">
+              <Users size={15} />
+              <span>누적 방문객 (Visitors)</span>
+            </div>
+            <div className="metric-value-row">
+              <span className="metric-number">{traffic.totalVisitors.toLocaleString()}</span>
+              <span className="metric-unit">명</span>
+            </div>
+            <span className="metric-sub-note">오늘 {traffic.todayVisitors}명 · 최근 7일 {traffic.weeklyVisitors}명</span>
+          </div>
+
+          {/* 타일 2: 활성 출간 작가 & 전환율 */}
+          <div className="kpi-metric-tile">
+            <div className="metric-label-row">
+              <Feather size={15} />
+              <span>활성 출간 작가</span>
+            </div>
+            <div className="metric-value-row">
+              <span className="metric-number">{publishedAuthorsCount}</span>
+              <span className="metric-unit">명</span>
+            </div>
+            <span className="metric-sub-note">전체 기획 작가 {totalAuthorsCount}명 중 {authorSuccessRate}% 출간 달성</span>
+          </div>
+
+          {/* 타일 3: 공식 출간 도서 */}
           <div className="kpi-metric-tile">
             <div className="metric-label-row">
               <BookOpen size={15} />
-              <span>총 기획 도서</span>
+              <span>공식 출간 도서</span>
             </div>
             <div className="metric-value-row">
-              <span className="metric-number">{books.length}</span>
+              <span className="metric-number">{totalPublishedBooksCount}</span>
               <span className="metric-unit">권</span>
             </div>
-            <span className="metric-sub-note">서재 보관 프로젝트</span>
+            <span className="metric-sub-note">연재 {serialBooksCount}권 · 완결 {completedBooksCount}권</span>
           </div>
 
+          {/* 타일 4: 기획 대비 출간 성공률 */}
           <div className="kpi-metric-tile">
             <div className="metric-label-row">
-              <Layers size={15} />
-              <span>총 집필 챕터</span>
+              <Award size={15} />
+              <span>출간 전환 성공률</span>
             </div>
             <div className="metric-value-row">
-              <span className="metric-number">{stats.totalChapters || 0}</span>
-              <span className="metric-unit">장</span>
-            </div>
-            <span className="metric-sub-note">완료: {stats.completedChapters || 0}장</span>
-          </div>
-
-          <div className="kpi-metric-tile">
-            <div className="metric-label-row">
-              <FileText size={15} />
-              <span>총 누적 집필량</span>
-            </div>
-            <div className="metric-value-row">
-              <span className="metric-number">{totalCharacters.toLocaleString()}</span>
-              <span className="metric-unit">자</span>
-            </div>
-            <span className="metric-sub-note">원고지 약 {Math.round(totalCharacters / 200)}매</span>
-          </div>
-
-          <div className="kpi-metric-tile">
-            <div className="metric-label-row">
-              <Activity size={15} />
-              <span>클라우드 동기화 상태</span>
-            </div>
-            <div className="metric-value-row">
-              <span className="metric-number" style={{ fontSize: '1.25rem', color: syncStatus === 'synced' ? 'var(--success)' : 'var(--primary)' }}>
-                {syncStatus === 'synced' ? '최신 동기화' : syncStatus === 'syncing' ? '동기화 중' : '로컬 보존'}
+              <span className="metric-number" style={{ color: 'var(--color-primary, #8b5a2b)' }}>
+                {overallPublishSuccessRate}
               </span>
+              <span className="metric-unit">%</span>
             </div>
-            <span className="metric-sub-note">
-              {lastSyncedAt ? new Date(lastSyncedAt).toLocaleDateString('ko-KR') : '동기화 이력 없음'}
-            </span>
+            <span className="metric-sub-note">최종 완결 성공률 {completionRate}% ({completedBooksCount}/{totalBooks}권)</span>
           </div>
         </div>
 
-        {/* 세부 인프라 진단 바 */}
-        <div className="kpi-diagnostics-row">
-          <div className="diag-sub-box">
-            <h4>인증 & 세션 보안 현황</h4>
-            <div className="diag-list">
-              <div className="diag-list-item">
-                <span>접속 권한</span>
-                <strong style={{ color: 'var(--primary)' }}>관리자 (Local Developer Mode)</strong>
+        {/* 2) 중단: 출간 성공률 4단계 파이프라인 퍼널 (Funnel) */}
+        <div className="kpi-funnel-card">
+          <div className="funnel-header-row">
+            <div className="funnel-title-wrap">
+              <TrendingUp size={16} className="text-primary-icon" />
+              <h3>출간 단계별 전환 성공률 퍼널 (Publishing Conversion Funnel)</h3>
+            </div>
+            <span className="funnel-sub-badge">총 {totalBooks}개 프로젝트 분석</span>
+          </div>
+
+          <div className="funnel-steps-grid">
+            {/* Step 1: 기획 시작 */}
+            <div className="funnel-step-item">
+              <div className="funnel-step-top">
+                <span className="step-badge">Step 1</span>
+                <span className="step-name">기획 착수</span>
               </div>
-              <div className="diag-list-item">
-                <span>로그인 계정</span>
-                <span>{user ? user.email : '로컬 프리패스 접속 중'}</span>
+              <div className="funnel-step-val">
+                <strong>{totalBooks}</strong>
+                <span>권</span>
               </div>
-              <div className="diag-list-item">
-                <span>저장 아키텍처</span>
-                <span>로컬 우선(Local-First) + Firestore 비동기 스냅샷</span>
+              <div className="funnel-progress-wrap">
+                <div className="funnel-progress-bar" style={{ width: '100%' }} />
+              </div>
+              <span className="funnel-rate-tag">전환율 100%</span>
+            </div>
+
+            <div className="funnel-arrow-divider">➔</div>
+
+            {/* Step 2: 본문 집필 */}
+            <div className="funnel-step-item">
+              <div className="funnel-step-top">
+                <span className="step-badge">Step 2</span>
+                <span className="step-name">집필 돌입</span>
+              </div>
+              <div className="funnel-step-val">
+                <strong>{writingBooksCount}</strong>
+                <span>권</span>
+              </div>
+              <div className="funnel-progress-wrap">
+                <div className="funnel-progress-bar" style={{ width: `${writingRate}%` }} />
+              </div>
+              <span className="funnel-rate-tag">진입률 {writingRate}%</span>
+            </div>
+
+            <div className="funnel-arrow-divider">➔</div>
+
+            {/* Step 3: 연재 발행 */}
+            <div className="funnel-step-item">
+              <div className="funnel-step-top">
+                <span className="step-badge">Step 3</span>
+                <span className="step-name">연재 발행</span>
+              </div>
+              <div className="funnel-step-val">
+                <strong>{serialBooksCount}</strong>
+                <span>권</span>
+              </div>
+              <div className="funnel-progress-wrap">
+                <div className="funnel-progress-bar" style={{ width: `${serialRate}%` }} />
+              </div>
+              <span className="funnel-rate-tag">발행률 {serialRate}%</span>
+            </div>
+
+            <div className="funnel-arrow-divider">➔</div>
+
+            {/* Step 4: 최종 완결 */}
+            <div className="funnel-step-item highlight-completed">
+              <div className="funnel-step-top">
+                <span className="step-badge">Step 4</span>
+                <span className="step-name">최종 완결</span>
+              </div>
+              <div className="funnel-step-val">
+                <strong style={{ color: 'var(--success, #059669)' }}>{completedBooksCount}</strong>
+                <span>권</span>
+              </div>
+              <div className="funnel-progress-wrap">
+                <div className="funnel-progress-bar bar-completed" style={{ width: `${completionRate}%` }} />
+              </div>
+              <span className="funnel-rate-tag tag-completed">완결 성공률 {completionRate}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 3) 하단 2열 상세 분석: 독자 반응 & 장르별 성과 */}
+        <div className="kpi-detail-2col">
+          {/* 좌측: 독자 인터랙션 및 열람 반응 */}
+          <div className="kpi-detail-box">
+            <div className="detail-box-header">
+              <Eye size={16} className="text-primary-icon" />
+              <h4>독자 열람 및 반응 인터랙션 (Audience Engagement)</h4>
+            </div>
+            <div className="audience-metrics-list">
+              <div className="audience-metric-item">
+                <div className="aud-item-left">
+                  <span className="aud-title">독서 세션 및 페이지뷰</span>
+                  <span className="aud-desc">웹 뷰어에서 실제 열람된 누적 세션</span>
+                </div>
+                <div className="aud-item-val">
+                  <strong>{traffic.readerSessions.toLocaleString()}</strong> 회
+                </div>
+              </div>
+
+              <div className="audience-metric-item">
+                <div className="aud-item-left">
+                  <span className="aud-title">연재 작품 누적 조회수</span>
+                  <span className="aud-desc">발행된 {totalPublishedChapters}개 챕터 열람 총합</span>
+                </div>
+                <div className="aud-item-val">
+                  <strong>{totalViews.toLocaleString()}</strong> 뷰
+                </div>
+              </div>
+
+              <div className="audience-metric-item">
+                <div className="aud-item-left">
+                  <span className="aud-title">독서 서재 담김 (북마크)</span>
+                  <span className="aud-desc">독자가 서재에 담아 이어읽는 도서 수</span>
+                </div>
+                <div className="aud-item-val">
+                  <strong>{savedToShelfCount}</strong> 권
+                </div>
+              </div>
+
+              <div className="audience-metric-item">
+                <div className="aud-item-left">
+                  <span className="aud-title">독자 응원 반응 (좋아요/댓글)</span>
+                  <span className="aud-desc">하트 공감 및 챕터 피드백 총합</span>
+                </div>
+                <div className="aud-item-val">
+                  <strong>{(totalLikes + totalComments).toLocaleString()}</strong> 개
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="diag-sub-box">
-            <h4>AI 모델 파이프라인 가동률</h4>
-            <div className="diag-list">
-              <div className="diag-list-item">
-                <span>기본 라우팅 엔진</span>
-                <strong>Google AI Studio Cascade Engine</strong>
-              </div>
-              <div className="diag-list-item">
-                <span>페르소나 뼈대 규격</span>
-                <span>3대 출판 뼈대 (소설 / 에세이 / 비문학)</span>
-              </div>
-              <div className="diag-list-item">
-                <span>안전망 (Fallback)</span>
-                <span>429 자동 스위칭 (Gemma 4 31B 백업)</span>
-              </div>
+          {/* 우측: 장르별 출간 비중 및 성공률 */}
+          <div className="kpi-detail-box">
+            <div className="detail-box-header">
+              <Layers size={16} className="text-primary-icon" />
+              <h4>장르별 출간 현황 및 완결률 (Genre Performance)</h4>
+            </div>
+            <div className="genre-performance-list">
+              {topGenreList.length === 0 ? (
+                <div className="genre-empty-text">등록된 도서가 없습니다.</div>
+              ) : (
+                topGenreList.slice(0, 5).map(g => {
+                  const gCompRate = g.total > 0 ? Math.round((g.completed / g.total) * 100) : 0;
+                  const gPubRate = g.total > 0 ? Math.round((g.published / g.total) * 100) : 0;
+                  return (
+                    <div key={g.label} className="genre-perf-row">
+                      <div className="genre-perf-meta">
+                        <span className="genre-name">{g.label}</span>
+                        <div className="genre-counts">
+                          <span>기획 {g.total}권</span>
+                          <span className="bullet">·</span>
+                          <span>연재 {g.published}권</span>
+                          <span className="bullet">·</span>
+                          <span className="highlight-comp">완결 {g.completed}권 ({gCompRate}%)</span>
+                        </div>
+                      </div>
+                      <div className="genre-bar-track">
+                        <div 
+                          className="genre-bar-fill" 
+                          style={{ width: `${Math.max(8, gPubRate)}%` }}
+                          title={`출간 성공률 ${gPubRate}%`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
