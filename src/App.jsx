@@ -4,6 +4,7 @@ import { useStore } from './store';
 import Sidebar from './components/Sidebar';
 import Toast from './components/Toast';
 import CustomDialog from './components/CustomDialog';
+import AdNative from './components/AdNative';
 import { trafficTracker } from './utils/trafficTracker';
 
 // 주요 페이지 (Lotto 스타일 pages 구조)
@@ -79,7 +80,9 @@ export default function App() {
       </main>
       {!isWriterSpace && (
         <aside className="global-right-rail" aria-label="사이드 여백">
-          <div className="right-rail-ad-slot" id="yeonjae-right-ad-slot" />
+          <div className="right-rail-ad-slot" id="yeonjae-right-ad-slot">
+            <AdNative variant="sidebar" slotId="4938563458" />
+          </div>
         </aside>
       )}
       <Toast />

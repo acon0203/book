@@ -57,7 +57,8 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │   ├── tiptapExtensions.js     # [신설] Tiptap 서식 커스텀 확장 (글자체·글자색·배경색·형광펜·정렬·들여쓰기·줄간격)
     │   ├── ManuscriptImportModal.jsx / .css # [신설] 외부 원고(TXT·MD·DOCX) 가져오기 & 스마트 목차 분할 마법사
     │   ├── AuthorPersonaModal.jsx / .css # [신설] 서재 관리 작가 페르소나 설정 모달 (대표 문체 샘플 3~5편 Few-shot, 문체 칩, 금기어, 작가 지침)
-    │   └── BookInfoModal.jsx / .css # [신설] 도서 신규 기획 및 기본 정보(제목, 필명, 장르, 6종 테마 표지 등) 통합 수정 모달
+    │   ├── BookInfoModal.jsx / .css # [신설] 도서 신규 기획 및 기본 정보(제목, 필명, 장르, 6종 테마 표지 등) 통합 수정 모달
+    │   └── AdNative.jsx / .css      # [신설] Zero-Lag 구글 애드센스 정적 네이티브 광고 컴포넌트 (CLS 0px 방지, 테마 일치)
     ├── data/                    # [출판 레퍼런스 및 영감 정적 DB]
     │   ├── bestseller-db.json   # 베스트셀러 25권 표본 분석 & 장르별 표준 규격(페이지수, 꼭지당 글자수, 표본 도서) DB
     │   ├── ai-models-db.json    # 무료 텍스트/Gemma 모델 목록(0/0 제외) 및 스마트 자동 전환 우선순위 DB
@@ -112,6 +113,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 | **`src/components/TiptapEditor.jsx`** | 범용 리치 텍스트 에디터 독립 컴포넌트: H1~H3 서식 툴바, 종이 시트 본문 뷰포트, 실시간 원고지 환산 매수 하단 상태바(`editor-status-bar`), 드래그 문장 AI 자동 전송 및 Zero-Lag 즉시 렌더링 |
 | **`src/components/tiptapExtensions.js`** | [신설] Tiptap 서식 커스텀 확장 모듈: 문단 정렬(4종), 들여쓰기/내어쓰기, 글자 색상(8종 팔레트), 형광펜 하이라이트(5종), 줄 간격(140%~200%) |
 | **`src/components/BookInfoModal.jsx`** | [통합 모달] 도서 신규 기획 및 기본 정보(제목, 부제, 10대 장르, 필명, 타깃 독자층, 6종 표지 테마 색상) 생성/수정 겸용 모달 (`BookInfoModal.css`와 1:1 매칭) |
+| **`src/components/AdNative.jsx`** | [신설] Zero-Lag 구글 애드센스 정적 네이티브 광고 컴포넌트: CLS(레이아웃 덜컹거림) 0px 방지, 테마 스타일 자동 일치, 로컬/승인대기 안전 플레이스홀더 제공 (`AdNative.css`와 1:1 매칭) |
 | **`src/components/AuthorPersonaModal.jsx`** | [신설] 작가 문체 페르소나 설정 모달: 문체 샘플(3~5편 Few-shot 붙여넣기), 문체 칩(단문, 속도감 등), 금기어 태그(번역투 배제 등), 추가 지침 관리 (`AuthorPersonaModal.css`와 1:1 매칭) |
 | **`src/pages/Library.jsx`** | [내 서재 전면 개편] 1. 상단 ⚡ 지금 이어하기 Quick Band(최근 집필 ➔ 스튜디오 / 최근 독서 ➔ 뷰어 2분할 퀵 직통) + 2. 좌우 분류 시트 탭(✍️ 집필 서재 vs 📖 독서 서재) + 3. 시트 연동 스마트 2줄 요약 밴드 & 도서/독서 카드 그리드 |
 | **`src/components/ai/AIEditor.jsx`** | [4대 AI] AI 총괄 편집장 드로어: 실시간 채팅 상담, 세션 히스토리 보관, 6대 추천 액션, 목차 개편안 원클릭 반영 (`AIEditor.css`와 1:1 매칭) |

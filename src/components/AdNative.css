@@ -1,0 +1,170 @@
+/* AdNative.css - 연재서재 정적 네이티브 광고 스타일 */
+
+.ad-native-container {
+  position: relative;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-panel, #ffffff);
+  border: 1px solid var(--border-glass, rgba(0, 0, 0, 0.08));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.ad-native-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.4rem 0.75rem 0.2rem;
+}
+
+.ad-native-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #8e8e93);
+  text-transform: uppercase;
+  background: rgba(128, 128, 128, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.ad-native-body {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 1. 피드 카드형 (도서 목록 그리드 사이에 들어갈 때) */
+.ad-native-container.ad-variant-feed {
+  width: 100%;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ad-native-container.ad-variant-feed .ad-native-body {
+  flex: 1;
+  padding: 1rem;
+}
+
+/* 2. 본문 하단/회차 뷰어형 (가로 배너 정적 카드) */
+.ad-native-container.ad-variant-in-article {
+  width: 100%;
+  max-width: 780px;
+  min-height: 140px;
+  margin: 2.5rem auto 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.ad-native-container.ad-variant-in-article .ad-native-body {
+  padding: 0.75rem 1.25rem 1.25rem;
+}
+
+/* 3. 사이드바 레일형 (우측 220px 글로벌 레일 전용: 160x600 / 200x600 고수익 스카이스크래퍼 규격) */
+.ad-native-container.ad-variant-sidebar {
+  width: 196px;
+  min-height: 600px;
+  height: 640px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card, rgba(255, 255, 255, 0.6));
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.ad-native-container.ad-variant-sidebar .ad-native-body {
+  flex: 1;
+  height: 100%;
+  padding: 0.85rem 0.65rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 사이드바 전용 세로 롱 플레이스홀더 */
+.ad-variant-sidebar .ad-native-placeholder {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+  padding: 2rem 0.85rem;
+  gap: 1.5rem;
+  box-sizing: border-box;
+}
+
+.ad-variant-sidebar .ad-placeholder-graphic {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+}
+
+.ad-variant-sidebar .ad-placeholder-info {
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ad-variant-sidebar .ad-placeholder-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ad-variant-sidebar .ad-placeholder-desc {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-dim, #8e8e93);
+}
+
+/* 4. 컴팩트형 */
+.ad-native-container.ad-variant-compact {
+  width: 100%;
+  min-height: 100px;
+}
+
+/* 플레이스홀더 기본 (피드/인아티클용 가로형) */
+.ad-native-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem;
+  background: rgba(128, 128, 128, 0.03);
+  border-radius: var(--radius-sm, 6px);
+  border: 1px dashed var(--border-glass, rgba(0, 0, 0, 0.12));
+}
+
+.ad-placeholder-graphic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(128, 128, 128, 0.08);
+  color: var(--text-muted, #8e8e93);
+  flex-shrink: 0;
+}
+
+.ad-placeholder-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ad-placeholder-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main, #1c1c1e);
+}
+
+.ad-placeholder-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted, #8e8e93);
+  line-height: 1.4;
+  word-break: keep-all;
+}
