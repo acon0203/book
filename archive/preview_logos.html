@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연재서재 - 서가(書架) 라인 & 에디토리얼 워드마크 컬렉션 아카이브 (1~8번)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,700;1,6..96,600&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=Gowun+Batang:wght@400;700&family=Noto+Serif+KR:wght@400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --app-bg: #191512;
+      --app-surface: #231d18;
+      --app-border: rgba(196, 138, 84, 0.18);
+      --primary: #c48a54;
+      --primary-light: #e8c48a;
+      --text-main: #f7f3ec;
+      --text-sub: #b3a69a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--app-bg);
+      color: var(--text-main);
+      font-family: 'Pretendard', sans-serif;
+      padding: 3rem 1.5rem 6rem;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .header {
+      text-align: center;
+      max-width: 880px;
+      margin: 0 auto 3.5rem;
+    }
+    .header-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: rgba(196, 138, 84, 0.1);
+      border: 1px solid rgba(196, 138, 84, 0.35);
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+      margin-bottom: 1.2rem;
+      font-weight: 600;
+    }
+    h1 {
+      font-family: 'Bodoni Moda', 'Noto Serif KR', serif;
+      font-size: 2.3rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.9rem;
+      color: #faf6f0;
+    }
+    .desc {
+      color: var(--text-sub);
+      font-size: 1rem;
+      line-height: 1.75;
+      font-weight: 400;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2.2rem;
+      max-width: 1360px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--app-surface);
+      border: 1px solid var(--app-border);
+      border-radius: 20px;
+      padding: 2.2rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: var(--primary);
+      box-shadow: 0 20px 42px rgba(0, 0, 0, 0.55);
+    }
+    .card.is-selected {
+      border: 2px solid var(--primary);
+      background: linear-gradient(180deg, rgba(196, 138, 84, 0.14) 0%, var(--app-surface) 100%);
+    }
+    .badge-number {
+      position: absolute;
+      top: 1.4rem;
+      right: 1.4rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(196, 138, 84, 0.12);
+      border: 1px solid rgba(196, 138, 84, 0.3);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .status-tag {
+      position: absolute;
+      top: 1.5rem;
+      left: 1.5rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.65rem;
+      border-radius: 4px;
+      background: rgba(196, 138, 84, 0.2);
+      color: var(--primary-light);
+      border: 1px solid rgba(196, 138, 84, 0.4);
+    }
+
+    .preview-canvas {
+      background: #191512;
+      border: 1px solid rgba(196, 138, 84, 0.18);
+      border-radius: 14px;
+      padding: 2.5rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      margin-top: 1.8rem;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .preview-canvas-light {
+      background: #faf7f2;
+      border: 1px solid rgba(156, 110, 67, 0.16);
+      border-radius: 12px;
+      padding: 1.4rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.4rem;
+      position: relative;
+    }
+    .canvas-tag {
+      position: absolute;
+      top: 0.6rem;
+      left: 0.85rem;
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      opacity: 0.7;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.4rem;
+    }
+    .card-keyword {
+      font-size: 0.82rem;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+    .card-desc {
+      font-size: 0.88rem;
+      color: var(--text-sub);
+      line-height: 1.65;
+    }
+
+    .action-tip {
+      text-align: center;
+      margin-top: 4.5rem;
+      padding: 1.8rem;
+      background: rgba(196, 138, 84, 0.08);
+      border: 1px dashed var(--primary);
+      border-radius: 16px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 1rem;
+      color: #faf6f0;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-badge">The Complete Wordmark Archive</div>
+    <h1>연재서재 1~8번 워드마크 컬렉션 아카이브</h1>
+    <p class="desc">
+      탐색과 개발 과정에서 검토된 <strong>1번부터 8번까지의 모든 에디토리얼 워드마크</strong>를 원형 그대로 영구 보존한 아카이브입니다.<br>
+      본 애플리케이션의 사이드바에는 최종 채택된 <strong>8번 시안(E자 옆 서책 3권 & 북엔드 마감)</strong>이 가볍고 빠른 단독 인라인 코드로 영구 반영되었습니다.
+    </p>
+  </div>
+
+  <div class="grid">
+
+    <!-- 시안 1. 브런치 프렌치 이탤릭 'yeonjae' -->
+    <div class="card">
+      <span class="status-tag">시안 1</span>
+      <div class="badge-number">1</div>
+      <div class="preview-canvas">
+        <span class="canvas-tag">다크 모드</span>
+        <svg viewBox="0 0 210 50" width="195" height="46" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="10" y="34" font-family="'Playfair Display', 'Cormorant Garamond', serif" font-size="34" font-style="italic" font-weight="600" fill="#f7f3ec" letter-spacing="0.04em">
+            yeon<tspan fill="#e8c48a">j</tspan>ae
+          </text>
+          <g transform="translate(122, 6.5)">
+            <path d="M4 1 L1.5 7.2 L6.5 7.2 Z" fill="#e8c48a"/>
+            <line x1="4" y1="1" x2="4" y2="5.5" stroke="#191512" stroke-width="0.7"/>
+          </g>
+          <line x1="12" y1="42" x2="192" y2="42" stroke="#c48a54" stroke-width="0.9" stroke-dasharray="3 3" opacity="0.45"/>
+        </svg>
+      </div>
+      <div class="preview-canvas-light">
+        <svg viewBox="0 0 210 50" width="175" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="10" y="34" font-family="'Playfair Display', 'Cormorant Garamond', serif" font-size="34" font-style="italic" font-weight="600" fill="#231d18" letter-spacing="0.04em">
+            yeon<tspan fill="#9c6e43">j</tspan>ae
+          </text>
+          <g transform="translate(122, 6.5)">
+            <path d="M4 1 L1.5 7.2 L6.5 7.2 Z" fill="#9c6e43"/>
+            <line x1="4" y1="1" x2="4" y2="5.5" stroke="#faf7f2" stroke-width="0.7"/>
+          </g>
+          <line x1="12" y1="42" x2="192" y2="42" stroke="#9c6e43" stroke-width="0.9" stroke-dasharray="3 3" opacity="0.35"/>
+        </svg>
+      </div>
+      <div class="card-title">시안 1. 브런치 프렌치 이탤릭 'yeonjae'</div>
+      <div class="card-keyword">컨셉: 브런치 특유의 유려한 이탤릭 소문자 + 'j'의 미세 펜촉 팁</div>
+      <div class="card-desc">유려한 곡선과 <code>j</code> 윗점의 펜촉 팁이 감성적인 문학 매거진의 분위기를 줍니다.</div>
+    </div>
+
+    <!-- 시안 2. 작가의 잉크 스와시 'yeonjae' -->
+    <div class="card">
+      <span class="status-tag">시안 2</span>
+      <div class="badge-number">2</div>
+      <div class="preview-canvas">
+        <span class="canvas-tag">다크 모드</span>
+        <svg viewBox="0 0 210 52" width="200" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 21 C16 21 19 28 22 34 C26 26 29 15 33 15 C35 15 33 22 30 32 C27 43 20 47 13 47 C9 47 7 44 10 42 C14 40 20 39 26 33" stroke="#c48a54" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+          <text x="35" y="33" font-family="'Playfair Display', serif" font-size="31" font-style="italic" font-weight="600" fill="#f7f3ec" letter-spacing="0.03em">
+            eon<tspan fill="#e8c48a">j</tspan>ae
+          </text>
+          <circle cx="178" cy="30" r="2.4" fill="#c48a54"/>
+        </svg>
+      </div>
+      <div class="preview-canvas-light">
+        <svg viewBox="0 0 210 52" width="180" height="44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 21 C16 21 19 28 22 34 C26 26 29 15 33 15 C35 15 33 22 30 32 C27 43 20 47 13 47 C9 47 7 44 10 42 C14 40 20 39 26 33" stroke="#9c6e43" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+          <text x="35" y="33" font-family="'Playfair Display', serif" font-size="31" font-style="italic" font-weight="600" fill="#231d18" letter-spacing="0.03em">
+            eon<tspan fill="#9c6e43">j</tspan>ae
+          </text>
+          <circle cx="178" cy="30" r="2.4" fill="#9c6e43"/>
+        </svg>
+      </div>
+      <div class="card-title">시안 2. 작가의 잉크 스와시 'yeonjae'</div>
+      <div class="card-keyword">컨셉: 첫 글자 y의 긴 스와시(Swash) 곡선 순수 영문 워드마크</div>
+      <div class="card-desc">한글 텍스트를 제거하여 정갈해진 순수 필기체 서명 워드마크입니다.</div>
+    </div>
+
+    <!-- 시안 3. 킨포크 미니멀 'YEONJAE' & 다이아몬드 -->
+    <div class="card">
+      <span class="status-tag">시안 3</span>
+      <div class="badge-number">3</div>
+      <div class="preview-canvas">
+        <span class="canvas-tag">다크 모드</span>
+        <svg viewBox="0 0 220 50" width="205" height="46" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="14" y="30" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="20" font-weight="600" fill="#f7f3ec" letter-spacing="0.32em">
+            YEONJAE
+          </text>
+          <line x1="14" y1="39" x2="196" y2="39" stroke="#c48a54" stroke-width="0.8" opacity="0.4"/>
+          <polygon points="105,37 107.5,39 105,41 102.5,39" fill="#c48a54"/>
+        </svg>
+      </div>
+      <div class="preview-canvas-light">
+        <svg viewBox="0 0 220 50" width="185" height="42" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="14" y="30" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="20" font-weight="600" fill="#231d18" letter-spacing="0.32em">
+            YEONJAE
+          </text>
+          <line x1="14" y1="39" x2="196" y2="39" stroke="#9c6e43" stroke-width="0.8" opacity="0.35"/>
+          <polygon points="105,37 107.5,39 105,41 102.5,39" fill="#9c6e43"/>
+        </svg>
+      </div>
+      <div class="card-title">시안 3. 킨포크 미니멀 'YEONJAE' (다이아몬드)</div>
+      <div class="card-keyword">컨셉: 와이드 트래킹(0.32em) + 서가선 중앙 장정 다이아몬드</div>
+      <div class="card-desc">클래식 양장본 서책 표지의 중심 장정 다이아몬드를 품은 원본입니다.</div>
+    </div>
+
+    <!-- 시안 4. 북엔드(Bookends) 서가선 YEONJAE -->
+    <div class="card">
+      <span class="status-tag">시안 4</span>
+      <div class="badge-number">4</div>
+      <div class="preview-canvas">
+        <span class="canvas-tag">다크 모드</span>
+        <svg viewBox="0 0 220 52" width="205" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="14" y="29" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="20" font-weight="600" fill="#f7f3ec" letter-spacing="0.32em">
+            YEONJAE
+          </text>
+          <path d="M12 34 L12 40 L18 40" stroke="#c48a54" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="18" y1="40" x2="192" y2="40" stroke="#c48a54" stroke-width="0.8" opacity="0.5"/>
+          <path d="M192 40 L198 40 L198 34" stroke="#c48a54" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="102" y1="38" x2="102" y2="42" stroke="#e8c48a" stroke-width="1" stroke-linecap="round"/>
+          <line x1="105" y1="37" x2="105" y2="43" stroke="#e8c48a" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="108" y1="38" x2="108" y2="42" stroke="#e8c48a" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="preview-canvas-light">
+        <svg viewBox="0 0 220 52" width="185" height="44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="14" y="29" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="20" font-weight="600" fill="#231d18" letter-spacing="0.32em">
+            YEONJAE
+          </text>
+          <path d="M12 34 L12 40 L18 40" stroke="#9c6e43" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="18" y1="40" x2="192" y2="40" stroke="#9c6e43" stroke-width="0.8" opacity="0.45"/>
+          <path d="M192 40 L198 40 L198 34" stroke="#9c6e43" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="102" y1="38" x2="102" y2="42" stroke="#9c6e43" stroke-width="1" stroke-linecap="round"/>
+          <line x1="105" y1="37" x2="105" y2="43" stroke="#9c6e43" stroke-width="1.2" stroke-linecap="round"/>
+          <line x1="108" y1="38" x2="108" y2="42" stroke="#9c6e43" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="card-title">시안 4. 북엔드(Bookends) 서가선 'YEONJAE'</div>
+      <div class="card-keyword">컨셉: 서가 양끝을 받치는 모던 북엔드(Bookends) + 중앙 3중 서가 슬릿</div>
+      <div class="card-desc">서가 양 끝을 받치는 L자형 북엔드 구조와 중앙 3중 슬릿이 건축적 균형미를 제공합니다.</div>
+    </div>
+
+    <!-- 시안 5. 서가선 중앙 서책 3권 YEONJAE -->
+    <div class="card">
+      <span class="status-tag">시안 5</span>
+      <div class="badge-number">5</div>
+      <div class="preview-canvas">
+        <span class="canvas-tag">다크 모드</span>
+        <svg viewBox="0 0 220 54" width="205" height="50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="14" y="28" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="20" font-weight="600" fill="#f7f3ec" letter-spacing="0.32em">
+            YEONJAE
+          </text>
+          <line x1="14" y1="41" x2="88" y2="41" stroke="#c48a54" stroke-width="0.8" opacity="0.45"/>
+          <rect x="91" y="34" width="3" height="7" rx="0.5" fill="#c48a54"/>
+          <rect x="95" y="32" width="3.2" height="9" rx="0.5" fill="#f7f3ec" opacity="0.9"/>
+          <rect x="100" y="33" width="3" height="8" rx="0.5" fill="#e8c48a" transform="rotate(12 100 41)"/>
+          <line x1="108" y1="41" x2="196" y2="41" stroke="#c48a54" stroke-width="0.8" opacity="0.45"/>
+          <circle cx="196" cy="41" r="1.2" fill="#c48a54"/>
+        </svg>
+      </div>
+      <div class="preview-canvas-light">
+        <svg viewBox="0 0 220 54" width="185" height="46" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="14" y="28" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="20" font-weight="600" fill="#231d18" letter-spacing="0.32em">
+            YEONJAE
+          </text>
+          <line x1="14" y1="41" x2="88" y2="41" stroke="#9c6e43" stroke-width="0.8" opacity="0.4"/>
+          <rect x="91" y="34" width="3" height="7" rx="0.5" fill="#9c6e43"/>
+          <rect x="95" y="32" width="3.2" height="9" rx="0.5" fill="#231d18" opacity="0.85"/>
+          <rect x="100" y="33" width="3" height="8" rx="0.5" fill="#9c6e43" transform="rotate(12 100 41)"/>
+          <line x1="108" y1="41" x2="196" y2="41" stroke="#9c6e43" stroke-width="0.8" opacity="0.4"/>
+          <circle cx="196" cy="41" r="1.2" fill="#9c6e43"/>
+        </svg>
+      </div>
+      <div class="card-title">시안 5. 꽂힌 서책(Books on Shelf) 서가선 'YEONJAE'</div>
+      <div class="card-keyword">컨셉: 서가선 중앙에 서책 3권(똑바로 선 책 + 기댄 책)이 자연스레 꽂힌 풍경</div>
+      <div class="card-desc">서가선 중앙에 꽂힌 3권의 책 실루엣이 정갈한 서재의 분위기를 살려줍니다.</div>
+    </div>
+
+    <!-- 시안 6. E자 옆 책 3권 + 점(Circle) 마감 -->
+    <div class="card">
+      <span class="status-tag">시안 6</span>
+      <div class="badge-number">6</div>
+      <div class="preview-canvas">
+        <span class="canvas-tag">다크 모드</span>
+        <svg viewBox="0 0 195 44" width="180" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="8" y="24" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="17.5" font-weight="600" fill="#f7f3ec" letter-spacing="0.28em">
+            YEONJAE
+          </text>
+          <g transform="translate(0, -3)">
+            <line x1="8" y1="34" x2="135" y2="34" stroke="#c48a54" stroke-width="0.7" opacity="0.45"/>
+            <rect x="138" y="28" width="2.6" height="6" rx="0.4" fill="#c48a54"/>
+            <rect x="141.5" y="26.5" width="2.8" height="7.5" rx="0.4" fill="#f7f3ec" opacity="0.9"/>
+            <rect x="145.5" y="27.5" width="2.6" height="6.8" rx="0.4" fill="#e8c48a" transform="rotate(12 145.5 34)"/>
+            <line x1="153" y1="34" x2="168" y2="34" stroke="#c48a54" stroke-width="0.7" opacity="0.45"/>
+            <circle cx="168" cy="34" r="1.1" fill="#c48a54"/>
+          </g>
+        </svg>
+      </div>
+      <div class="preview-canvas-light">
+        <svg viewBox="0 0 195 44" width="165" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="8" y="24" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="17.5" font-weight="600" fill="#231d18" letter-spacing="0.28em">
+            YEONJAE
+          </text>
+          <g transform="translate(0, -3)">
+            <line x1="8" y1="34" x2="135" y2="34" stroke="#9c6e43" stroke-width="0.7" opacity="0.4"/>
+            <rect x="138" y="28" width="2.6" height="6" rx="0.4" fill="#9c6e43"/>
+            <rect x="141.5" y="26.5" width="2.8" height="7.5" rx="0.4" fill="#231d18" opacity="0.85"/>
+            <rect x="145.5" y="27.5" width="2.6" height="6.8" rx="0.4" fill="#9c6e43" transform="rotate(12 145.5 34)"/>
+            <line x1="153" y1="34" x2="168" y2="34" stroke="#9c6e43" stroke-width="0.7" opacity="0.4"/>
+            <circle cx="168" cy="34" r="1.1" fill="#9c6e43"/>
+          </g>
+        </svg>
+      </div>
+      <div class="card-title">시안 6. E자 옆 서책 3권 & 점(Circle) 마감</div>
+      <div class="card-keyword">컨셉: 서가선 오른쪽 끝이 단정한 호박석 골드 포인트 점(Circle)으로 마감</div>
+      <div class="card-desc">서가선 끝에 작은 점이 찍혀 차분하게 마무리되는 형태입니다.</div>
+    </div>
+
+    <!-- 시안 7. E자 옆 3중 북마크 슬릿 -->
+    <div class="card">
+      <span class="status-tag">시안 7</span>
+      <div class="badge-number">7</div>
+      <div class="preview-canvas">
+        <span class="canvas-tag">다크 모드</span>
+        <svg viewBox="0 0 195 44" width="180" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="8" y="25" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="17.5" font-weight="600" fill="#f7f3ec" letter-spacing="0.28em">
+            YEONJAE
+          </text>
+          <path d="M6 29 L6 34 L11 34" stroke="#c48a54" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="11" y1="34" x2="162" y2="34" stroke="#c48a54" stroke-width="0.7" opacity="0.45"/>
+          <path d="M162 34 L167 34 L167 29" stroke="#c48a54" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="136" y1="32.5" x2="136" y2="35.5" stroke="#e8c48a" stroke-width="0.9" stroke-linecap="round"/>
+          <line x1="138" y1="31.5" x2="138" y2="36.5" stroke="#e8c48a" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="140" y1="32.5" x2="140" y2="35.5" stroke="#e8c48a" stroke-width="0.9" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="preview-canvas-light">
+        <svg viewBox="0 0 195 44" width="165" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="8" y="25" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="17.5" font-weight="600" fill="#231d18" letter-spacing="0.28em">
+            YEONJAE
+          </text>
+          <path d="M6 29 L6 34 L11 34" stroke="#9c6e43" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="11" y1="34" x2="162" y2="34" stroke="#9c6e43" stroke-width="0.7" opacity="0.45"/>
+          <path d="M162 34 L167 34 L167 29" stroke="#9c6e43" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="136" y1="32.5" x2="136" y2="35.5" stroke="#9c6e43" stroke-width="0.9" stroke-linecap="round"/>
+          <line x1="138" y1="31.5" x2="138" y2="36.5" stroke="#9c6e43" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="140" y1="32.5" x2="140" y2="35.5" stroke="#9c6e43" stroke-width="0.9" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="card-title">시안 7. E자 옆 3중 북마크 슬릿</div>
+      <div class="card-keyword">컨셉: 양끝 북엔드와 E자 우측에 단정히 놓인 3중 북마크 슬릿</div>
+      <div class="card-desc">4번의 북마크 슬릿을 E자 옆으로 수평 이동한 형태입니다.</div>
+    </div>
+
+    <!-- 🌟 시안 8. [최종 채택 확정] E자 옆 서책 3권 & 수직 북엔드 마감 -->
+    <div class="card is-selected">
+      <span class="status-tag">★ 최종 채택 확정</span>
+      <div class="badge-number">8</div>
+      <div class="preview-canvas">
+        <span class="canvas-tag">다크 모드</span>
+        <svg viewBox="0 0 195 44" width="180" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="8" y="24" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="17.5" font-weight="600" fill="#f7f3ec" letter-spacing="0.28em">
+            YEONJAE
+          </text>
+          <g transform="translate(0, -3)">
+            <line x1="8" y1="34" x2="135" y2="34" stroke="#c48a54" stroke-width="0.7" opacity="0.45"/>
+            <rect x="138" y="28" width="2.6" height="6" rx="0.4" fill="#c48a54"/>
+            <rect x="141.5" y="26.5" width="2.8" height="7.5" rx="0.4" fill="#f7f3ec" opacity="0.9"/>
+            <rect x="145.5" y="27.5" width="2.6" height="6.8" rx="0.4" fill="#e8c48a" transform="rotate(12 145.5 34)"/>
+            <path d="M153 34 L166 34 L166 28" stroke="#c48a54" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      </div>
+      <div class="preview-canvas-light">
+        <svg viewBox="0 0 195 44" width="165" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <text x="8" y="24" font-family="'Cinzel', 'Noto Serif KR', serif" font-size="17.5" font-weight="600" fill="#231d18" letter-spacing="0.28em">
+            YEONJAE
+          </text>
+          <g transform="translate(0, -3)">
+            <line x1="8" y1="34" x2="135" y2="34" stroke="#9c6e43" stroke-width="0.7" opacity="0.4"/>
+            <rect x="138" y="28" width="2.6" height="6" rx="0.4" fill="#9c6e43"/>
+            <rect x="141.5" y="26.5" width="2.8" height="7.5" rx="0.4" fill="#231d18" opacity="0.85"/>
+            <rect x="145.5" y="27.5" width="2.6" height="6.8" rx="0.4" fill="#9c6e43" transform="rotate(12 145.5 34)"/>
+            <path d="M153 34 L166 34 L166 28" stroke="#9c6e43" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      </div>
+      <div class="card-title">시안 8. E자 옆 서책 3권 & 위로 올라가는 북엔드 마감</div>
+      <div class="card-keyword">컨셉: 서가선 위 E자 옆 서책 3권 + 서가선 끝 수직 북엔드 마감 (최종 채택)</div>
+      <div class="card-desc">연재서재의 공식 단독 워드마크로 채택된 최종 디자인입니다. 단어 끝에 안착된 서책들과 북엔드가 완벽한 조형 균형과 서재의 정취를 완성합니다.</div>
+    </div>
+
+  </div>
+
+  <div class="action-tip">
+    🏛️ <strong>연재서재 공식 로고 확정</strong>: 8번 시안이 공식 로고로 단독 확정되어 사이드바에 내장 통합되었습니다.<br>
+    본 페이지는 1~8번 전체 디자인 히스토리를 언제든 열람할 수 있는 정적 아카이브로 보존됩니다.
+  </div>
+
+</body>
+</html>

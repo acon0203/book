@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>연재서재 - 공식 파비콘 & 앱 아이콘 4대 후보 쇼케이스</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Noto+Serif+KR:wght@500;700&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --app-bg: #191512;
+      --app-surface: #231d18;
+      --app-border: rgba(196, 138, 84, 0.18);
+      --primary: #c48a54;
+      --primary-light: #e8c48a;
+      --text-main: #f7f3ec;
+      --text-sub: #b3a69a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--app-bg);
+      color: var(--text-main);
+      font-family: 'Pretendard', sans-serif;
+      padding: 3rem 1.5rem 6rem;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .header {
+      text-align: center;
+      max-width: 860px;
+      margin: 0 auto 3.5rem;
+    }
+    .header-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: rgba(196, 138, 84, 0.1);
+      border: 1px solid rgba(196, 138, 84, 0.35);
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+      margin-bottom: 1.2rem;
+      font-weight: 600;
+    }
+    h1 {
+      font-family: 'Cinzel', 'Noto Serif KR', serif;
+      font-size: 2.2rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.9rem;
+      color: #faf6f0;
+    }
+    .desc {
+      color: var(--text-sub);
+      font-size: 1rem;
+      line-height: 1.75;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 2.2rem;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--app-surface);
+      border: 1px solid var(--app-border);
+      border-radius: 20px;
+      padding: 2.2rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      border-color: var(--primary);
+      box-shadow: 0 20px 42px rgba(0, 0, 0, 0.55);
+    }
+    .badge-label {
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(196, 138, 84, 0.12);
+      border: 1px solid rgba(196, 138, 84, 0.3);
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+    }
+
+    /* 64px 확대 뷰 */
+    .icon-hero-view {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      background: #15110e;
+      border: 1px solid rgba(196, 138, 84, 0.15);
+      border-radius: 14px;
+      padding: 2rem 1.5rem;
+      margin-top: 1.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .hero-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .hero-caption {
+      font-size: 0.68rem;
+      color: var(--text-sub);
+      opacity: 0.7;
+    }
+
+    /* 실제 브라우저 탭 실물 시뮬레이터 */
+    .browser-tab-simulator {
+      background: #2b2a2a;
+      border-radius: 10px;
+      padding: 0.6rem 0.8rem 0;
+      margin-bottom: 1.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .browser-tab-light {
+      background: #dee1e6;
+      border-radius: 10px;
+      padding: 0.6rem 0.8rem 0;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .sim-tab-header {
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 0.4rem;
+      opacity: 0.65;
+    }
+    .sim-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      background: #1e1e1e;
+      color: #e3e3e3;
+      padding: 0.45rem 1rem 0.5rem 0.75rem;
+      border-radius: 8px 8px 0 0;
+      font-size: 0.76rem;
+      font-weight: 500;
+      width: 175px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sim-tab-light-inner {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      background: #ffffff;
+      color: #3c4043;
+      padding: 0.45rem 1rem 0.5rem 0.75rem;
+      border-radius: 8px 8px 0 0;
+      font-size: 0.76rem;
+      font-weight: 500;
+      width: 175px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.4rem;
+    }
+    .card-keyword {
+      font-size: 0.82rem;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+    .card-desc {
+      font-size: 0.88rem;
+      color: var(--text-sub);
+      line-height: 1.65;
+    }
+
+    .action-tip {
+      text-align: center;
+      margin-top: 4.5rem;
+      padding: 1.8rem;
+      background: rgba(196, 138, 84, 0.08);
+      border: 1px dashed var(--primary);
+      border-radius: 16px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 1rem;
+      color: #faf6f0;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-badge">Favicon & App Icon Selection</div>
+    <h1>연재서재 공식 파비콘(Favicon) 4대 후보</h1>
+    <p class="desc">
+      구버전의 답답한 검은색 사각 박스 엠블럼을 전면 폐기하고,<br>
+      투명 배경 위에서 16px 초소형 탭에서도 선명하게 빛나는 <strong>에디토리얼 서재 감성의 4가지 공식 파비콘 시안</strong>입니다.
+    </p>
+  </div>
+
+  <div class="grid">
+
+    <!-- 🌟 시안 A-Full. 로고와 100% 동일한 색상 배치 (본파일 적용 완료) -->
+    <div class="card" style="border: 2px solid var(--primary); background: linear-gradient(180deg, rgba(196, 138, 84, 0.12) 0%, var(--app-surface) 100%);">
+      <span class="badge-label" style="background: var(--primary); color: #191512; font-weight: 800;">★ 로고 동일 색상</span>
+      
+      <div class="icon-hero-view">
+        <div class="hero-box">
+          <!-- 64px 확대 뷰 (로고 동일 색상 배치) -->
+          <svg viewBox="0 0 32 32" width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="2" y1="26" x2="27" y2="26" stroke="#c48a54" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="27" y1="26" x2="27" y2="17" stroke="#c48a54" stroke-width="2.4" stroke-linecap="round"/>
+            <!-- 1번 책: 호박석 골드 #c48a54 -->
+            <rect x="5.5" y="9.5" width="5.5" height="16.5" rx="1.2" fill="#c48a54" stroke="#140f0c" stroke-width="0.8"/>
+            <!-- 2번 책 (가운데): 로고 currentColor (다크에선 양장지 백색, 라이트에선 짙은 에스프레소 #2b2017) -->
+            <rect x="12.5" y="5.5" width="5.8" height="20.5" rx="1.2" fill="#f5efe6" stroke="#140f0c" stroke-width="0.8"/>
+            <!-- 3번 책: 라이트 골드 #dfb260 -->
+            <rect x="20" y="7.5" width="5.5" height="18.5" rx="1.2" fill="#dfb260" stroke="#140f0c" stroke-width="0.8" transform="rotate(13 20 26)"/>
+          </svg>
+          <span class="hero-caption">64px (로고와 100% 동일)</span>
+        </div>
+        <div class="hero-box">
+          <svg viewBox="0 0 32 32" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="2" y1="26" x2="27" y2="26" stroke="#c48a54" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="27" y1="26" x2="27" y2="17" stroke="#c48a54" stroke-width="2.4" stroke-linecap="round"/>
+            <rect x="5.5" y="9.5" width="5.5" height="16.5" rx="1.2" fill="#c48a54" stroke="#140f0c" stroke-width="0.8"/>
+            <rect x="12.5" y="5.5" width="5.8" height="20.5" rx="1.2" fill="#f5efe6" stroke="#140f0c" stroke-width="0.8"/>
+            <rect x="20" y="7.5" width="5.5" height="18.5" rx="1.2" fill="#dfb260" stroke="#140f0c" stroke-width="0.8" transform="rotate(13 20 26)"/>
+          </svg>
+          <span class="hero-caption">32px 실물</span>
+        </div>
+      </div>
+
+      <!-- 다크 탭 바 실물 시뮬레이터 -->
+      <div class="browser-tab-simulator">
+        <div class="sim-tab-header">Chrome 다크 탭 (가운데: 로고 다크 텍스트색 #f5efe6)</div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="2" y1="26" x2="27" y2="26" stroke="#c48a54" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="27" y1="26" x2="27" y2="17" stroke="#c48a54" stroke-width="2.4" stroke-linecap="round"/>
+            <rect x="5.5" y="9.5" width="5.5" height="16.5" rx="1.2" fill="#c48a54"/>
+            <rect x="12.5" y="5.5" width="5.8" height="20.5" rx="1.2" fill="#f5efe6"/>
+            <rect x="20" y="7.5" width="5.5" height="18.5" rx="1.2" fill="#dfb260" transform="rotate(13 20 26)"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <!-- 라이트 탭 바 실물 시뮬레이터 -->
+      <div class="browser-tab-light">
+        <div class="sim-tab-header">Chrome 라이트 탭 (가운데: 로고 라이트 텍스트색 #2b2017)</div>
+        <div class="sim-tab-light-inner">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="2" y1="26" x2="27" y2="26" stroke="#9c6e43" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="27" y1="26" x2="27" y2="17" stroke="#9c6e43" stroke-width="2.4" stroke-linecap="round"/>
+            <rect x="5.5" y="9.5" width="5.5" height="16.5" rx="1.2" fill="#9c6e43"/>
+            {/* 🌟 로고의 라이트 텍스트색과 동일한 짙은 원목색 #2b2017 */}
+            <rect x="12.5" y="5.5" width="5.8" height="20.5" rx="1.2" fill="#2b2017"/>
+            <rect x="20" y="7.5" width="5.5" height="18.5" rx="1.2" fill="#c48a54" transform="rotate(13 20 26)"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <div class="card-title">★ 로고 동일 색상 배치 (동적 테마 연동)</div>
+      <div class="card-keyword">컨셉: 1번 책(#c48a54) + 2번 책(로고 글자색과 동일) + 3번 책(#dfb260)</div>
+      <div class="card-desc">
+        사용자분께서 짚어주신 로고와의 100% 색상 일치 버전입니다. 가운데 책이 뜬금없이 고정 백색으로 뜨지 않고, <strong>로고의 글자색 규칙(다크에선 양장지색 #f5efe6, 라이트에선 짙은 원목색 #2b2017)과 동일한 기준</strong>으로 브라우저 탭 테마에 맞춰 살아 숨 쉽니다. (본파일 `favicon.svg`에 즉시 적용 완료)
+      </div>
+    </div>
+
+    <!-- 시안 A. 서가에 꽂힌 서책 3권 (기존 고정 백색 보존) -->
+    <div class="card">
+      <span class="badge-label">시안 A (기존 보존)</span>
+      
+      <div class="icon-hero-view">
+        <div class="hero-box">
+          <!-- 64px 확대 뷰 -->
+          <svg viewBox="0 0 32 32" width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* 서가 베이스 라인 & 북엔드 */}
+            <line x1="2" y1="26" x2="27" y2="26" stroke="#c48a54" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="27" y1="26" x2="27" y2="18" stroke="#c48a54" stroke-width="2" stroke-linecap="round"/>
+            {/* 3권의 서책 */}
+            <rect x="6" y="10" width="5.2" height="16" rx="1" fill="#c48a54"/>
+            <rect x="12.5" y="6" width="5.5" height="20" rx="1" fill="#f7f3ec"/>
+            <line x1="12.5" y1="9" x2="18" y2="9" stroke="#c48a54" stroke-width="1.2"/>
+            <rect x="19.5" y="8" width="5.2" height="18" rx="1" fill="#e8c48a" transform="rotate(13 19.5 26)"/>
+          </svg>
+          <span class="hero-caption">64px 확대</span>
+        </div>
+        <div class="hero-box">
+          <!-- 32px 뷰 -->
+          <svg viewBox="0 0 32 32" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="2" y1="26" x2="27" y2="26" stroke="#c48a54" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="27" y1="26" x2="27" y2="18" stroke="#c48a54" stroke-width="2" stroke-linecap="round"/>
+            <rect x="6" y="10" width="5.2" height="16" rx="1" fill="#c48a54"/>
+            <rect x="12.5" y="6" width="5.5" height="20" rx="1" fill="#f7f3ec"/>
+            <rect x="19.5" y="8" width="5.2" height="18" rx="1" fill="#e8c48a" transform="rotate(13 19.5 26)"/>
+          </svg>
+          <span class="hero-caption">32px 실물</span>
+        </div>
+      </div>
+
+      <!-- 다크 탭 바 시뮬레이션 -->
+      <div class="browser-tab-simulator">
+        <div class="sim-tab-header">Chrome 다크 탭 바 실물 (16px)</div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="2" y1="26" x2="27" y2="26" stroke="#c48a54" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="27" y1="26" x2="27" y2="18" stroke="#c48a54" stroke-width="2.4" stroke-linecap="round"/>
+            <rect x="6" y="10" width="5.2" height="16" rx="1" fill="#c48a54"/>
+            <rect x="12.5" y="6" width="5.5" height="20" rx="1" fill="#f7f3ec"/>
+            <rect x="19.5" y="8" width="5.2" height="18" rx="1" fill="#e8c48a" transform="rotate(13 19.5 26)"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <!-- 라이트 탭 바 시뮬레이션 -->
+      <div class="browser-tab-light">
+        <div class="sim-tab-header">Chrome 라이트 탭 바 실물 (16px)</div>
+        <div class="sim-tab-light-inner">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="2" y1="26" x2="27" y2="26" stroke="#9c6e43" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="27" y1="26" x2="27" y2="18" stroke="#9c6e43" stroke-width="2.4" stroke-linecap="round"/>
+            <rect x="6" y="10" width="5.2" height="16" rx="1" fill="#9c6e43"/>
+            <rect x="12.5" y="6" width="5.5" height="20" rx="1" fill="#2b2017"/>
+            <rect x="19.5" y="8" width="5.2" height="18" rx="1" fill="#9c6e43" transform="rotate(13 19.5 26)"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <div class="card-title">시안 A. 서가에 꽂힌 서책 3권 (Books on Shelf)</div>
+      <div class="card-keyword">컨셉: 확정된 사이드바 로고의 서책 심볼과 100% 일체화된 공식 패밀리룩</div>
+      <div class="card-desc">
+        방금 확정한 로고 <code>YEONJAE</code>의 핵심 상징인 <strong>'서가선 위에 꽂힌 서책 3권과 북엔드 마감'</strong>을 파비콘으로 단독 추출한 형태입니다. 사이드바 로고와 브라우저 탭이 완벽한 하나의 브랜드로 연결됩니다.
+      </div>
+    </div>
+
+    <!-- 시안 B. 에디토리얼 세리프 모노그램 'Y' (The Serif Y) -->
+    <div class="card">
+      <span class="badge-label">시안 B</span>
+
+      <div class="icon-hero-view">
+        <div class="hero-box">
+          <svg viewBox="0 0 32 32" width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="16" y="24" font-family="'Cinzel', serif" font-size="24" font-weight="700" fill="#c48a54" text-anchor="middle">Y</text>
+            <circle cx="23" cy="8" r="2.2" fill="#e8c48a"/>
+          </svg>
+          <span class="hero-caption">64px 확대</span>
+        </div>
+        <div class="hero-box">
+          <svg viewBox="0 0 32 32" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="16" y="24" font-family="'Cinzel', serif" font-size="24" font-weight="700" fill="#c48a54" text-anchor="middle">Y</text>
+            <circle cx="23" cy="8" r="2.2" fill="#e8c48a"/>
+          </svg>
+          <span class="hero-caption">32px 실물</span>
+        </div>
+      </div>
+
+      <div class="browser-tab-simulator">
+        <div class="sim-tab-header">Chrome 다크 탭 바 실물 (16px)</div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="16" y="24" font-family="'Cinzel', serif" font-size="24" font-weight="700" fill="#c48a54" text-anchor="middle">Y</text>
+            <circle cx="23" cy="8" r="2.5" fill="#e8c48a"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <div class="browser-tab-light">
+        <div class="sim-tab-header">Chrome 라이트 탭 바 실물 (16px)</div>
+        <div class="sim-tab-light-inner">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="16" y="24" font-family="'Cinzel', serif" font-size="24" font-weight="700" fill="#9c6e43" text-anchor="middle">Y</text>
+            <circle cx="23" cy="8" r="2.5" fill="#9c6e43"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <div class="card-title">시안 B. 에디토리얼 모노그램 'Y' (The Serif Y)</div>
+      <div class="card-keyword">컨셉: Cinzel 세리프의 대표 이니셜 Y + 골드 북마크 도트</div>
+      <div class="card-desc">
+        뉴요커(The New Yorker)나 예일대 출판부처럼, 브랜드의 첫 글자 <strong>Y</strong>를 클래식 세리프 활자로 또렷하게 각인한 모노그램입니다. 16px 극소형 탭에서도 가장 명확한 가독성을 자랑합니다.
+      </div>
+    </div>
+
+    <!-- 시안 C. 미니멀 양장본 서책 & 가름끈 (The Editorial Book) -->
+    <div class="card">
+      <span class="badge-label">시안 C</span>
+
+      <div class="icon-hero-view">
+        <div class="hero-box">
+          <svg viewBox="0 0 32 32" width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* 펼쳐진 양장 서책 실루엣 */}
+            <path d="M5 23 C10 21 14 21.5 16 23.5 C18 21.5 22 21 27 23 L27 8 C22 6 18 6.5 16 8.5 C14 6.5 10 6 5 8 Z" fill="#f7f3ec" stroke="#c48a54" stroke-width="1.6" stroke-linejoin="round"/>
+            <line x1="16" y1="8.5" x2="16" y2="23.5" stroke="#c48a54" stroke-width="1.6"/>
+            {/* 가름끈 리본 */}
+            <path d="M16 23.5 C16 26.5 18 28 20 29" stroke="#e8c48a" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <span class="hero-caption">64px 확대</span>
+        </div>
+        <div class="hero-box">
+          <svg viewBox="0 0 32 32" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 23 C10 21 14 21.5 16 23.5 C18 21.5 22 21 27 23 L27 8 C22 6 18 6.5 16 8.5 C14 6.5 10 6 5 8 Z" fill="#f7f3ec" stroke="#c48a54" stroke-width="1.6" stroke-linejoin="round"/>
+            <line x1="16" y1="8.5" x2="16" y2="23.5" stroke="#c48a54" stroke-width="1.6"/>
+            <path d="M16 23.5 C16 26.5 18 28 20 29" stroke="#e8c48a" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          <span class="hero-caption">32px 실물</span>
+        </div>
+      </div>
+
+      <div class="browser-tab-simulator">
+        <div class="sim-tab-header">Chrome 다크 탭 바 실물 (16px)</div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 23 C10 21 14 21.5 16 23.5 C18 21.5 22 21 27 23 L27 8 C22 6 18 6.5 16 8.5 C14 6.5 10 6 5 8 Z" fill="#f7f3ec" stroke="#c48a54" stroke-width="2" stroke-linejoin="round"/>
+            <line x1="16" y1="8.5" x2="16" y2="23.5" stroke="#c48a54" stroke-width="2"/>
+            <path d="M16 23.5 C16 26.5 18 28 20 29" stroke="#e8c48a" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <div class="browser-tab-light">
+        <div class="sim-tab-header">Chrome 라이트 탭 바 실물 (16px)</div>
+        <div class="sim-tab-light-inner">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 23 C10 21 14 21.5 16 23.5 C18 21.5 22 21 27 23 L27 8 C22 6 18 6.5 16 8.5 C14 6.5 10 6 5 8 Z" fill="#ffffff" stroke="#9c6e43" stroke-width="2" stroke-linejoin="round"/>
+            <line x1="16" y1="8.5" x2="16" y2="23.5" stroke="#9c6e43" stroke-width="2"/>
+            <path d="M16 23.5 C16 26.5 18 28 20 29" stroke="#9c6e43" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <div class="card-title">시안 C. 양장본 펼친 서책 & 가름끈 (The Book)</div>
+      <div class="card-keyword">컨셉: 투명 배경 위 미니멀 1색 라인의 펼쳐진 양장 도서와 가름끈</div>
+      <div class="card-desc">
+        기존의 무겁고 시커먼 사각 박스를 완전히 버리고, <strong>투명 배경 위에 펼쳐진 부드러운 양장본 서책과 가름끈 리본</strong>만을 슬림하게 남긴 정통 도서 아이콘입니다.
+      </div>
+    </div>
+
+    <!-- 시안 D. 클래식 골든 펜촉 (The Golden Quill) -->
+    <div class="card">
+      <span class="badge-label">시안 D</span>
+
+      <div class="icon-hero-view">
+        <div class="hero-box">
+          <svg viewBox="0 0 32 32" width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* 만년필 펜촉 실루엣 */}
+            <path d="M16 4 L9 17 C9 21.5 12 25 16 28 C20 25 23 21.5 23 17 Z" stroke="#c48a54" stroke-width="1.8" fill="#1e1916"/>
+            <line x1="16" y1="5" x2="16" y2="16" stroke="#c48a54" stroke-width="1.4"/>
+            <circle cx="16" cy="18" r="1.6" fill="#c48a54"/>
+          </svg>
+          <span class="hero-caption">64px 확대</span>
+        </div>
+        <div class="hero-box">
+          <svg viewBox="0 0 32 32" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 4 L9 17 C9 21.5 12 25 16 28 C20 25 23 21.5 23 17 Z" stroke="#c48a54" stroke-width="1.8" fill="#1e1916"/>
+            <line x1="16" y1="5" x2="16" y2="16" stroke="#c48a54" stroke-width="1.4"/>
+            <circle cx="16" cy="18" r="1.6" fill="#c48a54"/>
+          </svg>
+          <span class="hero-caption">32px 실물</span>
+        </div>
+      </div>
+
+      <div class="browser-tab-simulator">
+        <div class="sim-tab-header">Chrome 다크 탭 바 실물 (16px)</div>
+        <div class="sim-tab">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 4 L9 17 C9 21.5 12 25 16 28 C20 25 23 21.5 23 17 Z" stroke="#c48a54" stroke-width="2.2" fill="#1e1916"/>
+            <line x1="16" y1="5" x2="16" y2="16" stroke="#c48a54" stroke-width="1.8"/>
+            <circle cx="16" cy="18" r="1.8" fill="#c48a54"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <div class="browser-tab-light">
+        <div class="sim-tab-header">Chrome 라이트 탭 바 실물 (16px)</div>
+        <div class="sim-tab-light-inner">
+          <svg viewBox="0 0 32 32" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 4 L9 17 C9 21.5 12 25 16 28 C20 25 23 21.5 23 17 Z" stroke="#9c6e43" stroke-width="2.2" fill="#faf8f5"/>
+            <line x1="16" y1="5" x2="16" y2="16" stroke="#9c6e43" stroke-width="1.8"/>
+            <circle cx="16" cy="18" r="1.8" fill="#9c6e43"/>
+          </svg>
+          <span>연재서재 - AI 전자책 스튜디오</span>
+        </div>
+      </div>
+
+      <div class="card-title">시안 D. 클래식 골든 펜촉 (The Golden Quill)</div>
+      <div class="card-keyword">컨셉: 작가의 필기구(만년필 촉)의 날렵하고 단정한 실루엣</div>
+      <div class="card-desc">
+        ‘연재’와 ‘집필’의 행위를 상징하는 정통 만년필 촉 실루엣입니다. 중심의 미세 잉크 슬릿과 숨구멍(Breather hole)이 출판 창작 스튜디오의 전문성을 드러냅니다.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="action-tip">
+    💡 <strong>선택 안내</strong>: 구버전의 검은색 사각 엠블럼 박스를 완전히 없애고, 투명 배경 위에서 작동하는 4가지 파비콘 후보입니다.<br>
+    가장 마음에 드는 <strong>시안(A, B, C, D)</strong>을 말씀해 주시면, <code>public/favicon.svg</code>를 즉시 교체하여 브라우저 탭에 영구 반영하겠습니다!
+  </div>
+
+</body>
+</html>

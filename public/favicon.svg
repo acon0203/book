@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
+  <!-- 🌟 연재서재 공식 파비콘 (사이드바 로고와 100% 동일한 동적 색상 배치) -->
+  <style>
+    :root {
+      --fav-shelf: #9c6e43;
+      --fav-book1: #9c6e43;
+      --fav-book2: #2b2017;
+      --fav-book3: #c48a54;
+      --fav-border: #faf8f5;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fav-shelf: #c48a54;
+        --fav-book1: #c48a54;
+        --fav-book2: #f5efe6;
+        --fav-book3: #dfb260;
+        --fav-border: #191512;
+      }
+    }
+    .shelf-line { stroke: var(--fav-shelf); }
+    .book-1 { fill: var(--fav-book1); stroke: var(--fav-border); }
+    .book-2 { fill: var(--fav-book2); stroke: var(--fav-border); }
+    .book-3 { fill: var(--fav-book3); stroke: var(--fav-border); }
+  </style>
+
+  <!-- 하단 서가 베이스 라인 & 우측 수직 북엔드 -->
+  <line x1="2" y1="26" x2="27" y2="26" class="shelf-line" stroke-width="2.2" stroke-linecap="round"/>
+  <line x1="27" y1="26" x2="27" y2="17" class="shelf-line" stroke-width="2.4" stroke-linecap="round"/>
+
+  <!-- 1번 책: 로고의 primary 골드 -->
+  <rect x="5.5" y="9.5" width="5.5" height="16.5" rx="1.2" class="book-1" stroke-width="0.8"/>
+  
+  <!-- 2번 책 (가운데): 로고의 currentColor와 100% 동일 (라이트: 짙은 원목색 #2b2017 / 다크: 양장지 #f5efe6) -->
+  <rect x="12.5" y="5.5" width="5.8" height="20.5" rx="1.2" class="book-2" stroke-width="0.8"/>
+  
+  <!-- 3번 책: 로고의 primary-light 기댄 책 -->
+  <rect x="20" y="7.5" width="5.5" height="18.5" rx="1.2" class="book-3" stroke-width="0.8" transform="rotate(13 20 26)"/>
+</svg>

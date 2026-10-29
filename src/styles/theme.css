@@ -32,12 +32,29 @@
   --danger: #ef4444;
   --danger-bg: rgba(239, 68, 68, 0.15);
 
-  --font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* [전역 서체(글꼴) 계층] */
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 'Noto Sans KR', sans-serif;
+  --font-serif: 'Gowun Batang', 'Noto Serif KR', -apple-system, serif;
+  --font-family: var(--font-sans);
+  
+  /* 🌟 독립 로고 전용 폰트 (전역 테마/폰트 변경의 영향을 절대 받지 않음) */
+  --font-logo: 'Cinzel', serif;
+  
+  --font-brand-kr: 'Noto Serif KR', 'Gowun Batang', serif;
+  --font-brand-en: 'Cinzel', 'Inter', serif;
   --radius-lg: 14px;
   --radius-md: 8px;
   --radius-sm: 5px;
   --blur: blur(20px);
   --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* [전역 서체 스타일 - 서재 환경설정 연동 (산세리프 vs 세리프)] */
+html[data-font-family="sans"] {
+  --font-family: var(--font-sans);
+}
+html[data-font-family="serif"] {
+  --font-family: var(--font-serif);
 }
 
 /* [전역 글자 크기 스케일 - 서재 환경설정 연동] */
@@ -46,6 +63,11 @@ html[data-font-scale="small"] { font-size: 13.5px; }
 html[data-font-scale="normal"] { font-size: 15px; }
 html[data-font-scale="large"] { font-size: 16.5px; }
 html[data-font-scale="xlarge"] { font-size: 18px; }
+
+/* 🌟 로고 텍스트는 전역 서체 상속을 원천 차단하고 Cinzel 고정 */
+.brand-logo-text {
+  font-family: var(--font-logo) !important;
+}
 
 body.light-mode {
   /* [배경 계층 - 라이트: v2 에디토리얼 페이퍼 (Editorial Paper)] */
@@ -86,6 +108,11 @@ body.light-mode {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+}
+
+body, button, input, textarea, select, optgroup {
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
 }

@@ -45,7 +45,6 @@
   overflow: hidden;
   background-color: var(--bg-base);
   color: var(--text-main);
-  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   position: relative;
 }
@@ -109,7 +108,7 @@
 }
 
 .top-book-title {
-  font-family: var(--font-serif);
+  font-family: inherit;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-main);
@@ -228,7 +227,6 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  font-family: var(--font-display);
 }
 
 .vault-col-title {
@@ -308,7 +306,7 @@
 }
 
 .project-title {
-  font-family: var(--font-serif);
+  font-family: inherit;
   font-size: 0.84rem;
   font-weight: 600;
   color: var(--text-main);
@@ -489,7 +487,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
+  font-family: inherit;
   flex-shrink: 0;
   box-sizing: border-box;
 }
@@ -622,7 +620,7 @@
 }
 
 .idea-card-body {
-  font-family: var(--font-serif);
+  font-family: inherit;
   font-size: 0.88rem;
   line-height: 1.6;
   color: var(--text-main);
@@ -749,7 +747,7 @@
   padding: 0.75rem 0.9rem;
   font-size: 0.86rem;
   color: var(--text-main);
-  font-family: var(--font-serif);
+  font-family: inherit;
   line-height: 1.6;
   resize: vertical;
   outline: none;
@@ -839,7 +837,7 @@
 }
 
 .material-title {
-  font-family: var(--font-serif);
+  font-family: inherit;
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-main);
@@ -932,7 +930,7 @@
 }
 
 .char-name {
-  font-family: var(--font-serif);
+  font-family: inherit;
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-main);
@@ -1062,7 +1060,7 @@
 .plot-banner-flow {
   color: var(--text-sub);
   font-size: 0.72rem;
-  font-family: var(--font-serif);
+  font-family: inherit;
 }
 
 .plot-stages-tree {
@@ -1107,7 +1105,7 @@
 }
 
 .plot-stage-name {
-  font-family: var(--font-serif);
+  font-family: inherit;
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-main);
@@ -1367,13 +1365,17 @@
 }
 
 .outline-chap-header.is-dragging,
-.outline-sec-row.is-dragging {
+.outline-sec-row.is-dragging,
+.plot-stage-bar.is-dragging,
+.plot-subplot-card.is-dragging {
   opacity: 0.35 !important;
   background: rgba(139, 90, 43, 0.08) !important;
 }
 
 .outline-chap-header.drag-over-top::before,
-.outline-sec-row.drag-over-top::before {
+.outline-sec-row.drag-over-top::before,
+.plot-stage-bar.drag-over-top::before,
+.plot-subplot-card.drag-over-top::before {
   content: '';
   position: absolute;
   top: -2px;
@@ -1388,7 +1390,9 @@
 }
 
 .outline-chap-header.drag-over-bottom::after,
-.outline-sec-row.drag-over-bottom::after {
+.outline-sec-row.drag-over-bottom::after,
+.plot-stage-bar.drag-over-bottom::after,
+.plot-subplot-card.drag-over-bottom::after {
   content: '';
   position: absolute;
   bottom: -2px;
@@ -1402,7 +1406,8 @@
   pointer-events: none;
 }
 
-.outline-chap-header.drag-target-hover {
+.outline-chap-header.drag-target-hover,
+.plot-stage-bar.drag-target-hover {
   background: var(--color-primary-soft) !important;
   outline: 2px solid var(--color-primary) !important;
   outline-offset: -1px;
@@ -1432,7 +1437,7 @@
 }
 
 .chap-title-inline {
-  font-family: var(--font-serif);
+  font-family: inherit;
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-main);
@@ -1482,7 +1487,7 @@
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   background: var(--bg-card);
-  border: 1px dashed var(--border-subtle);
+  border: 1px solid var(--border-subtle);
   font-size: 0.82rem;
   color: var(--text-sub);
   cursor: grab;
@@ -2051,8 +2056,7 @@
    Step 5. 뼈대 구성 ➔ 목차 조립대 듀얼 카드 레이아웃 & 중앙 연결 브릿지
    ========================================================================= */
 .step5-main-layout {
-  display: grid;
-  grid-template-columns: 1fr 36px 1fr;
+  display: flex;
   gap: 0.65rem;
   height: 100%;
   min-height: 0;
@@ -2060,8 +2064,10 @@
   align-items: stretch;
 }
 
-/* 좌/우 독립 카드 섹션 */
+/* 좌/우 독립 카드 섹션 (펼쳐진 상태) */
 .step5-card-box {
+  flex: 1 1 0;
+  min-width: 0;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
@@ -2071,6 +2077,83 @@
   min-height: 0;
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: flex 0.22s cubic-bezier(0.16, 1, 0.3, 1), width 0.22s ease, max-width 0.22s ease;
+}
+
+/* 한쪽이 접혔을 때: 슬림 세로 레일 (나오긴 해야 하므로!) */
+.step5-card-box.is-collapsed {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  background: var(--bg-surface);
+  cursor: pointer;
+  padding: 0.75rem 0.2rem;
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.step5-card-box.is-collapsed:hover {
+  background: var(--bg-hover);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+}
+
+.step5-card-box.is-collapsed .btn-rail-expand {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  cursor: pointer;
+  margin-bottom: 0.65rem;
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.step5-card-box.is-collapsed:hover .btn-rail-expand {
+  transform: scale(1.1);
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.step5-card-box.is-collapsed .rail-icon-wrap {
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+}
+
+.step5-card-box.is-collapsed .collapsed-rail-title {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 0.32em;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 0.2rem;
+}
+
+.step5-card-box.is-collapsed .collapsed-rail-badge {
+  writing-mode: vertical-rl;
+  font-size: 0.65rem;
+  padding: 5px 3px;
+  border-radius: 4px;
+  background: rgba(139, 90, 43, 0.08);
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-top: 0.8rem;
+  letter-spacing: 0.12em;
 }
 
 /* 각 카드 상단 헤더 */
@@ -2084,20 +2167,23 @@
   justify-content: space-between;
   box-sizing: border-box;
   flex-shrink: 0;
+  gap: 0.5rem;
 }
 
 .card-header-left {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .card-header-title {
-  font-family: var(--font-serif);
+  font-family: inherit;
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-main);
   margin: 0;
+  white-space: nowrap;
 }
 
 .card-genre-pill {
@@ -2107,12 +2193,23 @@
   background: rgba(139, 90, 43, 0.08);
   color: var(--color-primary);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .card-header-actions {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  flex-shrink: 0;
+}
+/* 드래그 리사이징 진행 중 글로벌 커서 및 전환 지연 제거 */
+.step5-main-layout.is-resizing {
+  user-select: none !important;
+  cursor: col-resize !important;
+}
+
+.step5-main-layout.is-resizing .step5-card-box {
+  transition: none !important;
 }
 
 /* 뼈대 ➔ 목차 도출 브릿지 버튼 */
@@ -2150,47 +2247,63 @@
   gap: 0.75rem;
 }
 
-/* 중앙 연결 화살표 브릿지 */
+/* 중앙 연결 리사이저 드래그 분할선 (방안 2) */
 .step5-flow-divider {
   display: flex;
+  flex: 0 0 24px;
+  width: 24px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
   position: relative;
+  cursor: col-resize;
+  user-select: none;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .divider-line {
   flex: 1;
   width: 1px;
-  border-left: 1px dashed var(--border-subtle);
+  border-left: 1px solid var(--border-subtle);
+  transition: border-color 0.15s ease;
 }
 
+/* 초슬림 마이크로 알약 캡슐 핸들 (폭 11px, 세로선과 동일한 테두리 색상) */
 .divider-badge {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--bg-surface);
+  width: 11px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  color: var(--color-primary);
+  color: var(--text-dim);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  margin: 0.5rem 0;
+  box-shadow: none;
+  margin: 0.35rem 0;
   z-index: 2;
-  transition: all 0.2s ease;
-  cursor: default;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: col-resize;
+  padding: 0;
 }
 
-.divider-badge:hover {
-  transform: scale(1.1);
-  background: var(--color-primary);
-  color: #ffffff;
-  border-color: var(--color-primary);
+.step5-flow-divider:hover .divider-line,
+.step5-flow-divider.is-active .divider-line {
+  border-left: 1px solid var(--border-bright);
 }
 
-/* 플롯 단계 및 세부 꼭지 카드 스타일 (우측 목차와 1:1 대칭 완성) */
+.step5-flow-divider:hover .divider-badge,
+.step5-flow-divider.is-active .divider-badge {
+  background: var(--bg-hover);
+  color: var(--color-primary);
+  border-color: var(--border-bright);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  transform: scale(1.06);
+}
+
+/* 플롯 단계 및 세부 꼭지 카드 스타일 (우측 목차 조립대와 1:1 대칭 통일) */
 .plot-stages-tree {
   display: flex;
   flex-direction: column;
@@ -2204,56 +2317,75 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
-  transition: border-color 0.15s ease;
-}
-
-.plot-stage-group:hover {
-  border-color: rgba(139, 90, 43, 0.3);
 }
 
 .plot-stage-bar {
-  background: rgba(139, 90, 43, 0.04);
-  padding: 0.65rem 0.95rem;
+  background: var(--bg-surface);
+  padding: 0.75rem 1.15rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-subtle);
+  cursor: grab;
+  position: relative;
+  user-select: none;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.plot-stage-bar:active {
+  cursor: grabbing;
 }
 
 .plot-stage-title-text {
-  font-family: var(--font-serif);
-  font-size: 0.86rem;
+  font-family: inherit;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.2px;
 }
 
+/* 목차 조립대 chap-hover-actions와 100% 동일: 호버 시에만 수정/추가/삭제 노출 */
 .plot-stage-actions {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.plot-stage-bar:hover .plot-stage-actions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .plot-subplots-list {
-  padding: 0.5rem 0.85rem;
+  padding: 0.5rem 1.15rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
+/* 목차 조립대 outline-sec-row와 100% 동일: 실선 테두리 + 호버 시 배경만 전환 + 드래그 그랩 */
 .plot-subplot-card {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
   background: var(--bg-card);
-  border: 1px dashed var(--border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  padding: 0.45rem 0.75rem;
-  transition: all 0.15s ease;
+  padding: 0.5rem 0.75rem;
+  cursor: grab;
+  position: relative;
+  user-select: none;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.plot-subplot-card:active {
+  cursor: grabbing;
 }
 
 .plot-subplot-card:hover {
-  border-color: var(--color-primary);
   background: var(--bg-hover);
 }
 
@@ -2274,11 +2406,21 @@
   word-break: break-all;
 }
 
+/* 목차 조립대 sec-hover-actions와 100% 동일: 호버 시에만 버튼 노출 */
 .plot-subplot-actions {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.25rem;
   flex-shrink: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.plot-subplot-card:hover .plot-subplot-actions,
+.plot-subplot-card:focus-within .plot-subplot-actions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* 세련된 발상 메모 칩 버튼 */
@@ -2371,34 +2513,11 @@
   outline: none;
 }
 
-/* 세부 꼭지 및 단계 추가 점선 버튼 */
-.btn-add-subplot-row {
-  width: 100%;
-  padding: 0.4rem;
-  border: 1px dashed var(--border-subtle);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-sub);
-  font-size: 0.76rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-top: 0.25rem;
-}
-
-.btn-add-subplot-row:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: var(--color-primary-soft);
-}
-
+/* 새 플롯 단계 추가 실선 버튼 */
 .btn-add-stage-row {
   width: 100%;
   padding: 0.6rem;
-  border: 1px dashed var(--border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   background: var(--bg-card);
   color: var(--text-sub);
@@ -2414,7 +2533,7 @@
 }
 
 .btn-add-stage-row:hover {
-  border-color: var(--color-primary);
+  border-color: var(--border-bright);
   color: var(--color-primary);
   background: var(--bg-hover);
 }

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="canvasGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1814"/>
+      <stop offset="50%" stop-color="#2a221b"/>
+      <stop offset="100%" stop-color="#15110d"/>
+    </linearGradient>
+    <linearGradient id="goldText" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#e6ca7b"/>
+      <stop offset="100%" stop-color="#c59f43"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="1200" height="630" fill="url(#canvasGrad)"/>
+  
+  <!-- 장식 테두리 라인 -->
+  <rect x="40" y="40" width="1120" height="550" rx="16" fill="none" stroke="#d4af37" stroke-width="1.5" stroke-opacity="0.3"/>
+  <rect x="52" y="52" width="1096" height="526" rx="12" fill="none" stroke="#d4af37" stroke-width="0.8" stroke-opacity="0.15"/>
+
+  <!-- 책 아이콘 장식 -->
+  <g transform="translate(100, 200)">
+    <rect x="0" y="0" width="160" height="220" rx="14" fill="#382d23" stroke="#d4af37" stroke-width="2" stroke-opacity="0.4"/>
+    <line x1="30" y1="0" x2="30" y2="220" stroke="#d4af37" stroke-width="2" stroke-opacity="0.3"/>
+    <path d="M55 70 C70 65 85 65 95 72 L95 145 C85 138 70 138 55 145 Z" fill="none" stroke="#f4ede4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M135 70 C120 65 105 65 95 72 L95 145 C105 138 120 138 135 145 Z" fill="none" stroke="#f4ede4" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="95" y1="72" x2="95" y2="145" stroke="#d4af37" stroke-width="4"/>
+  </g>
+
+  <!-- 텍스트 영역 -->
+  <g transform="translate(320, 240)">
+    <text x="0" y="0" font-family="'Noto Sans KR', sans-serif" font-size="22" font-weight="600" fill="#d4af37" letter-spacing="4">LOCAL-FIRST EBOOK ATELIER</text>
+    <text x="0" y="70" font-family="'Noto Sans KR', sans-serif" font-size="60" font-weight="800" fill="#ffffff" letter-spacing="-1">연재서재</text>
+    <text x="240" y="70" font-family="'Noto Sans KR', sans-serif" font-size="44" font-weight="300" fill="#d4af37" letter-spacing="0">Book Studio</text>
+    <text x="0" y="130" font-family="'Noto Sans KR', sans-serif" font-size="26" font-weight="400" fill="#c4b8aa">
+      기획부터 목차, 집필, 교정, 뷰어까지 로컬 우선(Local-First) 0ms 즉각 저장
+    </text>
+    <text x="0" y="170" font-family="'Noto Sans KR', sans-serif" font-size="22" font-weight="400" fill="#8f8375">
+      나만의 프리미엄 전자책을 완성하는 올인원 창작 서재
+    </text>
+  </g>
+
+  <!-- 하단 뱃지 라인 -->
+  <g transform="translate(320, 480)">
+    <rect x="0" y="0" width="130" height="34" rx="17" fill="#3d3024" stroke="#d4af37" stroke-width="1" stroke-opacity="0.3"/>
+    <text x="65" y="22" font-family="'Noto Sans KR', sans-serif" font-size="14" font-weight="500" fill="#e6ca7b" text-anchor="middle">Zero-Lag 집필</text>
+
+    <rect x="145" y="0" width="130" height="34" rx="17" fill="#3d3024" stroke="#d4af37" stroke-width="1" stroke-opacity="0.3"/>
+    <text x="210" y="22" font-family="'Noto Sans KR', sans-serif" font-size="14" font-weight="500" fill="#e6ca7b" text-anchor="middle">창작실 5대 플롯</text>
+
+    <rect x="290" y="0" width="130" height="34" rx="17" fill="#3d3024" stroke="#d4af37" stroke-width="1" stroke-opacity="0.3"/>
+    <text x="355" y="22" font-family="'Noto Sans KR', sans-serif" font-size="14" font-weight="500" fill="#e6ca7b" text-anchor="middle">독자 표준 웹뷰어</text>
+
+    <rect x="435" y="0" width="140" height="34" rx="17" fill="#3d3024" stroke="#d4af37" stroke-width="1" stroke-opacity="0.3"/>
+    <text x="505" y="22" font-family="'Noto Sans KR', sans-serif" font-size="14" font-weight="500" fill="#e6ca7b" text-anchor="middle">클라우드 스냅샷</text>
+  </g>
+</svg>

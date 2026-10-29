@@ -79,6 +79,7 @@ export const storageService = {
     };
     books.unshift(newBook);
     storageService.saveBooks(books);
+    storageService.recordDailyWritingActivity();
     return newBook;
   },
 
@@ -86,9 +87,24 @@ export const storageService = {
     const books = storageService.getBooks();
     const index = books.findIndex(b => b.id === id);
     if (index === -1) throw new Error('도서를 찾을 수 없습니다.');
-    books[index] = { ...books[index], ...bookData, updatedAt: new Date().toISOString() };
+    const nowIso = new Date().toISOString();
+    books[index] = { ...books[index], ...bookData, updatedAt: nowIso };
     storageService.saveBooks(books);
+    storageService.recordDailyWritingActivity(nowIso);
     return books[index];
+  },
+
+  // 실제 일자별 집필 활동 자동 기록 (YYYY-MM-DD)
+  recordDailyWritingActivity: (isoString = new Date().toISOString()) => {
+    try {
+      const dateKey = isoString.slice(0, 10);
+      const raw = localStorage.getItem('daily_writing_logs') || '[]';
+      const list = JSON.parse(raw);
+      if (!list.includes(dateKey)) {
+        list.push(dateKey);
+        localStorage.setItem('daily_writing_logs', JSON.stringify(list));
+      }
+    } catch {}
   },
 
   deleteBook: (id) => {

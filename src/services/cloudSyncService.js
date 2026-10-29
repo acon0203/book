@@ -18,6 +18,69 @@ const formatBackupDate = (date = new Date()) => {
   return `${m}/${day} ${h}:${min}`;
 };
 
+/**
+ * 일자별 집필 기록 병합 헬퍼 (덮어쓰지 않고 날짜별로 합치며, 동일 날짜는 큰 값 유지)
+ * @param {any} localLogs 
+ * @param {any} cloudLogs 
+ */
+export const mergeDailyWritingLogs = (localLogs, cloudLogs) => {
+  if (!localLogs && !cloudLogs) return [];
+
+  // 1. 객체 맵 형태인 경우 ({ '2026-10-29': 1500 })
+  if (
+    localLogs && typeof localLogs === 'object' && !Array.isArray(localLogs) &&
+    cloudLogs && typeof cloudLogs === 'object' && !Array.isArray(cloudLogs)
+  ) {
+    const merged = { ...cloudLogs, ...localLogs };
+    const allKeys = new Set([...Object.keys(cloudLogs), ...Object.keys(localLogs)]);
+    allKeys.forEach((key) => {
+      const v1 = Number(localLogs[key]) || 0;
+      const v2 = Number(cloudLogs[key]) || 0;
+      merged[key] = Math.max(v1, v2);
+    });
+    return merged;
+  }
+
+  const listA = Array.isArray(localLogs) ? localLogs : [];
+  const listB = Array.isArray(cloudLogs) ? cloudLogs : [];
+
+  // 2. 단순 날짜 문자열 배열인 경우 (['2026-10-28', '2026-10-29'])
+  const isAllString = listA.every((x) => typeof x === 'string') && listB.every((x) => typeof x === 'string');
+  if (isAllString) {
+    return Array.from(new Set([...listA, ...listB])).sort();
+  }
+
+  // 3. 일자별 객체 배열인 경우 ([{ date: '2026-10-29', words: 1500 }])
+  const map = new Map();
+  [...listB, ...listA].forEach((item) => {
+    if (!item) return;
+    if (typeof item === 'string') {
+      if (!map.has(item)) map.set(item, item);
+      return;
+    }
+    const dateKey = item.date || item.day || item.id;
+    if (!dateKey) return;
+
+    if (!map.has(dateKey)) {
+      map.set(dateKey, item);
+    } else {
+      const existing = map.get(dateKey);
+      const val1 = Number(item.words ?? item.count ?? item.value ?? 0);
+      const val2 = Number(existing.words ?? existing.count ?? existing.value ?? 0);
+      // 동일 날짜인 경우 더 큰 수치 기록을 유지
+      if (val1 >= val2) {
+        map.set(dateKey, item);
+      }
+    }
+  });
+
+  return Array.from(map.values()).sort((a, b) => {
+    const ka = typeof a === 'string' ? a : (a.date || a.day || '');
+    const kb = typeof b === 'string' ? b : (b.date || b.day || '');
+    return ka.localeCompare(kb);
+  });
+};
+
 export const cloudSyncService = {
   /**
    * 로컬 데이터를 Firestore 클라우드로 분리 컬렉션 동기화
@@ -127,11 +190,31 @@ export const cloudSyncService = {
       }
     }
 
-    // [4] stats 컬렉션 (users/{userKey}/stats/summary)
+    // [4] stats 컬렉션 (users/{userKey}/stats/summary) 및 일자별 집필 기록 병합
     if (stats) {
       const statsDocRef = doc(db, 'users', userKey, 'stats', 'summary');
       const cleanStats = JSON.parse(JSON.stringify(stats));
-      batch.set(statsDocRef, { ...cleanStats, updatedAt: new Date().toISOString() }, { merge: true });
+
+      let mergedWritingLogs = [];
+      try {
+        const localLogsRaw = localStorage.getItem('daily_writing_logs') || '[]';
+        const localLogs = JSON.parse(localLogsRaw);
+        
+        // 기존 클라우드 기록 조회 후 날짜별로 합치기 (같은 날짜는 큰 값 유지)
+        const existingStatsSnap = await getDoc(statsDocRef);
+        const cloudLogs = existingStatsSnap.exists() ? (existingStatsSnap.data()?.dailyWritingLogs || []) : [];
+        
+        mergedWritingLogs = mergeDailyWritingLogs(localLogs, cloudLogs);
+        localStorage.setItem('daily_writing_logs', JSON.stringify(mergedWritingLogs));
+      } catch (logErr) {
+        console.warn('[CloudSync] 일자별 집필 로그 병합 경고:', logErr);
+      }
+
+      batch.set(statsDocRef, { 
+        ...cleanStats, 
+        dailyWritingLogs: mergedWritingLogs,
+        updatedAt: new Date().toISOString() 
+      }, { merge: true });
     }
 
     // [5] config 컬렉션 (users/{userKey}/config/current)
@@ -143,6 +226,14 @@ export const cloudSyncService = {
       delete cleanConfig.openaiApiKey;
       delete cleanConfig.anthropicApiKey;
       batch.set(configDocRef, { ...cleanConfig, updatedAt: new Date().toISOString() }, { merge: true });
+    }
+
+    // [6] 작가 문체 페르소나 (users/{userKey}/config/persona)
+    const authorPersona = storageService.getAuthorPersona();
+    if (authorPersona) {
+      const personaDocRef = doc(db, 'users', userKey, 'config', 'persona');
+      const cleanPersona = JSON.parse(JSON.stringify(authorPersona));
+      batch.set(personaDocRef, { ...cleanPersona, updatedAt: new Date().toISOString() }, { merge: true });
     }
 
     // 배치 커밋 실행
@@ -314,6 +405,35 @@ export const cloudSyncService = {
         anthropicApiKey: localConfig.anthropicApiKey || ''
       };
       storageService.saveConfig(safeConfig);
+    }
+
+    // 작가 문체 페르소나 복원
+    try {
+      const personaSnap = await getDoc(doc(db, 'users', userKey, 'config', 'persona'));
+      if (personaSnap.exists()) {
+        storageService.saveAuthorPersona(personaSnap.data());
+      }
+    } catch (e) {
+      console.warn('[CloudSync] 작가 페르소나 복원 경고:', e);
+    }
+
+    // 일자별 집필 기록(dailyWritingLogs) 복원 및 덮어쓰지 않고 날짜별 병합 (같은 날짜는 큰 값 유지)
+    try {
+      const statsSnap = await getDoc(doc(db, 'users', userKey, 'stats', 'summary'));
+      if (statsSnap.exists()) {
+        const cloudStatsData = statsSnap.data();
+        if (cloudStatsData?.dailyWritingLogs) {
+          const localLogsRaw = localStorage.getItem('daily_writing_logs') || '[]';
+          let localLogs = [];
+          try {
+            localLogs = JSON.parse(localLogsRaw);
+          } catch {}
+          const mergedLogs = mergeDailyWritingLogs(localLogs, cloudStatsData.dailyWritingLogs);
+          localStorage.setItem('daily_writing_logs', JSON.stringify(mergedLogs));
+        }
+      }
+    } catch (e) {
+      console.warn('[CloudSync] 일자별 집필 기록 복원 경고:', e);
     }
 
     const syncedAt = new Date().toISOString();

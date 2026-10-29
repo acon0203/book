@@ -85,7 +85,7 @@
 }
 
 .top-book-title {
-  font-family: var(--font-serif, inherit);
+  font-family: inherit;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-main, #241c15);

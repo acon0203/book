@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 연재서재 사용자 전용 데이터 격리 보안 규칙 (Local-First Cloud Sync)
+    match /users/{userKey} {
+      function isOwner() {
+        return request.auth != null && (
+          request.auth.uid == userKey || 
+          (request.auth.token.email != null && request.auth.token.email.lower() == userKey.lower())
+        );
+      }
+
+      // 본인 문서만 읽기/쓰기 허용 (타인 열람 및 변조 절대 차단)
+      allow read, write: if isOwner();
+
+      // 하위 모든 서브컬렉션 (books, vault, stats, config, studio_data 등)
+      match /{subCollection=**} {
+        allow read, write: if isOwner();
+      }
+    }
+
+    // 그 외 정의되지 않은 모든 경로는 기본 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

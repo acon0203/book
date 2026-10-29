@@ -117,7 +117,7 @@ export default function ExploreSerial() {
         updatedHistory = [newEntry, ...history.filter(h => h.bookId !== book.id)].slice(0, 30);
         localStorage.setItem('reader_history', JSON.stringify(updatedHistory));
         setSavedBookIds(new Set(updatedHistory.map(h => h.bookId)));
-        showToast(`'${book.title}' 도서가 독서 서재에 담겼습니다! 📚`, 'success');
+        showToast(`'${book.title}' 도서가 독서 서재에 담겼습니다.`, 'success');
       }
     } catch (err) {
       console.error('Failed to toggle shelf bookmark:', err);

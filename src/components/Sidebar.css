@@ -11,32 +11,37 @@
 }
 
 .brand-header {
-  padding: 1.5rem 1.25rem 1.25rem;
+  padding: 1.35rem 1.15rem 1.15rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
   border-bottom: 1px solid var(--border-glass);
+  cursor: pointer;
+  background-color: transparent;
 }
 
-.brand-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  box-shadow: 0 4px 15px var(--primary-glow);
+/* ❌ 불필요한 호버 음영 박스 전면 제거: 투명하게 순수한 로고만 유지 */
+.brand-header:hover {
+  background-color: transparent;
 }
 
-.brand-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  background: linear-gradient(90deg, var(--primary), var(--secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.brand-header:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.brand-logo-svg {
+  width: 100%;
+  height: 38px;
+  color: var(--text-main);
+  user-select: none;
+}
+
+/* 🌟 프리뷰와 100% 일치하는 고급스러운 Cinzel 세리프 폰트 강제 적용 */
+.brand-logo-text {
+  font-family: 'Cinzel', serif !important;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  fill: currentColor;
 }
 
 .nav-menu {

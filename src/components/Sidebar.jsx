@@ -39,7 +39,7 @@ export default function Sidebar() {
         openBook(books[0].id);
       } else {
         showActionToast(
-          '작업 중인 도서가 없습니다. 새 책을 만드시겠습니까?',
+          '작업 중인 작품이 없습니다. 새 작품을 만드시겠습니까?',
           () => {
             setView('library');
             setNewBookModalOpen(true);
@@ -98,11 +98,42 @@ export default function Sidebar() {
 
   return (
     <aside className="global-sidebar">
-      <div className="brand-header">
-        <div className="brand-icon">
-          <BookMarked size={18} />
-        </div>
-        <div className="brand-title">연재서재</div>
+      <div 
+        className="brand-header" 
+        onClick={() => handleNavClick('library')} 
+        role="button" 
+        tabIndex={0} 
+        title="연재서재 홈(내 서재)으로 이동"
+      >
+        {/* 🌟 연재서재 공식 단독 워드마크 (Cinzel 세리프 + 서가선 위 E자 옆 서책 3권 & 북엔드 마감) */}
+        <svg 
+          viewBox="0 0 195 44" 
+          width="100%" 
+          height="38" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+          className="brand-logo-svg"
+          aria-label="연재서재 YEONJAE"
+        >
+          <text 
+            x="8" 
+            y="24" 
+            className="brand-logo-text"
+            fontSize="17.5" 
+            fontWeight="600" 
+            fill="currentColor" 
+            letterSpacing="0.28em"
+          >
+            YEONJAE
+          </text>
+          <g transform="translate(0, -3)">
+            <line x1="8" y1="34" x2="135" y2="34" stroke="var(--primary, #c48a54)" strokeWidth="0.7" opacity="0.45" />
+            <rect x="138" y="28" width="2.6" height="6" rx="0.4" fill="var(--primary, #c48a54)" />
+            <rect x="141.5" y="26.5" width="2.8" height="7.5" rx="0.4" fill="currentColor" opacity="0.9" />
+            <rect x="145.5" y="27.5" width="2.6" height="6.8" rx="0.4" fill="var(--primary-light, #dfb260)" transform="rotate(12 145.5 34)" />
+            <path d="M153 34 L166 34 L166 28" stroke="var(--primary, #c48a54)" strokeWidth="0.9" strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+        </svg>
       </div>
 
       <nav className="nav-menu">

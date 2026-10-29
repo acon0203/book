@@ -15,6 +15,9 @@ export const useStore = create((set, get) => {
   const initialFontScale = localStorage.getItem('book_font_scale') || 'normal';
   document.documentElement.setAttribute('data-font-scale', initialFontScale);
 
+  const initialFontFamily = localStorage.getItem('book_font_family') || 'sans';
+  document.documentElement.setAttribute('data-font-family', initialFontFamily);
+
   const initialIsAdmin = checkIsAdmin(null);
   const validViews = ['library', 'studio', 'vault', 'stats', 'settings', 'reader', 'serial-explore', 'complete-explore', 'admin'];
   const savedView = localStorage.getItem('book_current_view');
@@ -96,7 +99,7 @@ export const useStore = create((set, get) => {
           await get().loadBooks();
           await get().loadVault();
           set({ syncStatus: 'synced', lastSyncedAt: result.syncedAt });
-          get().showToast(`다른 기기에서 작성된 최신 원고를 안전하게 불러왔습니다! (${result.itemCounts.books}권)`, 'success');
+          get().showToast(`다른 기기에서 작성된 최신 원고를 안전하게 불러왔습니다! (${result.itemCounts.books}작품)`, 'success');
         } else if (status.direction === 'conflict') {
           set({ syncStatus: 'idle' });
           get().showToast('다른 기기에서 수정한 최신 원고가 있습니다. 동기화 버튼을 확인해주세요.', 'info');
@@ -141,7 +144,7 @@ export const useStore = create((set, get) => {
           await get().loadVault();
           set({ syncStatus: 'synced', lastSyncedAt: result.syncedAt });
           if (showNotification) {
-            get().showToast(`다른 기기에서 작성된 최신 원고를 안전하게 불러왔습니다! (${result.itemCounts.books}권)`, 'success');
+            get().showToast(`다른 기기에서 작성된 최신 원고를 안전하게 불러왔습니다! (${result.itemCounts.books}작품)`, 'success');
           }
           return;
         }
@@ -215,7 +218,7 @@ export const useStore = create((set, get) => {
         await get().loadBooks();
         await get().loadVault();
         set({ syncStatus: 'synced', lastSyncedAt: result.syncedAt });
-        get().showToast(`클라우드에서 ${result.itemCounts.books}권의 도서를 복원했습니다!`, 'success');
+        get().showToast(`클라우드에서 ${result.itemCounts.books}작품을 복원했습니다!`, 'success');
       } catch (err) {
         set({ syncStatus: 'error' });
         get().showToast(`복원 실패: ${err.message}`, 'error');
@@ -277,6 +280,13 @@ export const useStore = create((set, get) => {
       document.documentElement.setAttribute('data-font-scale', scale);
       localStorage.setItem('book_font_scale', scale);
       set({ fontScale: scale });
+    },
+
+    fontFamily: localStorage.getItem('book_font_family') || 'sans',
+    setFontFamily: (family) => {
+      document.documentElement.setAttribute('data-font-family', family);
+      localStorage.setItem('book_font_family', family);
+      set({ fontFamily: family });
     },
 
     isNewBookModalOpen: false,

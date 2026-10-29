@@ -1,0 +1,18 @@
+{
+  "name": "연재서재 (Book Studio)",
+  "short_name": "연재서재",
+  "description": "AI 전자책 자동화 제작 스튜디오 - 로컬 우선 0ms 즉각 저장",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#18130e",
+  "theme_color": "#1e1814",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

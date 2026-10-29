@@ -48,7 +48,7 @@ export default function Settings() {
   const { 
     books, loadBooks, loadVault, showToast, user, loginWithGoogle, logout,
     syncStatus, syncToCloud, restoreFromCloud, lastSyncedAt, setView, activeBook, openConfirm,
-    theme, setTheme, fontScale, setFontScale
+    theme, setTheme, fontScale, setFontScale, fontFamily, setFontFamily
   } = useStore();
 
   const [config, setConfig] = useState({
@@ -69,6 +69,7 @@ export default function Settings() {
   const [isSavingKey, setIsSavingKey] = useState(false);
   const [isAdvancedAiOpen, setIsAdvancedAiOpen] = useState(false);
   const [infoSubView, setInfoSubView] = useState(null); // 'notices' | 'terms' | 'guide' | 'support' | null
+  const [termsTab, setTermsTab] = useState('service'); // 'service' | 'privacy' | 'license'
   const [isQuotaModalOpen, setIsQuotaModalOpen] = useState(false);
 
   // 작가 문체 페르소나 (Author Persona) 상태
@@ -157,7 +158,7 @@ export default function Settings() {
       const updated = { ...config, geminiApiKey: keyToSave };
       await bookService.saveConfig(updated);
       setSavedApiKey(keyToSave);
-      showToast('Google AI API 키가 안전하게 저장되었습니다! ✨', 'success');
+      showToast('Google AI API 키가 안전하게 저장되었습니다.', 'success');
     } catch (err) {
       showToast(`저장 실패: ${err.message}`, 'error');
     } finally {
@@ -199,7 +200,7 @@ export default function Settings() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('전체 서재 백업 파일이 다운로드되었습니다! 💾', 'success');
+      showToast('전체 서재 백업 파일이 다운로드되었습니다.', 'success');
     } catch (err) {
       showToast(`백업 내보내기 실패: ${err.message}`, 'error');
     }
@@ -227,7 +228,7 @@ export default function Settings() {
         await bookService.importBackupData(parsed);
         await loadBooks();
         await loadVault();
-        showToast('백업 파일에서 서재 데이터를 완벽하게 복원했습니다! 🎉', 'success');
+        showToast('백업 파일에서 서재 데이터를 완벽하게 복원했습니다.', 'success');
       } catch (err) {
         showToast(`복원 실패: 유효한 백업 JSON 파일이 아닙니다 (${err.message})`, 'error');
       } finally {
@@ -254,7 +255,7 @@ export default function Settings() {
             {infoSubView === 'notices' && (
               <>
                 <div className="subview-title-row">
-                  <Bell size={24} className="text-blue" />
+                  <Bell size={22} className="subview-header-icon" />
                   <h1>공지사항 & 업데이트 내역</h1>
                 </div>
                 <p>연재서재의 최신 기능 추가 및 서비스 개선 소식을 안내해 드립니다.</p>
@@ -263,16 +264,16 @@ export default function Settings() {
             {infoSubView === 'terms' && (
               <>
                 <div className="subview-title-row">
-                  <ShieldCheck size={24} className="text-green" />
+                  <ShieldCheck size={22} className="subview-header-icon" />
                   <h1>이용약관 및 데이터 안심 정책</h1>
                 </div>
-                <p>로컬 우선(Local-First) 원고 보존 원칙 및 AI 데이터 비학습 보장 정책을 안내합니다.</p>
+                <p>로컬 우선(Local-First) 원고 보존 원칙, 개인정보처리방침, 저작권 및 연재 이용허락 정책을 안내합니다.</p>
               </>
             )}
             {infoSubView === 'guide' && (
               <>
                 <div className="subview-title-row">
-                  <PenTool size={24} className="text-amber" />
+                  <PenTool size={22} className="subview-header-icon" />
                   <h1>집필 단축키 및 에디터 가이드</h1>
                 </div>
                 <p>쾌적하고 빠른 집필을 위한 필수 단축키와 데이터 보존 팁을 확인하세요.</p>
@@ -281,7 +282,7 @@ export default function Settings() {
             {infoSubView === 'support' && (
               <>
                 <div className="subview-title-row">
-                  <HelpCircle size={24} className="text-purple" />
+                  <HelpCircle size={22} className="subview-header-icon" />
                   <h1>고객센터 및 자주 묻는 질문 (FAQ)</h1>
                 </div>
                 <p>궁금한 점에 대한 즉각적인 답변과 1:1 문의 채널을 제공합니다.</p>
@@ -334,34 +335,167 @@ export default function Settings() {
 
             {infoSubView === 'terms' && (
               <div className="terms-content">
-                <section className="terms-section">
-                  <h4>1. 원고 데이터 주권 원칙 (Local-First Guarantee)</h4>
-                  <p>
-                    연재서재(Book Studio)에서 작성되는 모든 원고, 플롯, 기획서는 1차적으로 사용자의 브라우저 로컬 저장소(localStorage)에 실시간 보존됩니다.
-                    사용자의 명시적인 클라우드 동기화 또는 발행 요청 없이는 어떤 원고도 외부 서버로 전송되지 않습니다.
-                  </p>
-                </section>
+                {/* 3대 독립 서브 탭: 서비스 이용약관 | 개인정보처리방침 | 저작권 및 연재 이용허락 */}
+                <div className="terms-nav-tabs">
+                  <button
+                    type="button"
+                    className={`terms-tab-btn ${termsTab === 'service' ? 'active' : ''}`}
+                    onClick={() => setTermsTab('service')}
+                  >
+                    서비스 이용약관
+                  </button>
+                  <button
+                    type="button"
+                    className={`terms-tab-btn ${termsTab === 'privacy' ? 'active' : ''}`}
+                    onClick={() => setTermsTab('privacy')}
+                  >
+                    개인정보처리방침
+                  </button>
+                  <button
+                    type="button"
+                    className={`terms-tab-btn ${termsTab === 'license' ? 'active' : ''}`}
+                    onClick={() => setTermsTab('license')}
+                  >
+                    저작권 및 연재 이용허락
+                  </button>
+                </div>
 
-                <section className="terms-section">
-                  <h4>2. AI 생성 및 데이터 비학습 보장</h4>
-                  <p>
-                    AI 집필 어시스턴트(Gemini, Claude, GPT) 기능 이용 시 전달되는 문맥과 프롬프트는 
-                    오직 답변 생성 목적으로만 1회성 처리되며, 인공지능 모델의 재학습 데이터로 절대 사용되지 않습니다.
-                  </p>
-                </section>
+                {/* 탭 1: 서비스 이용약관 */}
+                {termsTab === 'service' && (
+                  <div className="terms-tab-body">
+                    <section className="terms-section">
+                      <h4>제1조 (목적)</h4>
+                      <p>
+                        본 약관은 연재서재(Book Studio, 이하 '서비스')가 제공하는 웹 기반 전자책 집필 스튜디오, 44종 서사 기획실, 표준 웹 뷰어 및 클라우드 동기화 서비스의 이용과 관련하여 서비스와 이용자(이하 '회원' 또는 '작가') 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+                      </p>
+                    </section>
 
-                <section className="terms-section">
-                  <h4>3. 저작권 보호 및 귀속</h4>
-                  <p>
-                    연재서재를 통해 집필된 모든 전자책과 원고의 저작권은 전적으로 창작자(작가 본인)에게 귀속됩니다.
-                    플랫폼은 원고에 대한 어떠한 독점적 권리도 요구하지 않습니다.
-                  </p>
-                </section>
+                    <section className="terms-section">
+                      <h4>제2조 (원고 주권 및 로컬 우선 원칙)</h4>
+                      <p>
+                        1. 본 서비스는 창작자의 원고가 기기 외부로 무단 유출되지 않도록 브라우저 로컬 저장소(localStorage)에 0ms 즉각 저장되는 로컬 우선(Local-First) 기술을 기반으로 작동합니다.<br />
+                        2. 이용자가 작성한 모든 원고, 플롯, 기획서는 이용자의 명시적인 클라우드 동기화 또는 발행 요청이 없는 한 브라우저 내부에서만 안전하게 보관됩니다.
+                      </p>
+                    </section>
 
-                <section className="terms-section">
-                  <h4>4. 클라우드 백업 보안</h4>
-                  <p>
-                    Google 계정 연동 시 전송되는 스냅샷 데이터는 본인의 고유 계정(UID) 격리 문서 영역에 안전하게 보관되며 타인에게 절대 노출되지 않습니다.
+                    <section className="terms-section">
+                      <h4>제3조 (인공지능 어시스턴트 기능의 이용 및 면책)</h4>
+                      <p>
+                        1. 서비스가 제공하는 AI 초고 집필, 문장 교정, 목차 기획 등의 어시스턴트 기능은 이용자의 창작을 보조하는 도구입니다.<br />
+                        2. AI 어시스턴트가 생성한 결과물의 최종 검토 및 채택 책임은 이용자에게 있으며, 외부 AI API 제공자(Google 등)의 일시적 장애나 정책 변경으로 인한 결과물 누락에 대해 서비스는 고의 또는 중과실이 없는 한 책임을 지지 않습니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제4조 (이용자의 의무 및 불법 저작물 금지)</h4>
+                      <p>
+                        1. 이용자는 타인의 지식재산권을 침해하거나 명예를 훼손하는 저작물, 음란물, 불법 소프트웨어 등 관련 법령을 위반하는 콘텐츠를 연재 발행하여서는 안 됩니다.<br />
+                        2. 위반 사실이 확인되거나 권리자의 정당한 침해 중단 요청이 접수될 경우, 서비스는 사전 통보 없이 해당 회차의 연재 노출을 즉시 중단할 수 있습니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제5조 (오프라인 백업 권고 및 책임 제한)</h4>
+                      <p>
+                        서비스는 로컬 우선 기술을 통해 최상의 원고 안전을 보장하고자 노력하나, 이용자의 브라우저 캐시 임의 삭제, 기기 분실, 브라우저 저장소 만료 등으로 인한 간접 손해에 대해 법률이 허용하는 한도 내에서 책임을 면합니다. 회원은 정기적으로 [서재 관리]의 '전체 서재 오프라인 JSON 백업' 기능을 활용하여 개별 PC에 안전하게 백업본을 보관할 것을 강력히 권장합니다.
+                      </p>
+                    </section>
+                  </div>
+                )}
+
+                {/* 탭 2: 개인정보처리방침 */}
+                {termsTab === 'privacy' && (
+                  <div className="terms-tab-body">
+                    <section className="terms-section">
+                      <h4>제1조 (수집하는 개인정보 항목 및 수집 방법)</h4>
+                      <p>
+                        1. <strong>수집 항목</strong>: Google 소셜 로그인 시 계정 식별자(UID), 이메일 주소, 프로필명, 프로필 사진 URL을 수집합니다. 비로그인 상태로 서재를 이용할 경우 어떠한 개인정보도 수집하지 않습니다.<br />
+                        2. <strong>수집 방법</strong>: Google OAuth 인증 연동을 통해 이용자의 명시적 동의 후 수집됩니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제2조 (개인정보의 처리 목적)</h4>
+                      <p>
+                        수집된 개인정보는 다기기 간 원고 백업 동기화, 사용자 식별 및 본인 원고 데이터 분리 보관, 그리고 비정상 트래픽 차단 목적으로만 한정하여 처리됩니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제3조 (개인정보보호법에 따른 연령 정책 및 아동 보호)</h4>
+                      <p>
+                        1. 본 서비스는 <strong>개인정보보호법 제22조의2(14세 미만 아동의 개인정보 처리에 대한 법정대리인의 동의)</strong>에 따라 만 14세 이상 이용자를 대상으로 제공됩니다.<br />
+                        2. 서비스는 법정대리인의 별도 본인확인 시스템을 운용하지 않으므로 만 14세 미만 아동의 회원가입 및 개인정보 수집을 지원하지 않으며, 만 14세 미만 아동의 정보가 수집된 사실을 인지할 경우 지체 없이 해당 데이터를 파기합니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제4조 (개인정보의 보유, 이용 기간 및 파기)</h4>
+                      <p>
+                        1. 이용자의 개인정보는 서비스 이용 기간 동안 안전하게 보관되며, 로그아웃 후 브라우저 로컬 데이터 초기화 시 기기에서 즉시 소멸됩니다.<br />
+                        2. 클라우드에 백업된 데이터는 이용자의 삭제 요청 시 지체 없이 영구 파기됩니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제5조 (개인정보 처리 위탁 및 제3자 제공)</h4>
+                      <p>
+                        1. 서비스는 원활한 클라우드 인프라 제공을 위해 글로벌 인증 기관인 Google Cloud Platform(Firebase Authentication, Cloud Firestore)에 데이터 처리를 위탁하고 있습니다.<br />
+                        2. 법률의 규정에 의한 경우를 제외하고는 이용자의 개인정보를 제3자에게 판매하거나 마케팅 목적으로 제공하지 않습니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제6조 (개인정보 보호책임자 및 문의처)</h4>
+                      <p>
+                        개인정보 보호와 관련한 문의 및 권리 행사는 아래 보호책임자에게 문의하실 수 있습니다.<br />
+                        - 개인정보 보호책임자: 연재서재 운영팀<br />
+                        - 연락처/이메일: acon0203@gmail.com
+                      </p>
+                    </section>
+                  </div>
+                )}
+
+                {/* 탭 3: 저작권 및 연재 이용허락 정책 */}
+                {termsTab === 'license' && (
+                  <div className="terms-tab-body">
+                    <section className="terms-section">
+                      <h4>제1조 (원고의 저작권 귀속)</h4>
+                      <p>
+                        1. 연재서재를 통해 집필된 모든 전자책, 챕터 원고, 등장인물 프로필, 취재 메모, 스토리라인 뼈대 등 모든 창작물의 지식재산권과 저작권은 <strong>전적으로 창작자(작가 본인)에게 100% 귀속</strong>됩니다.<br />
+                        2. 서비스는 작가의 원고에 대해 어떠한 독점적 권리나 출판권도 요구하지 않으며, 작가는 본인의 원고를 타 플랫폼에 동시 연재하거나 종이책/전자책으로 자유롭게 상업 출판할 수 있습니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제2조 (인공지능 모델 비학습 보장)</h4>
+                      <p>
+                        1. AI 집필 도우미 및 교정 기능 호출 시 전송되는 프롬프트와 원고 문맥은 오직 실시간 답변 생성 목적으로만 1회성(Ephemeral)으로 처리됩니다.<br />
+                        2. 서비스는 이용자의 창작 원고를 인공지능 모델의 학습 데이터(Training Data)로 제공하거나 재학습에 일체 활용하지 않습니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제3조 (연재 발행 시 비독점적 최소 이용허락)</h4>
+                      <p>
+                        1. 작가가 특정 챕터 또는 도서 전체에 대해 '연재 발행' 기능을 활성화한 경우에 한하여, 서비스는 해당 연재물을 서비스 내 '연재 작품' 및 '완성 작품' 탐색 화면과 표준 웹 뷰어를 통해 독자들에게 전송·표시할 수 있는 비독점적이고 무상인 서비스 운영 목적의 제한적 이용 권한을 가집니다.<br />
+                        2. 작가가 발행 상태를 '비공개(초고)'로 되돌리거나 도서를 삭제하는 즉시 공개 탐색 목록에서 즉각 제거됩니다.<br />
+                        3. 비공개 상태인 초고 원고는 플랫폼이나 제3자가 일체 열람하거나 전송할 수 없습니다.
+                      </p>
+                    </section>
+
+                    <section className="terms-section">
+                      <h4>제4조 (원고의 회수 및 완전 삭제권)</h4>
+                      <p>
+                        작가는 언제든지 본인의 도서 프로젝트를 서재나 클라우드에서 영구 삭제할 수 있으며, 삭제된 데이터는 어떤 백업 서버에도 남지 않고 완전히 파기됩니다.
+                      </p>
+                    </section>
+                  </div>
+                )}
+
+                <section className="terms-section" style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', marginTop: '1rem' }}>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    시행일자: 2026년 10월 28일 (v1.3) | 개인정보 보호책임자: 연재서재 운영팀 (acon0203@gmail.com)
                   </p>
                 </section>
               </div>
@@ -370,7 +504,7 @@ export default function Settings() {
             {infoSubView === 'guide' && (
               <div className="guide-content">
                 <div className="guide-group">
-                  <h4>⌨️ 집필 에디터 단축키</h4>
+                  <h4>집필 에디터 단축키</h4>
                   <table className="guide-table">
                     <tbody>
                       <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>원고 강제 즉시 저장 (자동 저장은 300ms 디바운스 동작)</td></tr>
@@ -382,7 +516,7 @@ export default function Settings() {
                 </div>
 
                 <div className="guide-group">
-                  <h4>📖 웹 뷰어 조작 단축키 (페이지 모드)</h4>
+                  <h4>웹 뷰어 조작 단축키 (페이지 모드)</h4>
                   <table className="guide-table">
                     <tbody>
                       <tr><td><kbd>→</kbd> / <kbd>Space</kbd></td><td>다음 페이지(쪽)로 넘김</td></tr>
@@ -393,7 +527,7 @@ export default function Settings() {
                 </div>
 
                 <div className="guide-group">
-                  <h4>💾 데이터 유실 방지 팁</h4>
+                  <h4>데이터 유실 방지 팁</h4>
                   <p className="guide-tip-text">
                     브라우저 방문 기록이나 인터넷 사용 기록을 전체 삭제할 경우 브라우저 저장소가 초기화될 수 있습니다. 
                     주기적으로 <strong>[전체 서재 백업 다운로드]</strong>를 통해 <code>.json</code> 파일을 PC에 보관해 두시면 100% 안전합니다.
@@ -459,12 +593,12 @@ export default function Settings() {
 
       <div className="settings-body">
         {/* =================================================================
-            꼭지 1: 👤 계정 & 작가 프로필 관리
+            꼭지 1: 계정 & 작가 프로필 관리
             ================================================================= */}
         <section className="settings-card">
           <div className="card-header-flex">
             <div className="card-header-title-group">
-              <User size={20} className="section-header-icon text-blue" />
+              <User size={19} className="section-header-icon" />
               <div>
                 <h3>계정 & 작가 프로필</h3>
                 <p className="card-sub-desc">Google 로그인 세션 및 기본 필명, 에디터 집필 환경을 설정합니다.</p>
@@ -538,14 +672,14 @@ export default function Settings() {
         </section>
 
         {/* =================================================================
-            꼭지 1-1: 🖋️ 작가 문체 페르소나 (Author Persona)
+            꼭지 1-1: 작가 문체 페르소나 (Author Persona)
             - 작품과 무관한 전역 문체 습관: 문체 샘플 3~5편(Few-Shot), 문체 칩, 금기어
             - 시점(1인칭/3인칭)은 창작실 Step 3에서 책별로 처리
             ================================================================= */}
         <section className="settings-card">
           <div className="card-header-flex">
             <div className="card-header-title-group">
-              <Feather size={20} className="section-header-icon text-purple" />
+              <Feather size={19} className="section-header-icon" />
               <div>
                 <h3>작가 문체 페르소나 (Author Persona)</h3>
                 <p className="card-sub-desc">
@@ -722,7 +856,42 @@ export default function Settings() {
               <span className="form-hint">클릭 즉시 서재 전체의 색상 테마가 전환됩니다.</span>
             </div>
 
-            {/* 2) 전역 글자 크기 스케일 */}
+            {/* 2) 전역 글꼴 스타일 (산세리프 vs 세리프) */}
+            <div className="appearance-group">
+              <label className="appearance-label">서재 글꼴 스타일 (서체)</label>
+              <div className="font-family-options-grid">
+                <div 
+                  className={`font-family-card ${(fontFamily || 'sans') === 'sans' ? 'active' : ''}`}
+                  onClick={() => setFontFamily('sans')}
+                >
+                  <div className="font-family-preview font-sample-sans">
+                    가나다 Aa
+                  </div>
+                  <div className="font-family-info">
+                    <strong>모던 산세리프</strong>
+                    <span>프리미엄 Pretendard · 선명하고 깔끔한 현대적 가독성</span>
+                  </div>
+                  {(fontFamily || 'sans') === 'sans' && <span className="theme-active-tag">적용 중</span>}
+                </div>
+
+                <div 
+                  className={`font-family-card ${fontFamily === 'serif' ? 'active' : ''}`}
+                  onClick={() => setFontFamily('serif')}
+                >
+                  <div className="font-family-preview font-sample-serif">
+                    가나다 Aa
+                  </div>
+                  <div className="font-family-info">
+                    <strong>에디토리얼 세리프</strong>
+                    <span>고운 바탕 / Noto Serif · 종이책 질감의 문학적 감성</span>
+                  </div>
+                  {fontFamily === 'serif' && <span className="theme-active-tag">적용 중</span>}
+                </div>
+              </div>
+              <span className="form-hint">사이드바 로고(YEONJAE)는 브랜드 정체성 유지를 위해 고정 세리프가 유지됩니다.</span>
+            </div>
+
+            {/* 3) 전역 글자 크기 스케일 */}
             <div className="appearance-group">
               <label className="appearance-label">전역 글자 크기</label>
               <div className="font-scale-buttons">
@@ -745,7 +914,7 @@ export default function Settings() {
               </div>
               <div className="font-preview-box">
                 <span className="preview-label">미리보기:</span>
-                <span className="preview-sample">서재의 문장들이 편안한 크기로 읽히는지 확인해보세요.</span>
+                <span className="preview-sample">서재의 문장들이 편안한 서체와 크기로 읽히는지 확인해보세요.</span>
               </div>
             </div>
           </div>
@@ -895,7 +1064,7 @@ export default function Settings() {
               className="btn btn-primary btn-sm"
               style={{ textDecoration: 'none' }}
             >
-              🔑 무료 API 키 발급받기
+              무료 API 키 발급받기
             </a>
           </div>
 
@@ -910,7 +1079,7 @@ export default function Settings() {
                   </span>
                 ) : (
                   <span className="badge-key-status warning">
-                    ⚠️ 미등록 (키 입력 필요)
+                    미등록 (키 입력 필요)
                   </span>
                 )}
               </div>
@@ -956,18 +1125,18 @@ export default function Settings() {
               onChange={(e) => handleConfigChange('geminiModel', e.target.value)}
             >
               <option value="smart_cascade">
-                ⭐ [스마트 자동 전환] 3.8 Flash 우선 ➔ 한도 소진 시 3.5 Lite(500회) ➔ 3.1 Lite ➔ Gemma 순차 전환 (강력 추천)
+                [스마트 자동 전환] 3.8 Flash 우선 ➔ 한도 소진 시 3.5 Lite(500회) ➔ 3.1 Lite ➔ Gemma 순차 전환 (권장)
               </option>
-              <optgroup label="👑 플래그십 모델 (성능 최고 · 일 20회)">
-                <option value="gemini-3.8-flash">🚀 Gemini 3.8 Flash (최신 플래그십 · 일 20회)</option>
-                <option value="gemini-3.7-flash">✨ Gemini 3.7 Flash (고지능 추론 플래그십 · 일 20회)</option>
+              <optgroup label="플래그십 모델 (성능 최고 · 일 20회)">
+                <option value="gemini-3.8-flash">Gemini 3.8 Flash (최신 플래그십 · 일 20회)</option>
+                <option value="gemini-3.7-flash">Gemini 3.7 Flash (고지능 추론 플래그십 · 일 20회)</option>
                 <option value="gemini-3.6-flash">Gemini 3.6 Flash (안정화 플래그십 · 일 20회)</option>
               </optgroup>
-              <optgroup label="⚡ Lite 대용량 모델 (초고속 안정 · 일 500회)">
-                <option value="gemini-3.5-flash-lite">⚡ Gemini 3.5 Flash Lite (초고속 & 안정 작동 · 일 500회 추천)</option>
+              <optgroup label="Lite 대용량 모델 (초고속 안정 · 일 500회)">
+                <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (초고속 & 안정 작동 · 일 500회 권장)</option>
                 <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (대용량 보조 · 일 500회)</option>
               </optgroup>
-              <optgroup label="🌐 Gemma 4 최신 모델 (대규모 한도 · 일 14.4K회)">
+              <optgroup label="Gemma 4 최신 모델 (대규모 한도 · 일 14.4K회)">
                 <option value="gemma-4-31b-it">Gemma 4 31B (Google 차세대 오픈 모델 · 일 14.4K회)</option>
                 <option value="gemma-4-26b-a4b-it">Gemma 4 26B (Google 차세대 경량 모델 · 일 14.4K회)</option>
               </optgroup>
@@ -1056,15 +1225,15 @@ export default function Settings() {
         </section>
 
         {/* =================================================================
-            꼭지 4: ℹ️ 서비스 안내 (밀리의 서재 스타일)
+            꼭지 4: 서비스 안내
             ================================================================= */}
         <section className="settings-card">
           <div className="card-header-flex">
             <div className="card-header-title-group">
-              <Info size={20} className="section-header-icon text-indigo" />
+              <Info size={19} className="section-header-icon" />
               <div>
                 <h3>서비스 안내</h3>
-                <p className="card-sub-desc">공지사항, 데이터 안심 정책, 집필 가이드 및 고객센터를 확인합니다.</p>
+                <p className="card-sub-desc">공지사항, 이용약관, 개인정보처리방침, 연재 이용허락 및 가이드를 확인합니다.</p>
               </div>
             </div>
             <span className="version-pill">v1.2.0 최신</span>
@@ -1077,7 +1246,7 @@ export default function Settings() {
               onClick={() => setInfoSubView('notices')}
             >
               <div className="menu-item-left">
-                <Bell size={18} className="menu-item-icon text-blue" />
+                <Bell size={18} className="menu-item-icon" />
                 <div>
                   <div className="menu-item-title">공지사항 & 업데이트 내역</div>
                   <div className="menu-item-sub">v1.2.0 전체 서재 백업/복원 및 연재 탐색 오픈</div>
@@ -1089,13 +1258,16 @@ export default function Settings() {
             <button 
               type="button" 
               className="service-menu-item"
-              onClick={() => setInfoSubView('terms')}
+              onClick={() => {
+                setTermsTab('service');
+                setInfoSubView('terms');
+              }}
             >
               <div className="menu-item-left">
-                <ShieldCheck size={18} className="menu-item-icon text-green" />
+                <ShieldCheck size={18} className="menu-item-icon" />
                 <div>
-                  <div className="menu-item-title">이용약관 및 데이터 안심 정책</div>
-                  <div className="menu-item-sub">로컬 우선(Local-First) 저장 원칙 및 AI 비학습 보장</div>
+                  <div className="menu-item-title">이용약관 · 개인정보처리방침 · 저작권 이용허락</div>
+                  <div className="menu-item-sub">3대 독립 규정 및 로컬 우선(Local-First) 데이터 주권 보장</div>
                 </div>
               </div>
               <ChevronRight size={18} className="menu-item-arrow" />
@@ -1107,7 +1279,7 @@ export default function Settings() {
               onClick={() => setInfoSubView('guide')}
             >
               <div className="menu-item-left">
-                <PenTool size={18} className="menu-item-icon text-amber" />
+                <PenTool size={18} className="menu-item-icon" />
                 <div>
                   <div className="menu-item-title">집필 단축키 및 에디터 가이드</div>
                   <div className="menu-item-sub">Ctrl+S 즉시 저장, 뷰어 제어, 마크다운/HTML 문법</div>
@@ -1122,7 +1294,7 @@ export default function Settings() {
               onClick={() => setInfoSubView('support')}
             >
               <div className="menu-item-left">
-                <HelpCircle size={18} className="menu-item-icon text-purple" />
+                <HelpCircle size={18} className="menu-item-icon" />
                 <div>
                   <div className="menu-item-title">고객센터 및 피드백 문의</div>
                   <div className="menu-item-sub">자주 묻는 질문(FAQ), 오류 제보 및 신규 기능 제안</div>

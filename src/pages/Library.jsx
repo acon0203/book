@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import ManuscriptImportModal from '../components/ManuscriptImportModal';
 import BookInfoModal from '../components/BookInfoModal';
+import { STARTER_BOOK, STARTER_VAULT_ITEMS } from '../data/starterBookData';
 
 export default function Library() {
   const {
@@ -72,6 +73,20 @@ export default function Library() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isNewBookModalOpen, setNewBookModalOpen]);
+
+  // 스타터 도서 및 창작실 가이드 자료 원클릭 생성
+  const handleLoadStarterBook = async () => {
+    try {
+      await bookService.createBook(STARTER_BOOK);
+      for (const item of STARTER_VAULT_ITEMS) {
+        await bookService.createVaultItem(item);
+      }
+      await loadBooks();
+      showToast('스타터 가이드북이 서재에 준비되었습니다. 클릭하여 둘러보세요!', 'success');
+    } catch (err) {
+      showToast(`스타터 도서 로드 실패: ${err.message}`, 'error');
+    }
+  };
 
   const authorStats = calcAuthorStats(books, baseStats);
   const readerStats = calcReaderStats(readingHistory);
@@ -205,7 +220,7 @@ export default function Library() {
           </button>
           <button className="btn btn-primary" onClick={() => { setEditingBook(null); setNewBookModalOpen(true); }}>
             <Plus size={18} />
-            <span>새 책 만들기</span>
+            <span>새 작품 만들기</span>
           </button>
         </div>
       </header>
@@ -282,8 +297,8 @@ export default function Library() {
                   </div>
                   <div className="stat-divider-line" />
                   <div className="stat-mini-item">
-                    <span className="stat-mini-label">완독 도서</span>
-                    <span className="stat-mini-val">{readerStats.completedCount}권</span>
+                    <span className="stat-mini-label">완독 작품</span>
+                    <span className="stat-mini-val">{readerStats.completedCount}작품</span>
                   </div>
                 </div>
               </div>
@@ -405,7 +420,7 @@ export default function Library() {
                 className={`shelf-tab-btn ${libraryTab === 'author' ? 'active' : ''}`}
                 onClick={() => handleTabChange('author')}
               >
-                <span>집필 중인 도서</span>
+                <span>집필 작품</span>
                 <span className="shelf-tab-count">{books.length}</span>
               </button>
 
@@ -414,7 +429,7 @@ export default function Library() {
                 className={`shelf-tab-btn reading-tab ${libraryTab === 'reader' ? 'active' : ''}`}
                 onClick={() => handleTabChange('reader')}
               >
-                <span>최근 읽은 책</span>
+                <span>최근 읽은 작품</span>
                 <span className="shelf-tab-count">{readingHistory.length}</span>
               </button>
             </div>
@@ -432,7 +447,7 @@ export default function Library() {
             )}
           </div>
 
-          {/* 탭 1: 집필 중인 도서 3열 그리드 */}
+          {/* 탭 1: 집필 작품 3열 그리드 */}
           {libraryTab === 'author' && (
             <>
               {isBooksLoading && books.length === 0 ? (
@@ -442,20 +457,32 @@ export default function Library() {
                   <div className="empty-state-icon-wrap" style={{ marginBottom: '1rem', opacity: 0.6 }}>
                     <BookOpen size={40} strokeWidth={1.5} />
                   </div>
-                  <h3>아직 작성 중인 도서 프로젝트가 없습니다.</h3>
+                  <h3>아직 작성 중인 작품이 없습니다.</h3>
                   <p style={{ marginTop: '0.5rem', marginBottom: '1.5rem' }}>
-                    '새 책 만들기'를 눌러 첫 번째 원고를 시작해보세요.
+                    '새 작품 만들기'를 눌러 첫 번째 원고를 시작해보세요.
                   </p>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => {
-                      setEditingBook(null);
-                      setNewBookModalOpen(true);
-                    }}
-                  >
-                    <Plus size={18} />
-                    <span>새 책 만들기</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setEditingBook(null);
+                        setNewBookModalOpen(true);
+                      }}
+                    >
+                      <Plus size={18} />
+                      <span>새 책 만들기</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary"
+                      onClick={handleLoadStarterBook}
+                      title="연재서재의 기능을 바로 체험해볼 수 있는 예시 도서를 생성합니다"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <BookOpen size={16} />
+                      <span>스타터 가이드북 불러오기</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="sample-book-grid-3col">

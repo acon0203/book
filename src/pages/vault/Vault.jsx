@@ -10,7 +10,8 @@ import {
   Plus, Trash2, X, Users, BookOpen, Layers, Check, Edit2,
   ChevronLeft, Bookmark, Compass, PenTool, CheckCircle, ChevronRight,
   Send, AlertCircle, RefreshCw, Bot, Sparkles, Save, Info, Sliders,
-  HelpCircle, Lightbulb, Sun, MessageSquare, Zap, ChevronDown, ChevronUp
+  HelpCircle, Lightbulb, Sun, MessageSquare, Zap, ChevronDown, ChevronUp,
+  PanelLeftClose, PanelRightClose, Columns2, GripVertical
 } from 'lucide-react';
 import { PIPELINE_STEPS, VAULT_CATEGORIES } from '../../data/vaultConstants';
 import { OFFICIAL_GENRES, getOfficialGenreId } from '../../data/genreConstants';
@@ -244,6 +245,65 @@ export default function Vault() {
   const [editingChapTitle, setEditingChapTitle] = useState('');
   const [editingSecId, setEditingSecId] = useState(null);
   const [editingSecTitle, setEditingSecTitle] = useState('');
+  // Step 5: 뼈대 구성 & 목차 조립대 듀얼 패널 너비 드래그 조절 & 스냅 접기 상태
+  const [step5SplitRatio, setStep5SplitRatio] = useState(50); // % (기본 50:50)
+  const [isDraggingStep5, setIsDraggingStep5] = useState(false);
+  const [step5Collapsed, setStep5Collapsed] = useState('none'); // 'none' | 'left' | 'right'
+  const step5ContainerRef = useRef(null);
+
+  // 중앙 스플릿 바 마우스/터치 드래그 리사이징 핸들러 (방안 2)
+  const handleStartStep5Drag = (e) => {
+    e.preventDefault();
+    setIsDraggingStep5(true);
+    const container = step5ContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+
+    const handleMove = (clientX) => {
+      const offset = clientX - rect.left;
+      const totalWidth = rect.width;
+      if (totalWidth <= 0) return;
+
+      const rawRatio = (offset / totalWidth) * 100;
+
+      // 좌측 임계치(14% 이하)로 밀어붙이면 좌측 접힘으로 스냅
+      if (rawRatio < 14) {
+        setStep5Collapsed('left');
+      } else if (rawRatio > 86) {
+        // 우측 임계치(86% 이상)로 밀어붙이면 우측 접힘으로 스냅
+        setStep5Collapsed('right');
+      } else {
+        // 정상 구간: 부드러운 실시간 너비 조절
+        setStep5Collapsed('none');
+        const bounded = Math.max(18, Math.min(82, rawRatio));
+        setStep5SplitRatio(bounded);
+      }
+    };
+
+    const onMouseMove = (moveEvent) => handleMove(moveEvent.clientX);
+    const onTouchMove = (touchEvent) => {
+      if (touchEvent.touches?.[0]) handleMove(touchEvent.touches[0].clientX);
+    };
+
+    const onEnd = () => {
+      setIsDraggingStep5(false);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onEnd);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onEnd);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onEnd);
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onEnd);
+  };
+
+  // 중앙 브릿지 더블클릭 시 5:5 기본 위치로 즉각 복원
+  const handleResetStep5Split = () => {
+    setStep5SplitRatio(50);
+    setStep5Collapsed('none');
+  };
 
   // 목차 기획 모달
   const [isOutlinePlanModalOpen, setIsOutlinePlanModalOpen] = useState(false);
@@ -372,8 +432,40 @@ export default function Vault() {
         }));
         setDraftChapters(initial);
       }
+
+      // Step 5 히스토리 스택 초기화
+      step5HistoryRef.current = [];
+      step5HistoryIdxRef.current = -1;
     }
   }, [activeBook]);
+
+  // Step 5 서사 뼈대 & 목차 조립대 되돌리기(Ctrl+Z / Cmd+Z) & 다시 실행(Ctrl+Y) 리스너
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      // 사용자가 인풋창이나 텍스트에어리어에서 직접 타이핑 중일 때는 브라우저 기본 텍스트 입력을 우선함
+      if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+
+      const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+      const isCmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+      if (!isCmdOrCtrl) return;
+
+      if (e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedoStep5();
+        } else {
+          handleUndoStep5();
+        }
+      } else if (e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        handleRedoStep5();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [activeBook, plotStages, draftChapters]);
 
   // 활성 단계 번호 계산 (1~5)
   const currentStepNumber = useMemo(() => {
@@ -687,8 +779,74 @@ ${isFiction ? `
     }
   };
 
+  // --- Step 5: 실행 취소(Undo) / 다시 실행(Redo) 히스토리 스택 ---
+  const step5HistoryRef = useRef([]); // [{ plotStages, draftChapters, desc }]
+  const step5HistoryIdxRef = useRef(-1);
+
+  // 새로운 변경사항을 히스토리에 기록하는 함수
+  const pushStep5History = (newPlotStages, newDraftChapters, desc = '') => {
+    // 현재 인덱스 이후의 Redo 분기는 잘라내고 새 스냅샷 추가
+    const currentStack = step5HistoryRef.current.slice(0, Math.max(0, step5HistoryIdxRef.current + 1));
+    const entry = {
+      plotStages: structuredClone(newPlotStages),
+      draftChapters: structuredClone(newDraftChapters),
+      desc
+    };
+    currentStack.push(entry);
+    // 최대 40개까지 유지
+    if (currentStack.length > 40) currentStack.shift();
+    step5HistoryRef.current = currentStack;
+    step5HistoryIdxRef.current = currentStack.length - 1;
+  };
+
+  // 실행 취소 (Undo - Ctrl+Z)
+  const handleUndoStep5 = async () => {
+    if (step5HistoryIdxRef.current <= 0) {
+      showToast('더 이상 되돌릴 작업이 없습니다.', 'info');
+      return;
+    }
+    step5HistoryIdxRef.current -= 1;
+    const target = step5HistoryRef.current[step5HistoryIdxRef.current];
+    if (target) {
+      const clonedPlot = structuredClone(target.plotStages);
+      const clonedDraft = structuredClone(target.draftChapters);
+      setPlotStages(clonedPlot);
+      setDraftChapters(clonedDraft);
+      if (activeBook) {
+        await updateActiveBookPlotStages(clonedPlot);
+        await saveDraftOutline(clonedDraft);
+      }
+      showToast(`되돌리기 실행${target.desc ? `: ${target.desc} 복원` : ''}`, 'info');
+    }
+  };
+
+  // 다시 실행 (Redo - Ctrl+Y / Ctrl+Shift+Z)
+  const handleRedoStep5 = async () => {
+    if (step5HistoryIdxRef.current >= step5HistoryRef.current.length - 1) {
+      showToast('다시 실행할 작업이 없습니다.', 'info');
+      return;
+    }
+    step5HistoryIdxRef.current += 1;
+    const target = step5HistoryRef.current[step5HistoryIdxRef.current];
+    if (target) {
+      const clonedPlot = structuredClone(target.plotStages);
+      const clonedDraft = structuredClone(target.draftChapters);
+      setPlotStages(clonedPlot);
+      setDraftChapters(clonedDraft);
+      if (activeBook) {
+        await updateActiveBookPlotStages(clonedPlot);
+        await saveDraftOutline(clonedDraft);
+      }
+      showToast(`다시 실행: ${target.desc || '다음 작업 복원'}`, 'info');
+    }
+  };
+
   // 플롯 단계 추가
   const handleAddNewStage = async () => {
+    // 변경 전 상태 보존
+    if (step5HistoryRef.current.length === 0) {
+      pushStep5History(plotStages, draftChapters, '초기 상태');
+    }
     const stageNum = plotStages.length + 1;
     const newStage = {
       id: `stage_${Date.now()}`,
@@ -703,6 +861,7 @@ ${isFiction ? `
     if (activeBook) {
       await updateActiveBookPlotStages(cloned);
     }
+    pushStep5History(cloned, draftChapters, '새 플롯 단계 추가');
     showToast('새 플롯 단계가 추가되었습니다.', 'info');
   };
 
@@ -710,38 +869,62 @@ ${isFiction ? `
   const handleDeleteStage = async (sIdx) => {
     const ok = await openConfirm({
       title: '플롯 단계 삭제',
-      message: '이 플롯 단계와 하위 세부 꼭지를 모두 삭제하시겠습니까?',
+      message: '이 플롯 단계와 하위 세부 꼭지를 모두 삭제하시겠습니까?\n(실수로 삭제 시 Ctrl+Z로 즉시 되돌릴 수 있습니다)',
       confirmText: '삭제'
     });
     if (!ok) return;
+
+    if (step5HistoryRef.current.length === 0) {
+      pushStep5History(plotStages, draftChapters, '초기 상태');
+    } else {
+      pushStep5History(plotStages, draftChapters, '단계 삭제 전');
+    }
+
     const cloned = structuredClone(plotStages);
+    const deletedTitle = cloned[sIdx]?.title || '단계';
     cloned.splice(sIdx, 1);
     setPlotStages(cloned);
     if (activeBook) {
       await updateActiveBookPlotStages(cloned);
     }
-    showToast('플롯 단계가 삭제되었습니다.', 'info');
+    pushStep5History(cloned, draftChapters, `'${deletedTitle}' 단계 삭제`);
+    showToast(`'${deletedTitle}' 단계가 삭제되었습니다. (되돌리려면 Ctrl+Z)`, 'info');
   };
 
-  // 플롯 단계명 수정
+  // 플롯 단계명 수정 시작
+  const handleStartEditingStage = (sIdx, currentTitle) => {
+    setEditingStageIdx(sIdx);
+    setEditingStageTitle(currentTitle || '');
+  };
+
+  // 플롯 단계명 수정 커밋
   const handleCommitEditStage = async (sIdx) => {
-    const cloned = structuredClone(plotStages);
+    if (editingStageIdx === null) return;
     if (editingStageTitle.trim()) {
+      if (step5HistoryRef.current.length === 0) {
+        pushStep5History(plotStages, draftChapters, '수정 전');
+      }
+      const cloned = structuredClone(plotStages);
       cloned[sIdx].title = editingStageTitle.trim();
+      if (editingStageDesc !== undefined) {
+        cloned[sIdx].desc = editingStageDesc.trim();
+      }
+      setPlotStages(cloned);
+      if (activeBook) {
+        await updateActiveBookPlotStages(cloned);
+      }
+      pushStep5History(cloned, draftChapters, '단계명 수정');
+      showToast('플롯 단계명이 수정되었습니다.', 'info');
     }
-    if (editingStageDesc !== undefined) {
-      cloned[sIdx].desc = editingStageDesc.trim();
-    }
-    setPlotStages(cloned);
     setEditingStageIdx(null);
-    if (activeBook) {
-      await updateActiveBookPlotStages(cloned);
-      showToast('플롯 단계 정보가 수정되었습니다.', 'info');
-    }
+    setEditingStageTitle('');
   };
 
   // 세부 꼭지 추가
   const handleAddNewSubplot = async (sIdx) => {
+    if (step5HistoryRef.current.length === 0) {
+      pushStep5History(plotStages, draftChapters, '초기 상태');
+    }
     const cloned = structuredClone(plotStages);
     const subCount = (cloned[sIdx].subplots || []).length + 1;
     cloned[sIdx].subplots.push({
@@ -752,47 +935,75 @@ ${isFiction ? `
     if (activeBook) {
       await updateActiveBookPlotStages(cloned);
     }
+    pushStep5History(cloned, draftChapters, '세부 꼭지 추가');
     showToast('새 세부 꼭지가 추가되었습니다.', 'info');
+  };
+
+  // 세부 꼭지 수정 시작
+  const handleStartEditingSubplotTitle = (sIdx, spIdx, currentTitle) => {
+    setEditingSubplotKey(`${sIdx}_${spIdx}`);
+    setEditingSubplotTitle(currentTitle || '');
   };
 
   // 세부 꼭지 인라인 수정 완료
   const handleCommitEditSubplot = async (sIdx, spIdx) => {
+    if (!editingSubplotKey) return;
     if (editingSubplotTitle.trim()) {
-      const cloned = structuredClone(plotStages);
-      const target = cloned[sIdx].subplots[spIdx];
-      if (typeof target === 'string') {
-        cloned[sIdx].subplots[spIdx] = { title: editingSubplotTitle.trim(), memo: '' };
-      } else {
-        target.title = editingSubplotTitle.trim();
+      if (step5HistoryRef.current.length === 0) {
+        pushStep5History(plotStages, draftChapters, '수정 전');
       }
-      setPlotStages(cloned);
-      if (activeBook) {
-        await updateActiveBookPlotStages(cloned);
+      const cloned = structuredClone(plotStages);
+      const target = cloned[sIdx]?.subplots?.[spIdx];
+      if (target) {
+        if (typeof target === 'string') {
+          cloned[sIdx].subplots[spIdx] = { title: editingSubplotTitle.trim(), memo: '' };
+        } else {
+          target.title = editingSubplotTitle.trim();
+        }
+        setPlotStages(cloned);
+        if (activeBook) {
+          await updateActiveBookPlotStages(cloned);
+        }
+        pushStep5History(cloned, draftChapters, '꼭지명 수정');
       }
     }
     setEditingSubplotKey(null);
     setEditingSubplotTitle('');
   };
 
-  // 세부 꼭지 삭제
+  // 세부 꼭지 삭제 (Ctrl+Z 되돌리기 보장)
   const handleDeleteSubplot = async (sIdx, spIdx) => {
+    // 삭제 직전 스냅샷 보존
+    if (step5HistoryRef.current.length === 0) {
+      pushStep5History(plotStages, draftChapters, '초기 상태');
+    } else {
+      pushStep5History(plotStages, draftChapters, '꼭지 삭제 전');
+    }
+
     const cloned = structuredClone(plotStages);
+    const subTarget = cloned[sIdx]?.subplots?.[spIdx];
+    const subName = typeof subTarget === 'string' ? subTarget : (subTarget?.title || '세부 꼭지');
     cloned[sIdx].subplots.splice(spIdx, 1);
     setPlotStages(cloned);
     if (activeBook) {
       await updateActiveBookPlotStages(cloned);
     }
-    showToast('세부 꼭지가 삭제되었습니다.', 'info');
+    pushStep5History(cloned, draftChapters, `'${subName}' 삭제`);
+    showToast(`'${subName}' 꼭지가 삭제되었습니다. (되돌리려면 Ctrl+Z)`, 'info');
   };
 
-  // 세부 꼭지 아이디어 메모 에디터
+  // 세부 꼭지 아이디어 메모 에디터 열기 (두 함수명 모두 완벽 지원)
   const handleOpenMemoEditor = (sIdx, spIdx, currentMemo = '') => {
     const key = `${sIdx}_${spIdx}`;
     setActiveMemoKey(key);
-    setMemoInputText(currentMemo);
+    setMemoInputText(currentMemo || '');
   };
+  const handleStartEditMemo = handleOpenMemoEditor;
 
   const handleSaveSubplotMemo = async (sIdx, spIdx) => {
+    if (step5HistoryRef.current.length === 0) {
+      pushStep5History(plotStages, draftChapters, '메모 작성 전');
+    }
     const cloned = structuredClone(plotStages);
     const targetSub = cloned[sIdx].subplots[spIdx];
     if (typeof targetSub === 'string') {
@@ -810,6 +1021,7 @@ ${isFiction ? `
       await updateActiveBookPlotStages(cloned);
       showToast('세부 꼭지 아이디어 메모가 저장되었습니다.', 'info');
     }
+    pushStep5History(cloned, draftChapters, '메모 저장');
   };
 
   const handleDeleteSubplotMemo = async (sIdx, spIdx) => {
@@ -823,6 +1035,7 @@ ${isFiction ? `
       await updateActiveBookPlotStages(cloned);
       showToast('아이디어 메모가 삭제되었습니다.', 'info');
     }
+    pushStep5History(cloned, draftChapters, '메모 삭제');
   };
 
   // 인물 추가/수정
@@ -955,7 +1168,135 @@ ${isFiction ? `
     setEditingSecTitle('');
   };
 
-  // 노션 스타일 드래그 핸들러
+  // --- 플롯 단계 및 세부 꼭지 노션 스타일 드래그 핸들러 ---
+  const handlePlotStageDragStart = (e, sIdx) => {
+    if (e.target.closest('button, input, textarea')) {
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedItem({ type: 'plot-stage', sIdx });
+  };
+
+  const handlePlotStageDragOver = (e, sIdx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedItem) return;
+
+    if (draggedItem.type === 'plot-stage') {
+      if (draggedItem.sIdx === sIdx) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const position = e.clientY < midY ? 'top' : 'bottom';
+      setDragOverTarget({ type: 'plot-stage', sIdx, position });
+    } else if (draggedItem.type === 'plot-subplot') {
+      setDragOverTarget({ type: 'plot-stage-drop-target', sIdx });
+    }
+  };
+
+  const handlePlotStageDrop = async (e, sIdx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedItem) return;
+
+    if (draggedItem.type === 'plot-stage') {
+      const srcIdx = draggedItem.sIdx;
+      let tgtIdx = sIdx;
+      if (dragOverTarget?.position === 'bottom' && srcIdx > sIdx) {
+        tgtIdx = sIdx + 1;
+      } else if (dragOverTarget?.position === 'top' && srcIdx < sIdx) {
+        tgtIdx = Math.max(0, sIdx - 1);
+      }
+      if (srcIdx !== tgtIdx) {
+        pushStep5History(plotStages, draftChapters, '단계 이동 전');
+        const cloned = structuredClone(plotStages);
+        const [moved] = cloned.splice(srcIdx, 1);
+        cloned.splice(tgtIdx, 0, moved);
+        setPlotStages(cloned);
+        if (activeBook) {
+          await updateActiveBookPlotStages(cloned);
+        }
+        pushStep5History(cloned, draftChapters, '단계 순서 변경');
+        showToast('플롯 단계 순서가 변경되었습니다.', 'info');
+      }
+    } else if (draggedItem.type === 'plot-subplot') {
+      pushStep5History(plotStages, draftChapters, '꼭지 이동 전');
+      const srcStageIdx = draggedItem.sIdx;
+      const srcSubIdx = draggedItem.spIdx;
+      const cloned = structuredClone(plotStages);
+      const [movedSub] = cloned[srcStageIdx].subplots.splice(srcSubIdx, 1);
+      if (!cloned[sIdx].subplots) cloned[sIdx].subplots = [];
+      cloned[sIdx].subplots.unshift(movedSub);
+      setPlotStages(cloned);
+      if (activeBook) {
+        await updateActiveBookPlotStages(cloned);
+      }
+      pushStep5History(cloned, draftChapters, '꼭지 단계 이동');
+      showToast('세부 꼭지가 해당 단계의 첫 번째로 이동되었습니다.', 'info');
+    }
+    setDraggedItem(null);
+    setDragOverTarget(null);
+  };
+
+  const handlePlotSubplotDragStart = (e, sIdx, spIdx) => {
+    if (e.target.closest('button, input, textarea')) {
+      e.preventDefault();
+      return;
+    }
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedItem({ type: 'plot-subplot', sIdx, spIdx });
+  };
+
+  const handlePlotSubplotDragOver = (e, sIdx, spIdx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedItem || draggedItem.type !== 'plot-subplot') return;
+    if (draggedItem.sIdx === sIdx && draggedItem.spIdx === spIdx) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const position = e.clientY < midY ? 'top' : 'bottom';
+    setDragOverTarget({ type: 'plot-subplot', sIdx, spIdx, position });
+  };
+
+  const handlePlotSubplotDrop = async (e, targetSIdx, targetSpIdx) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedItem || draggedItem.type !== 'plot-subplot') return;
+
+    const srcStageIdx = draggedItem.sIdx;
+    const srcSubIdx = draggedItem.spIdx;
+    let tgtSubIdx = targetSpIdx;
+
+    if (srcStageIdx === targetSIdx) {
+      if (dragOverTarget?.position === 'bottom' && srcSubIdx > targetSpIdx) {
+        tgtSubIdx = targetSpIdx + 1;
+      } else if (dragOverTarget?.position === 'top' && srcSubIdx < targetSpIdx) {
+        tgtSubIdx = Math.max(0, targetSpIdx - 1);
+      }
+    } else {
+      if (dragOverTarget?.position === 'bottom') tgtSubIdx = targetSpIdx + 1;
+    }
+
+    pushStep5History(plotStages, draftChapters, '꼭지 이동 전');
+    const cloned = structuredClone(plotStages);
+    const [movedSub] = cloned[srcStageIdx].subplots.splice(srcSubIdx, 1);
+    if (!cloned[targetSIdx].subplots) cloned[targetSIdx].subplots = [];
+    cloned[targetSIdx].subplots.splice(tgtSubIdx, 0, movedSub);
+    setPlotStages(cloned);
+    if (activeBook) {
+      await updateActiveBookPlotStages(cloned);
+    }
+    pushStep5History(cloned, draftChapters, '꼭지 순서 변경');
+    showToast('세부 꼭지 순서가 변경되었습니다.', 'info');
+
+    setDraggedItem(null);
+    setDragOverTarget(null);
+  };
+
+  // 목차 조립대 노션 스타일 드래그 핸들러
   const handleChapterDragStart = (e, chapId, cIdx) => {
     e.stopPropagation();
     e.dataTransfer.effectAllowed = 'move';
@@ -992,19 +1333,23 @@ ${isFiction ? `
         tgtIdx = Math.max(0, cIdx - 1);
       }
       if (srcIdx !== tgtIdx) {
+        pushStep5History(plotStages, draftChapters, '챕터 이동 전');
         const cloned = structuredClone(draftChapters);
         const [moved] = cloned.splice(srcIdx, 1);
         cloned.splice(tgtIdx, 0, moved);
         await saveDraftOutline(cloned);
+        pushStep5History(plotStages, cloned, '챕터 순서 변경');
         showToast('챕터 위치가 이동되었습니다.', 'info');
       }
     } else if (draggedItem.type === 'section') {
+      pushStep5History(plotStages, draftChapters, '소목차 이동 전');
       const srcChapIdx = draggedItem.cIdx;
       const srcSecIdx = draggedItem.sIdx;
       const cloned = structuredClone(draftChapters);
       const [movedSec] = cloned[srcChapIdx].sections.splice(srcSecIdx, 1);
       cloned[cIdx].sections.unshift(movedSec);
       await saveDraftOutline(cloned);
+      pushStep5History(plotStages, cloned, '소목차 챕터 이동');
       showToast('소목차가 해당 챕터의 첫 꼭지로 이동되었습니다.', 'info');
     }
     setDraggedItem(null);
@@ -1048,10 +1393,12 @@ ${isFiction ? `
       if (dragOverTarget?.position === 'bottom') tgtSecIdx = targetSIdx + 1;
     }
 
+    pushStep5History(plotStages, draftChapters, '소목차 이동 전');
     const cloned = structuredClone(draftChapters);
     const [movedSec] = cloned[srcChapIdx].sections.splice(srcSecIdx, 1);
     cloned[targetCIdx].sections.splice(tgtSecIdx, 0, movedSec);
     await saveDraftOutline(cloned);
+    pushStep5History(plotStages, cloned, '소목차 순서 변경');
     showToast('소목차 위치가 이동되었습니다.', 'info');
 
     setDraggedItem(null);
@@ -1939,26 +2286,59 @@ ${isFiction ? `
 
                   {/* [STEP 5] 서사 뼈대 & 목차 조립대 (좌: 뼈대 구성 카드, 우: 목차 조립대 카드) */}
                   {activeStep === 'outline' && (
-                    <div className="step5-main-layout">
+                    <div 
+                      ref={step5ContainerRef}
+                      className={`step5-main-layout layout-${step5Collapsed} ${isDraggingStep5 ? 'is-resizing' : ''}`}
+                    >
                       {/* 좌측 카드 섹션: 뼈대 구성 */}
-                      <section className="step5-card-box left-box">
-                        <div className="step5-card-header">
-                          <div className="card-header-left">
-                            <Layers size={16} style={{ color: 'var(--color-primary)' }} />
-                            <h3 className="card-header-title">뼈대 구성</h3>
-                            <span className="card-genre-pill">{activeBook?.genre || '소설'}</span>
-                          </div>
-                          <button
-                            type="button"
-                            className="btn-bridge-action"
-                            onClick={() => handleOpenOutlinePlanModal('plot')}
-                            title="현재 설정된 서사 뼈대를 분석하여 완성 목차를 자동 도출합니다"
+                      {step5Collapsed === 'left' ? (
+                        <aside 
+                          className="step5-card-box left-box is-collapsed"
+                          onClick={handleResetStep5Split}
+                          title="클릭하여 뼈대 구성 펼치기 (5:5 복원)"
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <button 
+                            type="button" 
+                            className="btn-rail-expand"
+                            onClick={(e) => { e.stopPropagation(); handleResetStep5Split(); }}
+                            title="뼈대 구성 펼치기"
                           >
-                            <Sparkles size={13} />
-                            이 뼈대로 목차 기획
-                            <ChevronRight size={13} />
+                            <ChevronRight size={15} />
                           </button>
-                        </div>
+                          <div className="rail-icon-wrap">
+                            <Layers size={16} style={{ color: 'var(--color-primary)' }} />
+                          </div>
+                          <div className="collapsed-rail-title">뼈대 구성</div>
+                          {activeBook?.genre && (
+                            <span className="collapsed-rail-badge">{activeBook.genre}</span>
+                          )}
+                        </aside>
+                      ) : (
+                        <section 
+                          className="step5-card-box left-box"
+                          style={step5Collapsed === 'none' ? { flex: `0 0 calc(${step5SplitRatio}% - 14px)`, width: `calc(${step5SplitRatio}% - 14px)` } : { flex: 1 }}
+                        >
+                          <div className="step5-card-header">
+                            <div className="card-header-left">
+                              <Layers size={16} style={{ color: 'var(--color-primary)' }} />
+                              <h3 className="card-header-title">뼈대 구성</h3>
+                              <span className="card-genre-pill">{activeBook?.genre || '소설'}</span>
+                            </div>
+                            <div className="card-header-actions">
+                              <button
+                                type="button"
+                                className="btn-bridge-action"
+                                onClick={() => handleOpenOutlinePlanModal('plot')}
+                                title="현재 설정된 서사 뼈대를 분석하여 완성 목차를 자동 도출합니다"
+                              >
+                                <Sparkles size={13} />
+                                이 뼈대로 목차 기획
+                                <ChevronRight size={13} />
+                              </button>
+                            </div>
+                          </div>
 
                         <div className="step5-card-body">
                           {/* 도서 장르 기반 추천 뼈대 및 44종 전체 서사 라이브러리 스위처 */}
@@ -2029,24 +2409,47 @@ ${isFiction ? `
                               </>
                             );
                           })()}
-                          {/* 플롯 단계 및 세부 꼭지 트리 (수정, 추가, 삭제 지원) */}
+                          {/* 플롯 단계 및 세부 꼭지 트리 (수정, 추가, 삭제 및 노션 스타일 드래그 순서 변경 지원) */}
                           <div className="plot-stages-tree">
                           {plotStages.map((stage, sIdx) => {
+                            const isStageDragging = draggedItem?.type === 'plot-stage' && draggedItem.sIdx === sIdx;
+                            const isStageOverTop = dragOverTarget?.type === 'plot-stage' && dragOverTarget.sIdx === sIdx && dragOverTarget.position === 'top';
+                            const isStageOverBottom = dragOverTarget?.type === 'plot-stage' && dragOverTarget.sIdx === sIdx && dragOverTarget.position === 'bottom';
+                            const isStageTargetHover = dragOverTarget?.type === 'plot-stage-drop-target' && dragOverTarget.sIdx === sIdx;
+
+                            let stageBarClass = 'plot-stage-bar';
+                            if (isStageDragging) stageBarClass += ' is-dragging';
+                            if (isStageOverTop) stageBarClass += ' drag-over-top';
+                            if (isStageOverBottom) stageBarClass += ' drag-over-bottom';
+                            if (isStageTargetHover) stageBarClass += ' drag-target-hover';
+
                             const isEditingStage = editingStageIdx === sIdx;
                             return (
                               <div key={stage.id || sIdx} className="plot-stage-group">
-                                <div className="plot-stage-bar">
+                                <div 
+                                  className={stageBarClass}
+                                  draggable
+                                  onDragStart={(e) => handlePlotStageDragStart(e, sIdx)}
+                                  onDragOver={(e) => handlePlotStageDragOver(e, sIdx)}
+                                  onDrop={(e) => handlePlotStageDrop(e, sIdx)}
+                                  onDragEnd={handleDragEnd}
+                                >
                                   {isEditingStage ? (
                                     <div style={{ display: 'flex', gap: '6px', flex: 1, alignItems: 'center' }}>
                                       <input
                                         type="text"
-                                        className="plot-inline-input"
+                                        className="inline-edit-input"
                                         value={editingStageTitle}
                                         onChange={(e) => setEditingStageTitle(e.target.value)}
+                                        onBlur={() => handleCommitEditStage(sIdx)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleCommitEditStage(sIdx);
+                                          if (e.key === 'Escape') setEditingStageIdx(null);
+                                        }}
                                         placeholder="단계명 (예: 1. 발단과 결핍의 일상)"
                                         autoFocus
                                       />
-                                      <button type="button" className="mini-icon-btn" onClick={() => handleSaveEditingStage(sIdx)} title="저장">
+                                      <button type="button" className="mini-icon-btn" onClick={() => handleCommitEditStage(sIdx)} title="저장">
                                         <Check size={12} />
                                       </button>
                                       <button type="button" className="mini-icon-btn" onClick={() => setEditingStageIdx(null)} title="취소">
@@ -2057,8 +2460,21 @@ ${isFiction ? `
                                     <>
                                       <span className="plot-stage-title-text">{stage.title}</span>
                                       <div className="plot-stage-actions">
-                                        <button type="button" className="mini-icon-btn" onClick={() => handleStartEditingStage(sIdx, stage.title)} title="단계명 수정">
+                                        <button 
+                                          type="button" 
+                                          className="mini-icon-btn" 
+                                          onClick={() => handleStartEditingStage(sIdx, stage.title)} 
+                                          title="단계명 수정"
+                                        >
                                           <Edit2 size={11} />
+                                        </button>
+                                        <button 
+                                          type="button" 
+                                          className="mini-icon-btn" 
+                                          onClick={() => handleAddNewSubplot(sIdx)} 
+                                          title="세부 꼭지 추가"
+                                        >
+                                          <Plus size={12} />
                                         </button>
                                         <button type="button" className="mini-icon-btn danger" onClick={() => handleDeleteStage(sIdx)} title="단계 삭제">
                                           <Trash2 size={11} />
@@ -2077,20 +2493,42 @@ ${isFiction ? `
                                     const isEditingSub = editingSubplotKey === subKey;
                                     const isMemoActive = activeMemoKey === subKey;
 
+                                    const isSubDragging = draggedItem?.type === 'plot-subplot' && draggedItem.sIdx === sIdx && draggedItem.spIdx === spIdx;
+                                    const isSubOverTop = dragOverTarget?.type === 'plot-subplot' && dragOverTarget.sIdx === sIdx && dragOverTarget.spIdx === spIdx && dragOverTarget.position === 'top';
+                                    const isSubOverBottom = dragOverTarget?.type === 'plot-subplot' && dragOverTarget.sIdx === sIdx && dragOverTarget.spIdx === spIdx && dragOverTarget.position === 'bottom';
+
+                                    let subCardClass = 'plot-subplot-card';
+                                    if (isSubDragging) subCardClass += ' is-dragging';
+                                    if (isSubOverTop) subCardClass += ' drag-over-top';
+                                    if (isSubOverBottom) subCardClass += ' drag-over-bottom';
+
                                     return (
-                                      <div key={subKey} className="plot-subplot-card">
+                                      <div 
+                                        key={subKey} 
+                                        className={subCardClass}
+                                        draggable
+                                        onDragStart={(e) => handlePlotSubplotDragStart(e, sIdx, spIdx)}
+                                        onDragOver={(e) => handlePlotSubplotDragOver(e, sIdx, spIdx)}
+                                        onDrop={(e) => handlePlotSubplotDrop(e, sIdx, spIdx)}
+                                        onDragEnd={handleDragEnd}
+                                      >
                                         <div className="plot-subplot-main">
                                           {isEditingSub ? (
                                             <div style={{ display: 'flex', gap: '6px', flex: 1, alignItems: 'center' }}>
                                               <input
                                                 type="text"
-                                                className="plot-inline-input"
+                                                className="inline-edit-input"
                                                 value={editingSubplotTitle}
                                                 onChange={(e) => setEditingSubplotTitle(e.target.value)}
+                                                onBlur={() => handleCommitEditSubplot(sIdx, spIdx)}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') handleCommitEditSubplot(sIdx, spIdx);
+                                                  if (e.key === 'Escape') setEditingSubplotKey(null);
+                                                }}
                                                 placeholder="세부 꼭지명 입력"
                                                 autoFocus
                                               />
-                                              <button type="button" className="mini-icon-btn" onClick={() => handleSaveEditingSubplotTitle(sIdx, spIdx)} title="저장">
+                                              <button type="button" className="mini-icon-btn" onClick={() => handleCommitEditSubplot(sIdx, spIdx)} title="저장">
                                                 <Check size={12} />
                                               </button>
                                               <button type="button" className="mini-icon-btn" onClick={() => setEditingSubplotKey(null)} title="취소">
@@ -2104,13 +2542,18 @@ ${isFiction ? `
                                                 <button
                                                   type="button"
                                                   className={`mini-memo-btn ${subMemo ? 'has-memo' : ''}`}
-                                                  onClick={() => handleStartEditMemo(sIdx, spIdx, subMemo)}
+                                                  onClick={() => handleOpenMemoEditor(sIdx, spIdx, subMemo)}
                                                   title={subMemo ? '메모 수정' : '발상 메모 추가'}
                                                 >
                                                   <Lightbulb size={11} />
                                                   {subMemo ? '메모' : '+ 메모'}
                                                 </button>
-                                                <button type="button" className="mini-icon-btn" onClick={() => handleStartEditingSubplotTitle(sIdx, spIdx, subTitle)} title="꼭지명 수정">
+                                                <button 
+                                                  type="button" 
+                                                  className="mini-icon-btn" 
+                                                  onClick={() => handleStartEditingSubplotTitle(sIdx, spIdx, subTitle)} 
+                                                  title="꼭지명 수정"
+                                                >
                                                   <Edit2 size={11} />
                                                 </button>
                                                 <button type="button" className="mini-icon-btn danger" onClick={() => handleDeleteSubplot(sIdx, spIdx)} title="꼭지 삭제">
@@ -2172,16 +2615,6 @@ ${isFiction ? `
                                       </div>
                                     );
                                   })}
-
-                                  {/* 세부 꼭지 추가 버튼 */}
-                                  <button
-                                    type="button"
-                                    className="btn-add-subplot-row"
-                                    onClick={() => handleAddNewSubplot(sIdx)}
-                                  >
-                                    <Plus size={11} />
-                                    세부 꼭지 추가
-                                  </button>
                                 </div>
                               </div>
                             );
@@ -2199,18 +2632,61 @@ ${isFiction ? `
                         </div>
                       </div>
                     </section>
+                  )}
 
-                    {/* 가운데 연결 화살표 브릿지 */}
-                    <div className="step5-flow-divider">
+                  {/* 가운데 리사이저 드래그 분할선 & 뱃지 (방안 2) */}
+                  {step5Collapsed === 'none' && (
+                    <div 
+                      className={`step5-flow-divider ${isDraggingStep5 ? 'is-active' : ''}`}
+                      onMouseDown={handleStartStep5Drag}
+                      onTouchStart={handleStartStep5Drag}
+                      onDoubleClick={handleResetStep5Split}
+                      title="좌우 드래그: 너비 조절 | 더블클릭: 5:5 균등 분할"
+                    >
                       <div className="divider-line" />
-                      <div className="divider-badge" title="서사 뼈대 구상을 바탕으로 목차를 조립합니다">
-                        <ChevronRight size={18} />
+                      <div 
+                        className="divider-badge"
+                        title="좌우 드래그: 너비 조절 | 더블클릭: 5:5 균등 분할"
+                      >
+                        <svg width="8" height="14" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M2.5 4.5L1 7L2.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M5.5 4.5L7 7L5.5 9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                       </div>
                       <div className="divider-line" />
                     </div>
+                  )}
 
-                    {/* 우측 카드 섹션: 목차 조립대 */}
-                    <section className="step5-card-box right-box">
+                  {/* 우측 카드 섹션: 목차 조립대 */}
+                  {step5Collapsed === 'right' ? (
+                    <aside 
+                      className="step5-card-box right-box is-collapsed"
+                      onClick={handleResetStep5Split}
+                      title="클릭하여 목차 조립대 펼치기 (5:5 복원)"
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <button 
+                        type="button" 
+                        className="btn-rail-expand"
+                        onClick={(e) => { e.stopPropagation(); handleResetStep5Split(); }}
+                        title="목차 조립대 펼치기"
+                      >
+                        <ChevronLeft size={15} />
+                      </button>
+                      <div className="rail-icon-wrap">
+                        <BookOpen size={16} style={{ color: 'var(--color-primary)' }} />
+                      </div>
+                      <div className="collapsed-rail-title">목차 조립대</div>
+                      {draftChapters.length > 0 && (
+                        <span className="collapsed-rail-badge">{draftChapters.length}장</span>
+                      )}
+                    </aside>
+                  ) : (
+                    <section 
+                      className="step5-card-box right-box"
+                      style={step5Collapsed === 'none' ? { flex: 1, minWidth: 0 } : { flex: 1 }}
+                    >
                       <div className="step5-card-header">
                         <div className="card-header-left">
                           <BookOpen size={16} style={{ color: 'var(--color-primary)' }} />
@@ -2270,6 +2746,7 @@ ${isFiction ? `
                                   onDragStart={(e) => handleChapterDragStart(e, chap.id, cIdx)}
                                   onDragOver={(e) => handleChapterDragOver(e, chap.id, cIdx)}
                                   onDrop={(e) => handleChapterDrop(e, chap.id, cIdx)}
+                                  onDragEnd={handleDragEnd}
                                 >
                                   <div className="chap-left-wrap">
                                     {editingChapId === chap.id ? (
@@ -2340,6 +2817,7 @@ ${isFiction ? `
                                         onDragStart={(e) => handleSectionDragStart(e, chap.id, sec.id, cIdx, sIdx)}
                                         onDragOver={(e) => handleSectionDragOver(e, sec.id, cIdx, sIdx)}
                                         onDrop={(e) => handleSectionDrop(e, cIdx, sIdx)}
+                                        onDragEnd={handleDragEnd}
                                       >
                                         <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
                                           {editingSecId === sec.id ? (
@@ -2394,8 +2872,9 @@ ${isFiction ? `
                         </div>
                       </div>
                     </section>
-                  </div>
-                )}
+                  )}
+                </div>
+              )}
                 </>
               )}
             </div>
