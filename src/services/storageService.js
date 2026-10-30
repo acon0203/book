@@ -4,8 +4,13 @@ const STORAGE_KEYS = {
   VAULT: 'bookstudio_vault',
   CONFIG: 'bookstudio_config',
   STATS: 'bookstudio_stats',
-  AUTHOR_PERSONA: 'bookstudio_author_persona'
+  AUTHOR_PERSONA: 'bookstudio_author_persona',
+  READER_HISTORY: 'reader_history',
+  READER_SHELF: 'reader_shelf',
+  READER_SHELF_CATEGORIES: 'reader_shelf_categories'
 };
+
+export const DEFAULT_SHELF_CATEGORIES = ['읽고 싶은 책', '관심 있는 분야', '소장·재독'];
 
 const DEFAULT_CONFIG = {
   selectedProvider: 'gemini',
@@ -111,6 +116,7 @@ export const storageService = {
     const books = storageService.getBooks();
     const filtered = books.filter(b => b.id !== id);
     storageService.saveBooks(filtered);
+    storageService.markBookDeletedInReaderLists(id);
     return { success: true };
   },
 
@@ -271,7 +277,7 @@ export const storageService = {
     return storageService.updateBook(bookId, book);
   },
 
-  addSection: (bookId, chapterId, title) => {
+  addSection: (bookId, chapterId, title, insertIndex = null) => {
     const book = storageService.getBook(bookId);
     const chap = book.chapters.find(c => c.id === chapterId);
     if (!chap) throw new Error('챕터를 찾을 수 없습니다.');
@@ -283,7 +289,11 @@ export const storageService = {
       status: 'draft',
       wordCount: 0
     };
-    chap.sections.push(newSec);
+    if (insertIndex !== null && insertIndex !== undefined && insertIndex >= 0 && insertIndex <= chap.sections.length) {
+      chap.sections.splice(insertIndex, 0, newSec);
+    } else {
+      chap.sections.push(newSec);
+    }
     return storageService.updateBook(bookId, book);
   },
 
@@ -594,6 +604,135 @@ export const storageService = {
     return persona;
   },
 
+  // --- 5-1. 독서 기록(reader_history) & 담은 작품(reader_shelf) 일원화 ---
+  getReadingHistory: () => {
+    try {
+      const rawHistory = localStorage.getItem(STORAGE_KEYS.READER_HISTORY) || '[]';
+      const parsedHistory = JSON.parse(rawHistory);
+      const historyList = Array.isArray(parsedHistory) ? parsedHistory : [];
+
+      // 구버전에서 열람 없이 서재 담기만 했던 항목(wordsCount === undefined && !isCompleted) 자동 이관
+      const bookmarkOnlyItems = historyList.filter(h => h.wordsCount === undefined && !h.isCompleted);
+      if (bookmarkOnlyItems.length > 0) {
+        const actualHistory = historyList.filter(h => !(h.wordsCount === undefined && !h.isCompleted));
+        const currentShelf = storageService.getShelfItems();
+        let shelfChanged = false;
+        bookmarkOnlyItems.forEach(item => {
+          if (!currentShelf.some(s => s.bookId === item.bookId)) {
+            currentShelf.unshift({
+              ...item,
+              category: item.category || DEFAULT_SHELF_CATEGORIES[0],
+              savedAt: item.savedAt || item.readAt || new Date().toISOString()
+            });
+            shelfChanged = true;
+          }
+        });
+        localStorage.setItem(STORAGE_KEYS.READER_HISTORY, JSON.stringify(actualHistory));
+        if (shelfChanged) {
+          storageService.saveShelfItems(currentShelf);
+        }
+        return actualHistory;
+      }
+
+      return historyList;
+    } catch {
+      return [];
+    }
+  },
+
+  saveReadingHistory: (list) => {
+    const safeList = Array.isArray(list) ? list : [];
+    localStorage.setItem(STORAGE_KEYS.READER_HISTORY, JSON.stringify(safeList));
+    return safeList;
+  },
+
+  removeReadingHistoryItem: (bookId) => {
+    const updated = storageService.getReadingHistory().filter(item => item.bookId !== bookId);
+    return storageService.saveReadingHistory(updated);
+  },
+
+  getShelfItems: () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.READER_SHELF) || '[]';
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  },
+
+  saveShelfItems: (list) => {
+    const safeList = Array.isArray(list) ? list : [];
+    localStorage.setItem(STORAGE_KEYS.READER_SHELF, JSON.stringify(safeList));
+    return safeList;
+  },
+
+  removeShelfItem: (bookId) => {
+    const updated = storageService.getShelfItems().filter(item => item.bookId !== bookId);
+    return storageService.saveShelfItems(updated);
+  },
+
+  updateShelfItemCategory: (bookId, newCategory) => {
+    const updated = storageService.getShelfItems().map(item =>
+      item.bookId === bookId ? { ...item, category: newCategory } : item
+    );
+    return storageService.saveShelfItems(updated);
+  },
+
+  toggleShelfItem: (book, defaultCategory = DEFAULT_SHELF_CATEGORIES[0]) => {
+    const list = storageService.getShelfItems();
+    const exists = list.some(item => item.bookId === book.id);
+    if (exists) {
+      const updated = list.filter(item => item.bookId !== book.id);
+      storageService.saveShelfItems(updated);
+      return { added: false, list: updated };
+    }
+    const firstChap = book.publishedChapters?.[0] || book.chapters?.[0];
+    const newEntry = {
+      bookId: book.id,
+      bookTitle: book.title,
+      subtitle: book.subtitle || '',
+      author: book.author || '작가 미상',
+      genre: book.genre || '소설',
+      coverColor: book.coverColor || 'linear-gradient(135deg, #1b382b, #0d1e16)',
+      chapterId: firstChap?.id || null,
+      chapterTitle: firstChap?.title || '1화',
+      category: defaultCategory,
+      savedAt: new Date().toISOString()
+    };
+    const updated = [newEntry, ...list];
+    storageService.saveShelfItems(updated);
+    return { added: true, list: updated };
+  },
+
+  getShelfCategories: () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.READER_SHELF_CATEGORIES);
+      const parsed = raw ? JSON.parse(raw) : DEFAULT_SHELF_CATEGORIES;
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_SHELF_CATEGORIES;
+    } catch {
+      return DEFAULT_SHELF_CATEGORIES;
+    }
+  },
+
+  saveShelfCategories: (categories) => {
+    const safeList = Array.isArray(categories) && categories.length > 0 ? categories : DEFAULT_SHELF_CATEGORIES;
+    localStorage.setItem(STORAGE_KEYS.READER_SHELF_CATEGORIES, JSON.stringify(safeList));
+    return safeList;
+  },
+
+  markBookDeletedInReaderLists: (bookId) => {
+    const updatedHistory = storageService.getReadingHistory().map(h =>
+      h.bookId === bookId ? { ...h, isDeleted: true } : h
+    );
+    storageService.saveReadingHistory(updatedHistory);
+
+    const updatedShelf = storageService.getShelfItems().map(s =>
+      s.bookId === bookId ? { ...s, isDeleted: true } : s
+    );
+    storageService.saveShelfItems(updatedShelf);
+  },
+
   // --- 6. 전체 로컬 백업 내보내기 & 복원 ---
   exportBackupData: () => {
     return {
@@ -603,7 +742,10 @@ export const storageService = {
       vault: storageService.getVault(),
       stats: storageService.getStats(),
       config: storageService.getConfig(),
-      authorPersona: storageService.getAuthorPersona()
+      authorPersona: storageService.getAuthorPersona(),
+      readingHistory: storageService.getReadingHistory(),
+      shelfItems: storageService.getShelfItems(),
+      shelfCategories: storageService.getShelfCategories()
     };
   },
 
@@ -622,6 +764,15 @@ export const storageService = {
     }
     if (backupObj.authorPersona) {
       storageService.saveAuthorPersona(backupObj.authorPersona);
+    }
+    if (Array.isArray(backupObj.readingHistory)) {
+      storageService.saveReadingHistory(backupObj.readingHistory);
+    }
+    if (Array.isArray(backupObj.shelfItems)) {
+      storageService.saveShelfItems(backupObj.shelfItems);
+    }
+    if (Array.isArray(backupObj.shelfCategories)) {
+      storageService.saveShelfCategories(backupObj.shelfCategories);
     }
     return true;
   }

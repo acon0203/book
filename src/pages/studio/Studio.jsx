@@ -1273,22 +1273,31 @@ export default function Studio() {
                         <div className="v4-hover-actions">
                           <button
                             type="button"
-                            className="v4-mini-btn"
-                            title="소목차 추가"
-                            onClick={async (e) => {
+                            className="mini-icon-btn"
+                            title="챕터명 수정"
+                            onClick={(e) => {
                               e.stopPropagation();
-                              const t = await openPrompt({
-                                title: '새 소목차 추가',
-                                placeholder: '추가할 소목차명을 입력하세요 (예: 1.1 새로운 여정)'
-                              });
-                              if (t?.trim()) addSection(chap.id, cleanTitle(t.trim()));
+                              setEditingChapterId(chap.id);
+                              setEditingChapterTitle(cleanTitle(chap.title));
                             }}
                           >
-                            +
+                            <Edit2 size={11} />
                           </button>
                           <button
                             type="button"
-                            className="v4-mini-btn delete"
+                            className="mini-icon-btn"
+                            title="소목차 추가"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              await addSection(chap.id, '새로운 소목차');
+                              showToast('새 소목차가 추가되었습니다.', 'info');
+                            }}
+                          >
+                            <Plus size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            className="mini-icon-btn danger"
                             title="챕터 삭제"
                             onClick={async (e) => {
                               e.stopPropagation();
@@ -1301,7 +1310,7 @@ export default function Studio() {
                               if (ok) deleteChapter(chap.id);
                             }}
                           >
-                            ✕
+                            <Trash2 size={11} />
                           </button>
                         </div>
                       </div>
@@ -1330,36 +1339,84 @@ export default function Studio() {
                                 setActiveSectionId(sec.id);
                               }}
                             >
-                              <span className={`v4-dot ${isDone ? 'filled' : 'empty'}`} title={isDone ? `집필 완료 (${rawText.length.toLocaleString()}자)` : '미작성'} />
-                              {editingSectionId === sec.id ? (
-                                <input
-                                  type="text"
-                                  className="v4-sec-input"
-                                  value={editingSectionTitle}
-                                  autoFocus
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) => setEditingSectionTitle(e.target.value)}
-                                  onBlur={() => handleCommitSectionRename(chap.id, sec.id, editingSectionTitle)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      handleCommitSectionRename(chap.id, sec.id, editingSectionTitle);
-                                    } else if (e.key === 'Escape') {
-                                      setEditingSectionId(null);
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <span
-                                  className="v4-sec-name"
-                                  title="더블클릭하여 소제목 수정"
-                                  onDoubleClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingSectionId(sec.id);
-                                    setEditingSectionTitle(cleanTitle(sec.title));
-                                  }}
-                                >
-                                  {cIdx + 1}.{sIdx + 1} {cleanTitle(sec.title)}
-                                </span>
+                              <div className="v4-sec-left">
+                                <span className={`v4-dot ${isDone ? 'filled' : 'empty'}`} title={isDone ? `집필 완료 (${rawText.length.toLocaleString()}자)` : '미작성'} />
+                                {editingSectionId === sec.id ? (
+                                  <input
+                                    type="text"
+                                    className="v4-sec-input"
+                                    value={editingSectionTitle}
+                                    autoFocus
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => setEditingSectionTitle(e.target.value)}
+                                    onBlur={() => handleCommitSectionRename(chap.id, sec.id, editingSectionTitle)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleCommitSectionRename(chap.id, sec.id, editingSectionTitle);
+                                      } else if (e.key === 'Escape') {
+                                        setEditingSectionId(null);
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <span
+                                    className="v4-sec-name"
+                                    title="더블클릭하여 소제목 수정"
+                                    onDoubleClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingSectionId(sec.id);
+                                      setEditingSectionTitle(cleanTitle(sec.title));
+                                    }}
+                                  >
+                                    {cIdx + 1}.{sIdx + 1} {cleanTitle(sec.title)}
+                                  </span>
+                                )}
+                              </div>
+
+                              {editingSectionId !== sec.id && (
+                                <div className="v4-sec-actions">
+                                  <button
+                                    type="button"
+                                    className="mini-icon-btn"
+                                    title="소목차명 수정"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingSectionId(sec.id);
+                                      setEditingSectionTitle(cleanTitle(sec.title));
+                                    }}
+                                  >
+                                    <Edit2 size={11} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="mini-icon-btn"
+                                    title="아래에 소목차 추가"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      await addSection(chap.id, '새로운 소목차', sIdx + 1);
+                                      showToast('새 소목차가 추가되었습니다.', 'info');
+                                    }}
+                                  >
+                                    <Plus size={12} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="mini-icon-btn danger"
+                                    title="소목차 삭제"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const ok = await openConfirm({
+                                        title: '소목차 삭제',
+                                        message: `'${cleanTitle(sec.title)}' 소목차를 삭제하시겠습니까?${isDone ? '\n작성된 본문 원고도 함께 삭제됩니다.' : ''}`,
+                                        danger: true,
+                                        confirmText: '삭제'
+                                      });
+                                      if (ok) deleteSection(chap.id, sec.id);
+                                    }}
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </div>
                               )}
                             </div>
                           );
@@ -1998,10 +2055,11 @@ export default function Studio() {
         showToast={showToast}
       />
 
-      {/* 모달 3: 자료 금고 선택 (VaultModal.jsx) */}
+      {/* 모달 3: 창작실 연동 선택 (VaultModal.jsx) */}
       <VaultModal
         isOpen={isVaultModalOpen}
         onClose={() => setIsVaultModalOpen(false)}
+        activeBook={activeBook}
         vault={vault}
         selectedVaultIds={selectedVaultIds}
         toggleSelectVaultId={toggleSelectVaultId}

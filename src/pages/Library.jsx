@@ -11,53 +11,53 @@ import {
 import { 
   Plus, 
   Trash2, 
-  Calendar, 
   ArrowRight, 
   BookOpen, 
   Flame, 
   Bookmark, 
-  Clock, 
   Play, 
-  Compass,
-  Zap,
   Edit2,
-  Edit3,
   UploadCloud,
-  Sparkles,
-  BookMarked,
-  Lightbulb
+  Lightbulb,
+  FolderPlus,
+  X
 } from 'lucide-react';
 import ManuscriptImportModal from '../components/ManuscriptImportModal';
 import BookInfoModal from '../components/BookInfoModal';
 import { STARTER_BOOK, STARTER_VAULT_ITEMS } from '../data/starterBookData';
+import { storageService, DEFAULT_SHELF_CATEGORIES } from '../services/storageService';
 
 export default function Library() {
   const {
     books, loadBooks, openBook, openReader, deleteBook, isBooksLoading, showToast,
-    isNewBookModalOpen, setNewBookModalOpen, setView, activeBook, user, openConfirm,
+    isNewBookModalOpen, setNewBookModalOpen, setView, activeBook, user, openConfirm, openPrompt,
     toggleBookCompleted
   } = useStore();
 
   const [baseStats, setBaseStats] = useState({ totalWordsGenerated: 0, totalChaptersCompleted: 0, aiGenerationsCount: 0 });
-  const [libraryTab, setLibraryTab] = useState(() => localStorage.getItem('library_active_tab') || 'author'); // 'author' | 'reader'
+  const [libraryTab, setLibraryTab] = useState(() => localStorage.getItem('library_active_tab') || 'author'); // 'author' | 'reader' | 'shelf'
   const [readingHistory, setReadingHistory] = useState([]);
+  const [shelfItems, setShelfItems] = useState([]);
+  const [shelfCategories, setShelfCategories] = useState(DEFAULT_SHELF_CATEGORIES);
+  const [selectedShelfCategory, setSelectedShelfCategory] = useState('all');
+
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
-  const [sortBy, setSortBy] = useState('recent'); // 'recent' | 'title' | 'progress'
 
-  const loadReadingHistory = () => {
-    try {
-      const raw = localStorage.getItem('reader_history') || '[]';
-      const parsed = JSON.parse(raw);
-      setReadingHistory(Array.isArray(parsed) ? parsed : []);
-    } catch (e) {
-      setReadingHistory([]);
-    }
+  // 탭별 정렬 상태
+  const [sortBy, setSortBy] = useState('recent'); // 'recent' | 'title' | 'progress'
+  const [readerSortBy, setReaderSortBy] = useState('recent'); // 'recent' | 'title' | 'author'
+  const [shelfSortBy, setShelfSortBy] = useState('recent'); // 'recent' | 'title' | 'author'
+
+  const loadReadingAndShelfData = () => {
+    setReadingHistory(storageService.getReadingHistory());
+    setShelfItems(storageService.getShelfItems());
+    setShelfCategories(storageService.getShelfCategories());
   };
 
   useEffect(() => {
     loadBooks();
-    loadReadingHistory();
+    loadReadingAndShelfData();
     bookService.getStats().then(setBaseStats).catch(console.error);
   }, [loadBooks]);
 
@@ -89,28 +89,37 @@ export default function Library() {
   };
 
   const authorStats = calcAuthorStats(books, baseStats);
-  const readerStats = calcReaderStats(readingHistory);
+  const readerStats = calcReaderStats(readingHistory, books);
   const quote = getDailyQuote();
-  const readingQuote = getDailyReadingQuote();
+
+  const handleGoToStats = (tab) => {
+    localStorage.setItem('stats_active_tab', tab);
+    setView('stats');
+  };
 
   // 최근 집필 도서 (activeBook 또는 가장 최근 수정된 도서)
   const recentWritingBook = activeBook || (books.length > 0 ? [...books].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))[0] : null);
-  // 최근 독서 도서 (readingHistory 최상단 항목)
-  const recentReadingBook = readingHistory.length > 0 ? readingHistory[0] : null;
+  // 최근 독서 도서 (삭제되지 않고 열람 가능한 가장 최근 도서)
+  const recentReadingBook = readingHistory.find(
+    (h) => !h.isDeleted && (isBooksLoading || books.some((b) => b.id === h.bookId))
+  ) || null;
 
-  // 표지 색상 헬퍼 (동일 도서인 경우 집필/독서 퀵 카드의 표지 색상을 100% 일치시킴)
-  const writingCoverColor = recentWritingBook?.coverColor || 'linear-gradient(135deg, #3d2c1e, #1f140b)';
+  // 표지 색상 헬퍼 (과거 파란색/네이비 기본값은 현재 에디토리얼 양장본 테마로 자동 변환)
+  const resolveCoverColor = (color, fallback = 'linear-gradient(135deg, #2b231d, #191410)') => {
+    if (!color || color.includes('#2563eb') || color.includes('#1e3a8a') || color.includes('#1e40af') || color.includes('#1e293b')) {
+      return fallback;
+    }
+    return color;
+  };
+
+  const writingCoverColor = resolveCoverColor(recentWritingBook?.coverColor, 'linear-gradient(135deg, #3d2c1e, #1f140b)');
   const matchedReadingBook = books.find(b => b.id === recentReadingBook?.bookId || b.title === recentReadingBook?.bookTitle);
   const readingCoverColor = (() => {
-    if (matchedReadingBook?.coverColor) return matchedReadingBook.coverColor;
+    if (matchedReadingBook?.coverColor) return resolveCoverColor(matchedReadingBook.coverColor, 'linear-gradient(135deg, #1b382b, #0d1e16)');
     if (recentWritingBook && (matchedReadingBook?.id === recentWritingBook?.id || recentReadingBook?.bookTitle === recentWritingBook?.title)) {
       return writingCoverColor;
     }
-    const stored = recentReadingBook?.coverColor;
-    if (stored && stored !== '#2563eb' && stored !== '#1e3a8a') {
-      return stored;
-    }
-    return 'linear-gradient(135deg, #1b382b, #0d1e16)';
+    return resolveCoverColor(recentReadingBook?.coverColor, 'linear-gradient(135deg, #1b382b, #0d1e16)');
   })();
 
   // 집필 서재용 최근 작업 챕터 추출 헬퍼
@@ -123,34 +132,76 @@ export default function Library() {
   const handleTabChange = (tab) => {
     setLibraryTab(tab);
     localStorage.setItem('library_active_tab', tab);
-    if (tab === 'reader') {
-      loadReadingHistory();
+    if (tab === 'reader' || tab === 'shelf') {
+      loadReadingAndShelfData();
     }
   };
 
   const handleRemoveHistory = (e, bookId) => {
     e.stopPropagation();
-    const next = readingHistory.filter(h => h.bookId !== bookId);
-    setReadingHistory(next);
-    localStorage.setItem('reader_history', JSON.stringify(next));
-    showToast('독서 기록에서 제거되었습니다.', 'info');
+    setReadingHistory(storageService.removeReadingHistoryItem(bookId));
+    showToast('최근 읽은 작품 목록에서 제거되었습니다.', 'info');
   };
 
-  // 도서별 챕터 D-Day 마감 계산
-  const getBookDeadlineInfo = (book) => {
-    const unpublished = book.chapters?.filter(c => c.status !== 'published' && c.deadline) || [];
-    if (unpublished.length === 0) return null;
-    unpublished.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-    const nearest = unpublished[0];
-    const target = new Date(nearest.deadline);
-    target.setHours(0, 0, 0, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+  const handleRemoveShelfItem = (e, bookId) => {
+    e.stopPropagation();
+    setShelfItems(storageService.removeShelfItem(bookId));
+    showToast('담은 작품 목록에서 제거되었습니다.', 'info');
+  };
 
-    if (diffDays === 0) return { text: '오늘 마감 D-Day', status: 'urgent', chapterTitle: nearest.title };
-    if (diffDays > 0) return { text: `D-${diffDays}`, status: diffDays <= 3 ? 'urgent' : 'normal', chapterTitle: nearest.title };
-    return { text: `D+${Math.abs(diffDays)} 초과`, status: 'urgent', chapterTitle: nearest.title };
+  const handleChangeShelfItemCategory = (bookId, newCat) => {
+    setShelfItems(storageService.updateShelfItemCategory(bookId, newCat));
+    showToast(`카테고리가 '${newCat}'(으)로 변경되었습니다.`, 'success');
+  };
+
+  const handleAddShelfCategory = async () => {
+    const name = await openPrompt({
+      title: '새 카테고리 추가',
+      message: '담은 작품을 분류할 새 카테고리 이름을 입력하세요. (예: 읽고 싶은 책, 관심 분야, 주말 독서)',
+      placeholder: '카테고리 이름 입력',
+      confirmText: '추가'
+    });
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    if (shelfCategories.includes(trimmed)) {
+      showToast('이미 존재하는 카테고리입니다.', 'info');
+      return;
+    }
+    const nextCats = storageService.saveShelfCategories([...shelfCategories, trimmed]);
+    setShelfCategories(nextCats);
+    setSelectedShelfCategory(trimmed);
+    showToast(`'${trimmed}' 카테고리가 추가되었습니다.`, 'success');
+  };
+
+  const handleDeleteShelfCategory = async (e, catName) => {
+    e.stopPropagation();
+    if (shelfCategories.length <= 1) {
+      showToast('최소 1개의 카테고리는 유지되어야 합니다.', 'info');
+      return;
+    }
+    const fallbackCat = shelfCategories.find(c => c !== catName) || '읽고 싶은 책';
+    const ok = await openConfirm({
+      title: '카테고리 삭제',
+      message: `'${catName}' 카테고리를 삭제하시겠습니까?\n해당 카테고리에 담긴 작품들은 '${fallbackCat}' 카테고리로 이동됩니다.`,
+      danger: true,
+      confirmText: '삭제'
+    });
+    if (!ok) return;
+
+    const nextCats = storageService.saveShelfCategories(shelfCategories.filter(c => c !== catName));
+    setShelfCategories(nextCats);
+
+    const nextItems = storageService.saveShelfItems(
+      shelfItems.map(item =>
+        (item.category || shelfCategories[0]) === catName ? { ...item, category: fallbackCat } : item
+      )
+    );
+    setShelfItems(nextItems);
+
+    if (selectedShelfCategory === catName) {
+      setSelectedShelfCategory('all');
+    }
+    showToast(`'${catName}' 카테고리가 삭제되었습니다.`, 'info');
   };
 
   // 도서 완결/연재중 전환 확인 팝업 (openConfirm 기반 재확인)
@@ -159,14 +210,14 @@ export default function Library() {
     if (!book.isCompleted) {
       const ok = await openConfirm({
         title: '도서 완결(완성작) 등록',
-        message: `《${book.title}》 도서를 [완성 작품]으로 등록하시겠습니까?\n\n• 독자 공간의 '완성 서가'에 완결 도서로 전시됩니다.\n• 언제든 다시 연재중으로 되돌릴 수 있습니다.`,
+        message: `${book.title} 도서를 [완성 작품]으로 등록하시겠습니까?\n\n• 독자 공간의 '완성 서가'에 완결 도서로 전시됩니다.\n• 언제든 다시 연재중으로 되돌릴 수 있습니다.`,
         confirmText: '완결 등록'
       });
       if (!ok) return;
     } else {
       const ok = await openConfirm({
         title: '연재중으로 전환',
-        message: `《${book.title}》 도서를 다시 [연재중] 상태로 전환하시겠습니까?\n\n• 완성 서가에서 연재 공간으로 변경됩니다.`,
+        message: `${book.title} 도서를 다시 [연재중] 상태로 전환하시겠습니까?\n\n• 완성 서가에서 연재 공간으로 변경됩니다.`,
         confirmText: '연재중 전환'
       });
       if (!ok) return;
@@ -183,7 +234,8 @@ export default function Library() {
       confirmText: '삭제'
     });
     if (ok) {
-      deleteBook(bookId);
+      await deleteBook(bookId);
+      loadReadingAndShelfData();
     }
   };
 
@@ -199,11 +251,50 @@ export default function Library() {
     return total === 0 ? 0 : Math.round((completed / total) * 100);
   };
 
+  const resolveDisplayAuthor = (itemAuthor, matchedBook) => {
+    const cfgRaw = localStorage.getItem('bookstudio_config');
+    let cfgAuthor = '';
+    try { if (cfgRaw) cfgAuthor = JSON.parse(cfgRaw).defaultAuthor; } catch {}
+    const fallbackAuthor = user?.displayName || cfgAuthor || '익명 작가';
+    if (itemAuthor && itemAuthor !== '작가' && itemAuthor !== '김연재') return itemAuthor;
+    if (matchedBook?.author && matchedBook.author !== '작가' && matchedBook.author !== '김연재') return matchedBook.author;
+    return fallbackAuthor;
+  };
+
+  // 1) 집필 작품 정렬
   const sortedBooks = [...books].sort((a, b) => {
-    if (sortBy === 'title') return a.title.localeCompare(b.title, 'ko');
+    if (sortBy === 'title') return (a.title || '').localeCompare(b.title || '', 'ko');
     if (sortBy === 'progress') return calculateProgress(b) - calculateProgress(a);
     return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
   });
+
+  // 2) 최근 읽은 작품 정렬
+  const sortedReadingHistory = [...readingHistory].sort((a, b) => {
+    if (readerSortBy === 'title') return (a.bookTitle || '').localeCompare(b.bookTitle || '', 'ko');
+    if (readerSortBy === 'author') {
+      const authA = resolveDisplayAuthor(a.author, books.find(bk => bk.id === a.bookId));
+      const authB = resolveDisplayAuthor(b.author, books.find(bk => bk.id === b.bookId));
+      return authA.localeCompare(authB, 'ko');
+    }
+    return new Date(b.readAt || 0) - new Date(a.readAt || 0);
+  });
+
+  // 3) 담은 작품 카테고리 필터링 & 정렬
+  const filteredAndSortedShelf = shelfItems
+    .filter((item) => {
+      if (selectedShelfCategory === 'all') return true;
+      const itemCat = item.category || shelfCategories[0] || '읽고 싶은 책';
+      return itemCat === selectedShelfCategory;
+    })
+    .sort((a, b) => {
+      if (shelfSortBy === 'title') return (a.bookTitle || '').localeCompare(b.bookTitle || '', 'ko');
+      if (shelfSortBy === 'author') {
+        const authA = resolveDisplayAuthor(a.author, books.find(bk => bk.id === a.bookId));
+        const authB = resolveDisplayAuthor(b.author, books.find(bk => bk.id === b.bookId));
+        return authA.localeCompare(authB, 'ko');
+      }
+      return new Date(b.savedAt || b.readAt || 0) - new Date(a.savedAt || a.readAt || 0);
+    });
 
   return (
     <div className="library-page">
@@ -227,12 +318,9 @@ export default function Library() {
 
       <div className="library-body">
         {/* =================================================================
-            1. 🌟 명언 + 레벨 통계 일체형 2행 카드
-            - 1행 (상단 음영): [전구 아이콘] + 따옴표 없는 담백한 명언
-            - 2행 (하단 흰색): 좌측 [Lv.4 예비 작가] / 우측 [Lv.2 성실한 애독가] (독서루틴 / 누적감상 / 완독도서 순서)
+            1. 명언 + 레벨 통계 일체형 2행 카드
             ================================================================= */}
         <section className="integrated-overview-card">
-          {/* 1행: 상단 음영 명언 바 (전구 아이콘, 따옴표 없음) */}
           <div className="overview-quote-row">
             <div className="quote-inline-text">
               <Lightbulb size={16} className="quote-lightbulb-icon" />
@@ -241,15 +329,14 @@ export default function Library() {
             </div>
           </div>
 
-          {/* 2행: 하단 통계 50:50 분할 (좌: 집필 / 우: 독서) */}
           <div className="overview-stats-row">
-            {/* 좌측 컬럼: 집필 요약 (Lv.4 예비 작가) */}
+            {/* 좌측 컬럼: 집필 요약 */}
             <div className="overview-stat-col left-col">
               <div className="stat-col-left">
                 <span 
                   className="stat-col-level-badge author"
-                  onClick={() => setView('stats')}
-                  title="집필 성장 상세 보기"
+                  onClick={() => handleGoToStats('writing')}
+                  title="집필 통계 보기"
                 >
                   Lv.{authorStats.level} {authorStats.tier.label}
                 </span>
@@ -270,20 +357,20 @@ export default function Library() {
                   </div>
                 </div>
               </div>
-              <span className="stat-more-link" onClick={() => setView('stats')}>
-                통계 상세 <ArrowRight size={12} />
+              <span className="stat-more-link" onClick={() => handleGoToStats('writing')}>
+                집필 통계 <ArrowRight size={12} />
               </span>
             </div>
 
-            {/* 우측 컬럼: 독서 요약 (Lv.2 성실한 애독가) - 요청 순서: 독서루틴 / 누적 감상 / 완독 도서 */}
+            {/* 우측 컬럼: 독서 요약 */}
             <div className="overview-stat-col">
               <div className="stat-col-left">
                 <span 
                   className="stat-col-level-badge reader"
-                  onClick={() => setView('stats')}
-                  title="독서 통계 상세 보기"
+                  onClick={() => handleGoToStats('reading')}
+                  title="독서 통계 보기"
                 >
-                  Lv.{readerStats.level} {readerStats.levelLabel}
+                  Lv.{readerStats.level} {readerStats.tier?.label}
                 </span>
                 <div className="stat-items-group">
                   <div className="stat-mini-item">
@@ -302,7 +389,7 @@ export default function Library() {
                   </div>
                 </div>
               </div>
-              <span className="stat-more-link" onClick={() => setView('stats')}>
+              <span className="stat-more-link" onClick={() => handleGoToStats('reading')}>
                 독서 통계 <ArrowRight size={12} />
               </span>
             </div>
@@ -310,7 +397,7 @@ export default function Library() {
         </section>
 
         {/* =================================================================
-            2. ⚡ 지금 이어하기 (소제목 아래 그냥 은은한 구분선만, 도서제목에 《》 괄호 제거)
+            2. 지금 이어하기
             ================================================================= */}
         <section className="section-block continue-section">
           <div className="section-divider-header">
@@ -407,10 +494,10 @@ export default function Library() {
         </section>
 
         {/* =================================================================
-            3. 📚 서재 선반 (2대 전환 탭 + 정렬 드롭다운 + 3열 양장본 카드 UI)
-            - 탭: [집필 중인 도서 (N)] / [최근 읽은 책 (M)]
-            - 우측: 정렬 드롭다운 (최신 작업순 / 제목순 / 진행률순)
-            - 카드: 양장본 커버 + 우측 상단 ✏️(수정)/🗑️(삭제) + 상태('집필중'/'완결' 2개)
+            3. 서재 선반 (3대 전환 탭 + 탭별 정렬 드롭다운 + 3열 양장본 카드 UI)
+            - 탭 1: 집필 작품
+            - 탭 2: 최근 읽은 작품 (실제 읽은 도서 기록)
+            - 탭 3: 담은 작품 (서재 담기로 찜한 관심 도서 + 카테고리 분류)
             ================================================================= */}
         <section className="section-block shelf-section">
           <div className="shelf-nav-bar">
@@ -432,19 +519,54 @@ export default function Library() {
                 <span>최근 읽은 작품</span>
                 <span className="shelf-tab-count">{readingHistory.length}</span>
               </button>
+
+              <button
+                type="button"
+                className={`shelf-tab-btn shelf-bookmark-tab ${libraryTab === 'shelf' ? 'active' : ''}`}
+                onClick={() => handleTabChange('shelf')}
+              >
+                <span>담은 작품</span>
+                <span className="shelf-tab-count">{shelfItems.length}</span>
+              </button>
             </div>
 
-            {libraryTab === 'author' && books.length > 0 && (
-              <select
-                className="shelf-sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="recent">최신 작업순</option>
-                <option value="title">제목순</option>
-                <option value="progress">진행률순</option>
-              </select>
-            )}
+            <div className="shelf-nav-controls">
+              {libraryTab === 'author' && (
+                <select
+                  className="shelf-sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="recent">최신 작업순</option>
+                  <option value="title">제목순</option>
+                  <option value="progress">진행률순</option>
+                </select>
+              )}
+
+              {libraryTab === 'reader' && (
+                <select
+                  className="shelf-sort-select"
+                  value={readerSortBy}
+                  onChange={(e) => setReaderSortBy(e.target.value)}
+                >
+                  <option value="recent">최근 읽은순</option>
+                  <option value="title">제목순</option>
+                  <option value="author">작가명순</option>
+                </select>
+              )}
+
+              {libraryTab === 'shelf' && (
+                <select
+                  className="shelf-sort-select"
+                  value={shelfSortBy}
+                  onChange={(e) => setShelfSortBy(e.target.value)}
+                >
+                  <option value="recent">최근 담은순</option>
+                  <option value="title">제목순</option>
+                  <option value="author">작가명순</option>
+                </select>
+              )}
+            </div>
           </div>
 
           {/* 탭 1: 집필 작품 3열 그리드 */}
@@ -490,10 +612,9 @@ export default function Library() {
                     const progress = calculateProgress(book);
                     return (
                       <article key={book.id} className="book-card">
-                        {/* 좌측: 양장본 북 커버 */}
                         <div
                           className="book-cover"
-                          style={{ background: book.coverColor || 'linear-gradient(135deg, #2b231d, #191410)' }}
+                          style={{ background: resolveCoverColor(book.coverColor, 'linear-gradient(135deg, #2b231d, #191410)') }}
                           onClick={() => openBook(book.id)}
                           title={`${book.title} 스튜디오 열기`}
                         >
@@ -502,10 +623,8 @@ export default function Library() {
                           <h4 className="book-cover-title">{book.title}</h4>
                         </div>
 
-                        {/* 우측: 상세 정보 */}
                         <div className="book-details">
                           <div>
-                            {/* 1행: 상태 뱃지 ('집필중' / '완결') + 우측 상단 [연필] & [휴지통] */}
                             <div className="card-top-header">
                               <div className="card-badges-left">
                                 <button
@@ -542,7 +661,6 @@ export default function Library() {
                               </div>
                             </div>
 
-                            {/* 2행: 제목 */}
                             <h3 
                               className="book-title-text"
                               onClick={() => openBook(book.id)}
@@ -551,13 +669,11 @@ export default function Library() {
                               {book.title}
                             </h3>
 
-                            {/* 3행: 로그라인 / 서브타이틀 */}
                             <p className="book-desc-text">
                               {book.subtitle || book.description || '집필 진행 중인 원고입니다.'}
                             </p>
                           </div>
 
-                          {/* 4행: 푸터 (챕터 수 + 진행률) */}
                           <div
                             className="book-card-footer"
                             onClick={() => openBook(book.id)}
@@ -584,57 +700,61 @@ export default function Library() {
             </>
           )}
 
-          {/* 탭 2: 최근 읽은 책 3열 그리드 */}
+          {/* 탭 2: 최근 읽은 작품 3열 그리드 */}
           {libraryTab === 'reader' && (
             <>
-              {readingHistory.length === 0 ? (
+              {sortedReadingHistory.length === 0 ? (
                 <div className="empty-state reader-empty-state">
                   <div className="empty-state-icon-wrap" style={{ marginBottom: '1rem', opacity: 0.6 }}>
-                    <Bookmark size={40} strokeWidth={1.5} />
+                    <BookOpen size={40} strokeWidth={1.5} />
                   </div>
-                  <h3>아직 읽고 있는 도서가 없습니다.</h3>
+                  <h3>아직 읽은 작품 기록이 없습니다.</h3>
                   <p style={{ marginTop: '0.5rem', marginBottom: '1.5rem', maxWidth: '440px', lineHeight: '1.6' }}>
-                    독자 공간의 '연재 작품'이나 '완성 서가'에서 관심 있는 책을 감상해보세요.
-                    읽다 만 페이지와 챕터가 이 서재에 자동으로 안전하게 기록됩니다.
+                    독자 공간의 '연재 작품'이나 '완성 작품'에서 책을 열람하면,
+                    서재에 담지 않아도 읽던 페이지와 화차가 이곳에 자동으로 기록됩니다.
                   </p>
                   <button className="btn btn-primary" onClick={() => setView('serial-explore')}>
                     <Flame size={16} />
-                    <span>인기 연재 작품 보러가기</span>
+                    <span>연재 작품 보러가기</span>
                   </button>
                 </div>
               ) : (
                 <div className="sample-book-grid-3col">
-                  {readingHistory.map((item) => {
+                  {sortedReadingHistory.map((item) => {
                     const matchedBook = books.find(b => b.id === item.bookId);
-                    const cfgRaw = localStorage.getItem('bookstudio_config');
-                    let cfgAuthor = '';
-                    try { if (cfgRaw) cfgAuthor = JSON.parse(cfgRaw).defaultAuthor; } catch {}
-                    const fallbackAuthor = user?.displayName || cfgAuthor || '김연재';
-                    const displayAuthor = (item.author && item.author !== '작가')
-                      ? item.author
-                      : (matchedBook?.author && matchedBook.author !== '작가' ? matchedBook.author : fallbackAuthor);
+                    const isDeletedBook = Boolean(item.isDeleted || (!isBooksLoading && !matchedBook));
+                    const displayAuthor = resolveDisplayAuthor(item.author, matchedBook);
+
+                    const handleCardClick = () => {
+                      if (isDeletedBook) {
+                        showToast('원고가 삭제되어 열람할 수 없는 작품입니다.', 'info');
+                        return;
+                      }
+                      openReader(item.bookId, item.chapterId);
+                    };
 
                     return (
-                      <article key={item.bookId} className="book-card">
-                        {/* 좌측: 양장본 북 커버 */}
+                      <article key={item.bookId} className={`book-card ${isDeletedBook ? 'deleted-book-card' : ''}`}>
                         <div
-                          className="book-cover"
-                          style={{ background: item.coverColor || 'linear-gradient(135deg, #1e3328, #101c16)' }}
-                          onClick={() => openReader(item.bookId, item.chapterId)}
-                          title={`${item.bookTitle} 뷰어 열기`}
+                          className={`book-cover ${isDeletedBook ? 'deleted-cover' : ''}`}
+                          style={{ background: resolveCoverColor(matchedBook?.coverColor || item.coverColor, 'linear-gradient(135deg, #1e3328, #101c16)') }}
+                          onClick={handleCardClick}
+                          title={isDeletedBook ? '원고가 삭제되어 열람할 수 없습니다' : `${item.bookTitle} 뷰어 열기`}
                         >
                           <div className="book-cover-line" />
                           <span className="book-cover-genre">{item.genre || '소설'}</span>
                           <h4 className="book-cover-title">{item.bookTitle}</h4>
                         </div>
 
-                        {/* 우측: 상세 정보 */}
                         <div className="book-details">
                           <div>
-                            {/* 1행: 상태 뱃지 + 우측 상단 [휴지통] */}
                             <div className="card-top-header">
                               <div className="card-badges-left">
-                                <span className="status-pill reading-pill">독서중</span>
+                                {isDeletedBook ? (
+                                  <span className="status-pill deleted-pill">삭제된 작품</span>
+                                ) : (
+                                  <span className="status-pill reading-pill">독서중</span>
+                                )}
                                 <span className="genre-label">글 {displayAuthor}</span>
                               </div>
 
@@ -642,7 +762,7 @@ export default function Library() {
                                 <button
                                   type="button"
                                   className="action-icon-top danger-btn"
-                                  title="독서 서재에서 제외"
+                                  title="최근 읽은 목록에서 제외"
                                   onClick={(e) => handleRemoveHistory(e, item.bookId)}
                                 >
                                   <Trash2 size={13} />
@@ -650,32 +770,212 @@ export default function Library() {
                               </div>
                             </div>
 
-                            {/* 2행: 도서명 */}
                             <h3
-                              className="book-title-text"
-                              onClick={() => openReader(item.bookId, item.chapterId)}
-                              title={`${item.bookTitle} 뷰어 열기`}
+                              className={`book-title-text ${isDeletedBook ? 'deleted-title' : ''}`}
+                              onClick={handleCardClick}
+                              title={isDeletedBook ? '원고가 삭제되어 열람할 수 없습니다' : `${item.bookTitle} 뷰어 열기`}
                             >
                               {item.bookTitle}
                             </h3>
 
-                            {/* 3행: 최근 읽은 챕터 */}
                             <p className="book-desc-text">
                               최근 읽던 화: {item.chapterTitle || '1화'}
                               {item.readAt && ` · ${new Date(item.readAt).toLocaleDateString()}`}
                             </p>
                           </div>
 
-                          {/* 4행: 푸터 */}
                           <div
                             className="book-card-footer"
-                            onClick={() => openReader(item.bookId, item.chapterId)}
+                            onClick={handleCardClick}
                           >
-                            <span>독서 기록</span>
-                            <div className="footer-action-read">
-                              <Play size={12} fill="currentColor" />
-                              <span>이어서 읽기</span>
+                            <span>{isDeletedBook ? '독서 기록 보존됨' : '독서 기록'}</span>
+                            {isDeletedBook ? (
+                              <span className="footer-action-deleted">열람 불가</span>
+                            ) : (
+                              <div className="footer-action-read">
+                                <Play size={12} fill="currentColor" />
+                                <span>이어서 읽기</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* 탭 3: 담은 작품 (서재 담기 북마크 & 사용자 정의 카테고리 분류) */}
+          {libraryTab === 'shelf' && (
+            <>
+              {/* 카테고리 필터 & 관리 바 */}
+              <div className="shelf-category-bar">
+                <div className="shelf-category-chips">
+                  <button
+                    type="button"
+                    className={`shelf-cat-chip ${selectedShelfCategory === 'all' ? 'active' : ''}`}
+                    onClick={() => setSelectedShelfCategory('all')}
+                  >
+                    <span>전체</span>
+                    <span className="shelf-cat-count">{shelfItems.length}</span>
+                  </button>
+
+                  {shelfCategories.map((cat) => {
+                    const count = shelfItems.filter(
+                      (item) => (item.category || shelfCategories[0] || '읽고 싶은 책') === cat
+                    ).length;
+                    const isActive = selectedShelfCategory === cat;
+                    return (
+                      <div
+                        key={cat}
+                        className={`shelf-cat-chip ${isActive ? 'active' : ''}`}
+                        onClick={() => setSelectedShelfCategory(cat)}
+                      >
+                        <span>{cat}</span>
+                        <span className="shelf-cat-count">{count}</span>
+                        {shelfCategories.length > 1 && (
+                          <button
+                            type="button"
+                            className="shelf-cat-del-btn"
+                            title={`'${cat}' 카테고리 삭제`}
+                            onClick={(e) => handleDeleteShelfCategory(e, cat)}
+                          >
+                            <X size={11} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  className="btn-add-shelf-category"
+                  onClick={handleAddShelfCategory}
+                >
+                  <FolderPlus size={13} />
+                  <span>카테고리 추가</span>
+                </button>
+              </div>
+
+              {filteredAndSortedShelf.length === 0 ? (
+                <div className="empty-state reader-empty-state">
+                  <div className="empty-state-icon-wrap" style={{ marginBottom: '1rem', opacity: 0.6 }}>
+                    <Bookmark size={40} strokeWidth={1.5} />
+                  </div>
+                  <h3>
+                    {selectedShelfCategory === 'all'
+                      ? '아직 서재에 담은 작품이 없습니다.'
+                      : `'${selectedShelfCategory}' 카테고리에 담긴 작품이 없습니다.`}
+                  </h3>
+                  <p style={{ marginTop: '0.5rem', marginBottom: '1.5rem', maxWidth: '460px', lineHeight: '1.6' }}>
+                    '연재 작품'이나 '완성 작품'에서 읽어보고 싶은 책의 [+ 서재 담기] 버튼을 누르면,
+                    원하는 카테고리로 분류하여 나만의 관심 도서 목록을 만들 수 있습니다.
+                  </p>
+                  <button className="btn btn-primary" onClick={() => setView('serial-explore')}>
+                    <Bookmark size={16} />
+                    <span>작품 둘러보기</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="sample-book-grid-3col">
+                  {filteredAndSortedShelf.map((item) => {
+                    const matchedBook = books.find(b => b.id === item.bookId);
+                    const isDeletedBook = Boolean(item.isDeleted || (!isBooksLoading && !matchedBook));
+                    const displayAuthor = resolveDisplayAuthor(item.author, matchedBook);
+                    const currentCat = shelfCategories.includes(item.category)
+                      ? item.category
+                      : (shelfCategories[0] || '읽고 싶은 책');
+
+                    const handleCardClick = () => {
+                      if (isDeletedBook) {
+                        showToast('원고가 삭제되어 열람할 수 없는 작품입니다.', 'info');
+                        return;
+                      }
+                      openReader(item.bookId, item.chapterId);
+                    };
+
+                    return (
+                      <article key={item.bookId} className={`book-card ${isDeletedBook ? 'deleted-book-card' : ''}`}>
+                        <div
+                          className={`book-cover ${isDeletedBook ? 'deleted-cover' : ''}`}
+                          style={{ background: resolveCoverColor(matchedBook?.coverColor || item.coverColor, 'linear-gradient(135deg, #2b231d, #191410)') }}
+                          onClick={handleCardClick}
+                          title={isDeletedBook ? '원고가 삭제되어 열람할 수 없습니다' : `${item.bookTitle} 뷰어 열기`}
+                        >
+                          <div className="book-cover-line" />
+                          <span className="book-cover-genre">{item.genre || '소설'}</span>
+                          <h4 className="book-cover-title">{item.bookTitle}</h4>
+                        </div>
+
+                        <div className="book-details">
+                          <div>
+                            <div className="card-top-header">
+                              <div className="card-badges-left">
+                                {isDeletedBook ? (
+                                  <span className="status-pill deleted-pill">삭제된 작품</span>
+                                ) : (
+                                  <select
+                                    className="shelf-card-cat-select"
+                                    value={currentCat}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => handleChangeShelfItemCategory(item.bookId, e.target.value)}
+                                    title="카테고리 변경"
+                                  >
+                                    {shelfCategories.map((cat) => (
+                                      <option key={cat} value={cat}>
+                                        {cat}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                                <span className="genre-label">글 {displayAuthor}</span>
+                              </div>
+
+                              <div className="card-actions-top-right">
+                                <button
+                                  type="button"
+                                  className="action-icon-top danger-btn"
+                                  title="담은 작품에서 제외"
+                                  onClick={(e) => handleRemoveShelfItem(e, item.bookId)}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
                             </div>
+
+                            <h3
+                              className={`book-title-text ${isDeletedBook ? 'deleted-title' : ''}`}
+                              onClick={handleCardClick}
+                              title={isDeletedBook ? '원고가 삭제되어 열람할 수 없습니다' : `${item.bookTitle} 뷰어 열기`}
+                            >
+                              {item.bookTitle}
+                            </h3>
+
+                            <p className="book-desc-text">
+                              {matchedBook?.subtitle || item.subtitle || `${item.genre || '도서'} · ${item.chapterTitle || '1화'}`}
+                            </p>
+                          </div>
+
+                          <div
+                            className="book-card-footer"
+                            onClick={handleCardClick}
+                          >
+                            <span>
+                              {(item.savedAt || item.readAt)
+                                ? `${new Date(item.savedAt || item.readAt).toLocaleDateString()} 담음`
+                                : '서재에 담김'}
+                            </span>
+                            {isDeletedBook ? (
+                              <span className="footer-action-deleted">열람 불가</span>
+                            ) : (
+                              <div className="footer-action-read">
+                                <Play size={12} fill="currentColor" />
+                                <span>읽기 시작</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </article>

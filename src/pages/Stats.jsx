@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './Stats.css';
 import { useStore } from '../store';
 import { bookService } from '../services/bookService';
+import { storageService } from '../services/storageService';
 import { achievementService } from '../services/achievementService';
 import { calcAuthorStats, calcReaderStats } from '../utils/authorStats';
 import { 
@@ -34,9 +35,9 @@ export default function Stats() {
   useEffect(() => {
     bookService.getStats().then(setBaseStats).catch(console.error);
     try {
-      const raw = localStorage.getItem('reader_history') || '[]';
-      const parsed = JSON.parse(raw);
-      setReadingHistory(Array.isArray(parsed) ? parsed : []);
+      const parsed = storageService.getReadingHistory();
+      setReadingHistory(parsed);
+      // storageService.getReadingHistory() 일원화 완료
     } catch {
       setReadingHistory([]);
     }

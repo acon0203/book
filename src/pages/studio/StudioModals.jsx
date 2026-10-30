@@ -219,51 +219,121 @@ export function ExportModal({ isOpen, onClose, activeBook, showToast }) {
 
 
 // =============================================================================
-// 3. [VaultModal] AI 집필 참고 자료 선택 모달
+// 3. [VaultModal] AI 집필 참고 자료 선택 모달 (창작실 연동: 글감 / 서사 뼈대 / 아이디어 노트)
 // =============================================================================
 export function VaultModal({
   isOpen,
   onClose,
   vault = [],
+  activeBook = null,
   selectedVaultIds = [],
   toggleSelectVaultId,
   clearSelectedVaultIds
 }) {
+  const [activeTab, setActiveTab] = useState('materials');
   useModalEsc(isOpen, onClose);
   if (!isOpen) return null;
 
+  const bookMaterials = vault.filter(
+    (v) =>
+      (v.category !== 'idea' || v.isMaterial) &&
+      (!activeBook?.id || !v.bookId || v.bookId === activeBook.id)
+  );
+
+  const ideaNotes = vault.filter((v) => v.category === 'idea' && !v.isMaterial);
+
+  const plotItems = [];
+  if (Array.isArray(activeBook?.plotStages)) {
+    activeBook.plotStages.forEach((stage, sIdx) => {
+      (stage.subplots || []).forEach((sp, spIdx) => {
+        const subTitle = typeof sp === 'string' ? sp : sp.title || '';
+        const subMemo = typeof sp === 'string' ? '' : sp.memo || '';
+        plotItems.push({
+          id: `plot_sub_${sIdx}_${spIdx}`,
+          stageTitle: stage.title || `${sIdx + 1}단계`,
+          title: subTitle,
+          content: subMemo || stage.desc || ''
+        });
+      });
+    });
+  }
+
+  const currentList =
+    activeTab === 'materials'
+      ? bookMaterials
+      : activeTab === 'plot'
+      ? plotItems
+      : ideaNotes;
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '520px' }}>
         <div className="modal-header">
-          <h2>AI 집필 참고 자료 선택</h2>
+          <h2>창작실 연동 자료 선택</h2>
           <button className="modal-close-btn" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
-        <div className="modal-body">
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '0.5rem' }}>
+            {[
+              { id: 'materials', label: `글감·취재창고 (${bookMaterials.length})` },
+              { id: 'plot', label: `서사 뼈대 & 메모 (${plotItems.length})` },
+              { id: 'ideas', label: `아이디어 노트 (${ideaNotes.length})` }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  flex: 1,
+                  padding: '0.45rem 0.5rem',
+                  fontSize: '0.8rem',
+                  fontWeight: activeTab === tab.id ? 700 : 500,
+                  borderRadius: '6px',
+                  border: activeTab === tab.id ? '1px solid var(--primary)' : '1px solid transparent',
+                  background: activeTab === tab.id ? 'var(--bg-active)' : 'transparent',
+                  color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
+                  cursor: 'pointer'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem' }}>선택된 자료: {selectedVaultIds.length}개</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              현재 선택된 연동 자료: <strong>{selectedVaultIds.length}개</strong>
+            </span>
             {selectedVaultIds.length > 0 && (
               <button type="button" className="btn btn-secondary btn-sm" onClick={clearSelectedVaultIds}>
                 선택 초기화
               </button>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '280px', overflowY: 'auto' }}>
-            {vault.length === 0 ? (
-              <p style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '2rem 0' }}>자료가 없습니다.</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '320px', overflowY: 'auto' }}>
+            {currentList.length === 0 ? (
+              <p style={{ color: 'var(--text-dim)', textAlign: 'center', padding: '2rem 0', fontSize: '0.85rem' }}>
+                {activeTab === 'materials'
+                  ? '이 작품의 글감·취재창고에 보관된 자료가 없습니다.'
+                  : activeTab === 'plot'
+                  ? '구성된 서사 뼈대 항목이 없습니다.'
+                  : '등록된 아이디어 노트가 없습니다.'}
+              </p>
             ) : (
-              vault.map((v) => {
-                const sel = selectedVaultIds.includes(v.id);
+              currentList.map((item) => {
+                const sel = selectedVaultIds.includes(item.id);
                 return (
                   <div
-                    key={v.id}
-                    onClick={() => toggleSelectVaultId(v.id)}
+                    key={item.id}
+                    onClick={() => toggleSelectVaultId(item.id)}
                     style={{
                       display: 'flex',
+                      alignItems: 'flex-start',
                       gap: '0.6rem',
-                      padding: '0.6rem 0.8rem',
+                      padding: '0.65rem 0.8rem',
                       borderRadius: '6px',
                       background: sel ? 'var(--bg-active)' : 'var(--bg-panel)',
                       border: `1px solid ${sel ? 'var(--primary)' : 'var(--border-glass)'}`,
@@ -274,15 +344,22 @@ export function VaultModal({
                       type="checkbox"
                       checked={sel}
                       onChange={() => {}}
-                      style={{ accentColor: 'var(--primary)' }}
+                      style={{ accentColor: 'var(--primary)', marginTop: '0.2rem' }}
                     />
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.88rem', color: sel ? 'var(--primary)' : 'var(--text-main)' }}>
-                        {v.title}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {item.stageTitle && (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>
+                          {item.stageTitle}
+                        </div>
+                      )}
+                      <div style={{ fontWeight: 600, fontSize: '0.86rem', color: sel ? 'var(--primary)' : 'var(--text-main)' }}>
+                        {item.title || '(제목 없음)'}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                        {v.content?.substring(0, 60)}...
-                      </div>
+                      {item.content && (
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.content}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

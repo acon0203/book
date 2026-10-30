@@ -239,7 +239,7 @@
   color: var(--text-main, #241c15);
   font-size: 0.74rem;
   padding-top: 0.2rem;
-  border-top: 1px dashed var(--border-divider, #e8dfd6);
+  border-top: 1px solid var(--border-divider, #e8dfd6);
 }
 
 .v5-sub-icon {

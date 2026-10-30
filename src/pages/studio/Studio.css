@@ -359,8 +359,9 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-width: 48px;
-  height: 20px;
+  padding-left: 0.35rem;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 /* 🌟 순수 텍스트 상태 태그 (완료, 집필중, 초고) - 박스형 뱃지 일체 배제 */
@@ -368,6 +369,7 @@
   font-size: 0.72rem;
   color: var(--text-muted, #a09388);
   transition: opacity 0.15s ease;
+  white-space: nowrap;
 }
 
 .v4-status-txt.writing {
@@ -378,11 +380,15 @@
 .v4-hover-actions {
   position: absolute;
   right: 0;
-  top: 0;
-  bottom: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 0.2rem;
+  padding-left: 0.35rem;
+  background: linear-gradient(90deg, transparent 0%, var(--bg-card, #ffffff) 18%);
+  border-radius: 4px;
+  z-index: 2;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -397,31 +403,37 @@
   pointer-events: auto;
 }
 
+/* 창작실(Vault)과 1:1 통일된 미니 아이콘 액션 버튼 (수정 / 추가 / 삭제) */
+.mini-icon-btn,
 .v4-mini-btn {
-  background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-subtle, #ede4da);
+  width: 22px;
+  height: 22px;
   border-radius: 4px;
-  width: 19px;
-  height: 19px;
-  display: flex;
+  border: 1px solid var(--border-subtle, #ede4da);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-sub, #6e5e52);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-sub, #6e5e52);
   cursor: pointer;
   padding: 0;
-  font-size: 0.75rem;
+  flex-shrink: 0;
   transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
+.mini-icon-btn:hover,
 .v4-mini-btn:hover {
-  background: var(--color-primary-soft, rgba(139, 90, 43, 0.1));
   color: var(--color-primary, #8b5a2b);
   border-color: var(--color-primary, #8b5a2b);
+  background: var(--color-primary-soft, rgba(139, 90, 43, 0.1));
 }
+
+.mini-icon-btn.danger:hover,
 .v4-mini-btn.delete:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border-color: #ef4444;
+  color: var(--color-danger, #c53030);
+  border-color: var(--color-danger, #c53030);
+  background: rgba(197, 48, 48, 0.08);
 }
 
 .v4-sec-list {
@@ -433,20 +445,52 @@
 }
 
 .v4-sec-row {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.5rem 0.75rem;
+  justify-content: space-between;
+  padding: 0.45rem 0.55rem 0.45rem 0.75rem;
   border-radius: 6px;
   font-size: 0.8rem;
   color: var(--text-sub, #6e5e52);
   cursor: pointer;
   transition: all 0.15s ease;
+  min-width: 0;
+}
+
+.v4-sec-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.v4-sec-actions {
+  position: absolute;
+  right: 0.4rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding-left: 0.35rem;
+  border-radius: 4px;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
 .v4-sec-row:hover {
   color: var(--text-main, #241c15);
   background: rgba(139, 90, 43, 0.04);
+}
+
+.v4-sec-row:hover .v4-sec-actions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .v4-sec-row.active {
@@ -462,6 +506,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
+  flex: 1;
 }
 
 .v4-sec-input {
@@ -2074,7 +2119,7 @@
   padding: 0.15rem 0.55rem;
   border-radius: 12px;
   background: var(--bg-surface);
-  border: 1px dashed var(--border-glass);
+  border: 1px solid var(--border-glass);
   color: var(--text-muted);
   font-size: 0.72rem;
   font-weight: 600;
@@ -2100,7 +2145,7 @@
   margin-bottom: 2rem;
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
-  border: 1px dashed var(--border-glass);
+  border: 1px solid var(--border-glass);
   background: var(--bg-panel);
   color: var(--text-muted);
   font-size: 0.85rem;
@@ -2127,7 +2172,7 @@
   justify-content: center;
   padding: 3rem 1.5rem;
   background: var(--bg-panel);
-  border: 1px dashed var(--border-glass);
+  border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
   text-align: center;
   gap: 1rem;
@@ -2495,4 +2540,4 @@ body.light-mode .chapter-badge-mini.draft {
   margin-right: 0.2rem;
   flex-shrink: 0;
 }
-
+

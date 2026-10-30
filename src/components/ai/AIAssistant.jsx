@@ -145,27 +145,6 @@ export default function AIAssistant({
     }
   }, [chiefMessages, activeAiTab]);
 
-  // 현재 작성 중인 소목차와 매칭되는 창작실 서사 뼈대 단계 및 꼭지 메모 계산
-  const plotContext = useMemo(() => {
-    if (!activeBook?.plotStages || activeBook.plotStages.length === 0) return null;
-    const chapIdx = (activeBook.chapters || []).findIndex(c => c.id === currentChapter?.id);
-    if (chapIdx < 0 || chapIdx >= activeBook.plotStages.length) return null;
-
-    const stage = activeBook.plotStages[chapIdx];
-    const secIdx = (currentChapter?.sections || []).findIndex(s => s.id === currentSection?.id);
-    const subplot = (stage?.subplots && secIdx >= 0 && secIdx < stage.subplots.length) ? stage.subplots[secIdx] : null;
-    const subplotTitle = typeof subplot === 'string' ? subplot : subplot?.title || '';
-    const subplotMemo = typeof subplot === 'object' ? subplot?.memo || '' : '';
-
-    return {
-      standardName: activeBook.plotStandardName || '표준 서사 뼈대',
-      stageTitle: stage.title || `단계 ${chapIdx + 1}`,
-      stageDesc: stage.desc || '',
-      subplotTitle,
-      subplotMemo
-    };
-  }, [activeBook, currentChapter, currentSection]);
-
   // AI 초고 집필 에이전트 실행
   const handleRunDraftAgent = async () => {
     if (!currentSection) {
@@ -176,12 +155,33 @@ export default function AIAssistant({
       setIsDrafting(true);
       showToast('AI 에이전트가 초고를 집필하고 있습니다...', 'info');
 
-      const referenceNotes = vault && selectedVaultIds?.length > 0
-        ? vault
-            .filter(v => selectedVaultIds.includes(v.id))
-            .map(v => `[자료 금고: ${v.title}]\n${v.content}`)
-            .join('\n\n')
-        : '';
+      const selectedNotes = [];
+      if (selectedVaultIds?.length > 0) {
+        // 1) 글감·취재창고 및 아이디어 노트 항목
+        if (vault) {
+          vault
+            .filter((v) => selectedVaultIds.includes(v.id))
+            .forEach((v) => {
+              selectedNotes.push(`[창작실 자료: ${v.title}]\n${v.content}`);
+            });
+        }
+        // 2) 창작실 서사 뼈대 세부 꼭지/메모 항목
+        if (activeBook?.plotStages) {
+          activeBook.plotStages.forEach((st, sIdx) => {
+            (st.subplots || []).forEach((sp, spIdx) => {
+              const plotItemId = `plot_sub_${sIdx}_${spIdx}`;
+              if (selectedVaultIds.includes(plotItemId)) {
+                const spTitle = typeof sp === 'string' ? sp : sp?.title || '';
+                const spMemo = typeof sp === 'object' ? sp?.memo || '' : '';
+                selectedNotes.push(
+                  `[서사 뼈대 (${st.title}): ${spTitle}]${spMemo ? `\n발상 메모: ${spMemo}` : ''}`
+                );
+              }
+            });
+          });
+        }
+      }
+      const referenceNotes = selectedNotes.join('\n\n');
 
       const result = await bookService.generateSection({
         bookTitle: activeBook?.title || '',
@@ -195,8 +195,7 @@ export default function AIAssistant({
         existingContent: editor?.getText() || localContent,
         referenceNotes,
         targetAudience: activeBook?.targetAudience || '',
-        genre: activeBook?.genre || '',
-        plotContext
+        genre: activeBook?.genre || ''
       });
 
       setDraftOutput(result.content);
@@ -438,39 +437,11 @@ export default function AIAssistant({
                   loadVault();
                   setIsVaultModalOpen(true);
                 }}
-                title="창작실 소재 연동"
+                title="창작실 소재 및 뼈대 메모 연동"
               >
                 <Lightbulb size={15} className="v5-picto" />
                 <span>창작실 연동 ({selectedVaultIds?.length || 0})</span>
               </button>
-
-              {/* 창작실 서사 뼈대 & 꼭지 메모 연동 카드 */}
-              {plotContext && (
-                <div className="v5-plot-guide-card">
-                  <div className="v5-plot-guide-header">
-                    <span className="v5-plot-guide-badge">
-                      <Layers size={11} />
-                      서사 뼈대 연동
-                    </span>
-                    <span className="v5-plot-guide-standard">{plotContext.standardName}</span>
-                  </div>
-                  <div className="v5-plot-guide-body">
-                    <div className="v5-plot-stage-name">{plotContext.stageTitle}</div>
-                    {plotContext.stageDesc && <div className="v5-plot-stage-desc">{plotContext.stageDesc}</div>}
-                    {plotContext.subplotTitle && (
-                      <div className="v5-plot-subplot-row">
-                        <Bookmark size={11} className="v5-sub-icon" />
-                        <span><strong>꼭지 목표:</strong> {plotContext.subplotTitle}</span>
-                      </div>
-                    )}
-                    {plotContext.subplotMemo && (
-                      <div className="v5-plot-memo-row">
-                        <span><strong>기획 메모:</strong> {plotContext.subplotMemo}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* 핵심 키워드 & 소재 (이모지 없음) */}
               <div className="v5-field-group">

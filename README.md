@@ -48,9 +48,12 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
     │   │   ├── Studio.jsx / .css # 집필 스튜디오 메인 (전역 상단 탑바 + 목차 트리 + 에디터 캔버스 + 3열 통합 AI 어시스턴트)
     │   │   ├── PublishModal.jsx / .css # 연재 발행 모달 (이번화 연재 + 전체 목차 일괄 선택 발행 대형 모달, 1:1 CSS 분리)
     │   │   └── StudioModals.jsx / .css # 스튜디오 3대 보조 모달 통합 모음 (ExportModal, VaultModal, VersionModal, 1:1 CSS 분리)
-    │   ├── Vault.jsx / .css     # 창작실 (5대 파이프라인: 아이디어 ➔ 기획서 ➔ 글감취재 ➔ Step 4 작품설정&인물 ➔ Step 5 서사뼈대·목차조립 2열 통합 화면)
-    │   ├── Vault_legacy.jsx / .css # [백업 보존] 리뉴얼 전 기존 창작실 전체 원본 코드 및 스타일 (기능 교차 검증용)
+    │   ├── vault/               # [창작실 패키지] 5대 창작 파이프라인 메인 화면 및 전용 모달
+    │   │   ├── Vault.jsx / .css # 창작실 메인 (아이디어 ➔ 기획서 ➔ 글감취재 ➔ 작품설정&인물 ➔ 서사뼈대·목차조립)
+    │   │   └── VaultModals.jsx  # 창작실 4대 팝업 모달 번들 (새 프로젝트/취재자료/인물/AI 목차 기획)
     │   ├── Reader.jsx / .css    # [Step 3 신설] 표준 통합 웹 뷰어 (문피아 지표/화면폭 + 네이버웹소설 간명 헤더/보기설정/작가의말/댓글 + DOMPurify XSS 방어)
+
+
     │   ├── ExploreSerial.jsx / .css # [Step 5-1 신설] 연재 작품 탐색 (교보문고 8대 장르 사이드바 + 실시간 TOP 5 랭킹 + 요일/자유연재 탭 + 카드 메타 & 서재 담기)
     │   ├── ExploreComplete.jsx / .css # [Step 5-2 신설] 완성 작품 탐색 (교보문고 8대 장르 사이드바 + 실시간 TOP 5 랭킹 + 단행본 분량 큐레이션 + 정주행 & 서재 담기)
     │   ├── Stats.jsx / .css     # 통합 통계 (집필 & 독서 2대 대시보드 1:1 표준 대칭: 방향 3 루틴+금주 활동 인라인 피드, 탭 지능형 월별 캘린더 모달, 6대 마일스톤 업적 모달)
@@ -127,11 +130,11 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 | **`src/components/Sidebar.jsx`** | 황금 비율 3단 사이드바 (나의 공간: 서재·통계 / 독자 공간: 연재·완성본 / 작가 공간: 창작실·집필 스튜디오) 네비게이션 |
 | **`src/components/TiptapEditor.jsx`** | 범용 리치 텍스트 에디터 독립 컴포넌트: H1~H3 서식 툴바, 종이 시트 본문 뷰포트, 실시간 원고지 환산 매수 하단 상태바(`editor-status-bar`), 드래그 문장 AI 자동 전송 및 Zero-Lag 즉시 렌더링 |
 | **`src/components/tiptapExtensions.js`** | [신설] Tiptap 서식 커스텀 확장 모듈: 문단 정렬(4종), 들여쓰기/내어쓰기, 글자 색상(8종 팔레트), 형광펜 하이라이트(5종), 줄 간격(140%~200%) |
-| **`src/components/BrandLogo.jsx`** | [신설] 연재서재 고유 시그니처 엠블럼(펼쳐진 서책과 황금빛 만년필 촉) 및 한국 출판 명조(Noto Serif KR) 워드마크·에디토리얼 영문 서브타이틀(BOOK STUDIO) 전용 브랜딩 컴포넌트 (`BrandLogo.css`와 1:1 매칭) |
+
 | **`src/components/BookInfoModal.jsx`** | [통합 모달] 도서 신규 기획 및 기본 정보(제목, 부제, 10대 장르, 필명, 타깃 독자층, 6종 표지 테마 색상) 생성/수정 겸용 모달 (`BookInfoModal.css`와 1:1 매칭) |
 | **`src/components/AdNative.jsx`** | [신설] Zero-Lag 구글 애드센스 정적 네이티브 광고 컴포넌트: CLS(레이아웃 덜컹거림) 0px 방지, 테마 스타일 자동 일치, 로컬/승인대기 안전 플레이스홀더 제공 (`AdNative.css`와 1:1 매칭) |
 | **`src/components/AuthorPersonaModal.jsx`** | [신설] 작가 문체 페르소나 설정 모달: 문체 샘플(3~5편 Few-shot 붙여넣기), 문체 칩(단문, 속도감 등), 금기어 태그(번역투 배제 등), 추가 지침 관리 (`AuthorPersonaModal.css`와 1:1 매칭) |
-| **`src/pages/Library.jsx`** | [내 서재 전면 개편] 1. 상단 ⚡ 지금 이어하기 Quick Band(최근 집필 ➔ 스튜디오 / 최근 독서 ➔ 뷰어 2분할 퀵 직통) + 2. 좌우 분류 시트 탭(✍️ 집필 서재 vs 📖 독서 서재) + 3. 시트 연동 스마트 2줄 요약 밴드 & 도서/독서 카드 그리드 |
+| **`src/pages/Library.jsx`** | [내 서재] 1. 상단 지금 이어하기 Quick Band + 2. 3대 서재 탭(집필 작품 \| 최근 읽은 작품 \| 담은 작품) + 3. 담은 작품 카테고리 관리 및 탭별 정렬 셀렉터 |
 | **`src/components/ai/AIEditor.jsx`** | [4대 AI] AI 총괄 편집장 드로어: 실시간 채팅 상담, 세션 히스토리 보관, 6대 추천 액션, 목차 개편안 원클릭 반영 (`AIEditor.css`와 1:1 매칭) |
 | **`src/components/ai/AIAssistant.jsx`** | [4대 AI] AI 어시스턴트 통합 패널: 3대 탭(초고 집필 \| 문장 교정 \| 총괄 편집장), 창작실 서사 뼈대 단계 및 꼭지 메모 실시간 연동 가이드 카드(`v5-plot-guide-card`), 초고 생성 시 뼈대 맥락 자동 주입, 실시간 쿼터 바닥 캡슐 (`AIAssistant.css`와 1:1 매칭) |
 | **`src/components/ai/OutlineModal.jsx`** | [4대 AI] AI 목차 자동 기획 모달: 25권 베스트셀러 장르 DB 템플릿, 단행본/A4 분량 실시간 계산, Gemini 프롬프트 생성 (OutlineModal.css와 1:1 매칭) |
@@ -140,7 +143,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 | **`src/pages/studio/PublishModal.jsx`** | [분리 격리] 연재 발행 모달: 이번화 즉시 발행 + 전체 목차 일괄 체크박스 동시 연재 통합 관리 (`PublishModal.css`와 1:1 매칭) |
 | **`src/pages/vault/Vault.jsx`** | [창작실 메인] 공식 10대 장르 새 기획, 7대 대분류 44종 표준 공통 서사 뼈대 라이브러리 및 추천 뼈대 칩/44종 전체 둘러보기, 인물/화자 프로필, 뼈대 기반 실시간 AI 목차 자동 도출(`generateOutlineFromPlot`), 가목차 스튜디오 100% 동기화 (`Vault.css`와 1:1 매칭) |
 | **`src/pages/vault/VaultModals.jsx`** | [분리 격리 모달] 창작실 4대 팝업 모달 번들: 새 프로젝트 생성 + 취재 자료 등록/수정 + 인물 추가/수정 + AI 목차 기획 모달 통합 관리 |
-| **`src/pages/vault/Vault_legacy.jsx`** | [백업 보존] 리뉴얼 이전 창작실 원본 컴포넌트 및 로직 전체 보존 파일 (기능 누락 교차 검증용, `Vault_legacy.css`와 1:1 매칭) |
+| **`src/pages/ExploreComplete.jsx`** | [Step 5-2 신설] 완결 단행본 탐색: 표준 10대 장르 좌측 사이드바 + 실시간 Best TOP 5 가로 랭킹 보드 + 단행본 분량 큐레이션 탭 + 정주행 & 서재 담기 |
 | **`src/pages/Reader.jsx`** | [Step 3 신설] 표준 통합 웹 뷰어: 간명 슬림 바(목차 드롭다운·5종 포인트컬러 보기설정 팝오버) + 챕터 메타 지표(조회수·관심·댓글) & 기본/펼침 화면폭 토글 + 하단 작가의 말 카드 & 독자 댓글 소통 공간 + DOMPurify 안전 렌더링 |
 | **`src/pages/ExploreSerial.jsx`** | [Step 5 신설] 실시간 연재 작품 탐색: 표준 8대 장르 좌측 사이드바 + 실시간 Best TOP 5 가로 랭킹 보드 + 요일(월~일) 및 자유연재 통합 탭 + 단정하고 정갈한 연재작 카드(1화부터/최신화 읽기 ➔ 뷰어 직통 연결) |
 | **`src/data/achievementsDb.js`** | [신설] 게이미피케이션 2.0 5대 핵심 롱테일 마일스톤 체인(루틴, 완결, 분량, 기획, 연재 각 8단계 + 무한 프레스티지) 및 히든 업적 마스터 DB |
@@ -152,7 +155,7 @@ AI(Google Gemini, Claude, OpenAI, Ollama)를 활용하여 전자책 기획, 목�
 | **`src/utils/paragraphParser.js`** | DOMParser 기반 HTML ↔ 문단(Paragraph) 블록 배열 무손실 양방향 변환 및 블록 ID 생성 유틸리티 |
 | **`src/utils/authorStats.js`** | 레벨 공식(Math.sqrt), 티어(브론즈~다이아몬드), 분야별 칭호/전문성, 활동 기록, 다권 완주율 및 마감 D-Day 계산 순수 함수 |
 | **`src/utils/quotaManager.js`** | Gemini 및 AI 모델별 일일 한도(Quota) 추적, PST/KST 리셋 카운트다운 및 429 감지 유틸리티 |
-| **`src/services/storageService.js`** | 브라우저 로컬 저장소 기반 0초 즉시 저장 및 100% 오프라인 지원 모듈 |
+| **`src/services/storageService.js`** | 브라우저 로컬 저장소 기반 0ms 즉시 저장, 도서/창작실/독서기록(`reader_history`)/담은작품(`reader_shelf`) 및 카테고리 일원화 관리 모듈 |
 | **`src/services/authService.js`** | Google 계정 1초 팝업 로그인, 로그아웃, 인증 상태 실시간 리스너 |
 | **`src/services/cloudSyncService.js`** | Firestore `users/{email}` 이메일 기반 멀티 컬렉션(`books`, `vault`, `stats`, `config`) 동기화 및 일자별 집필 기록 덮어쓰지 않고 날짜별 병합(동일 일자 큰 값 유지) 엔진 |
 | **`src/services/aiService.js`** | 브라우저 직접 AI 연동 (스마트 캐스케이드, 목차 번호 정제 `cleanOutlineTitle`, AI 총괄 편집장 `consultEditorChief`) |

@@ -313,7 +313,12 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-right: 1.25rem; /* 우측 상단 오버레이 삭제 버튼과의 겹침 방지 */
+  padding-right: 0.25rem;
+  transition: padding-right 0.12s ease;
+}
+
+.project-card:hover .project-title {
+  padding-right: 3rem; /* 호버 시 수정/삭제 버튼과의 겹침 방지 */
 }
 
 .project-sub-row {
@@ -368,11 +373,28 @@
   color: #059669;
 }
 
-/* 프로젝트 카드 우측 상단 호버 오버레이 삭제 버튼 */
-.btn-delete-project {
+/* 프로젝트 카드 우측 상단 호버 오버레이 액션 (수정 / 삭제) */
+.project-card-actions {
   position: absolute;
   top: 6px;
   right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+  transition: opacity 0.15s ease;
+}
+
+.project-card:hover .project-card-actions,
+.project-card-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.btn-edit-project,
+.btn-delete-project {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -383,18 +405,16 @@
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
   cursor: pointer;
-  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.12s ease;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 3;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
   padding: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-.project-card:hover .btn-delete-project,
-.btn-delete-project:focus {
-  opacity: 1;
-  pointer-events: auto;
+.btn-edit-project:hover {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  transform: scale(1.08);
 }
 
 .btn-delete-project:hover {
@@ -402,28 +422,6 @@
   border-color: rgba(220, 38, 38, 0.35);
   color: #dc2626;
   transform: scale(1.08);
-}
-
-/* 상단 탑바 프로젝트 삭제 버튼 */
-.btn-vault-top-delete {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.42rem 0.72rem;
-  border-radius: 6px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-vault-top-delete:hover {
-  background: rgba(220, 38, 38, 0.08);
-  border-color: rgba(220, 38, 38, 0.3);
-  color: #dc2626;
 }
 
 /* =========================================================================
@@ -444,17 +442,17 @@
   background: #ede5da;
   border-bottom: 1px solid rgba(139, 90, 43, 0.16);
   border-top-right-radius: 12px;
-  overflow-x: auto;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
 .pipeline-step-item {
-  flex: 1;
-  min-width: 145px;
+  flex: 1 1 0%;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.8rem 1.15rem;
+  gap: clamp(0.4rem, 0.7vw, 0.7rem);
+  padding: 0.78rem clamp(0.5rem, 1vw, 1.1rem);
   cursor: pointer;
   border: none;
   border-right: 1px solid rgba(139, 90, 43, 0.15);
@@ -463,6 +461,7 @@
   transition: all 0.15s ease;
   user-select: none;
   text-align: left;
+  overflow: hidden;
 }
 .pipeline-step-item:last-child {
   border-right: none;
@@ -477,8 +476,9 @@
 }
 
 .step-num-pill {
-  width: 26px;
+  min-width: 26px;
   height: 24px;
+  padding: 0 5px;
   border-radius: 6px;
   background: #ded2c1;
   color: #78532c;
@@ -490,26 +490,47 @@
   font-family: inherit;
   flex-shrink: 0;
   box-sizing: border-box;
+  white-space: nowrap;
+}
+.step-num-pill.shared-pill {
+  padding: 0 6px;
+  font-size: 0.68rem;
+  letter-spacing: -0.02em;
+  background: rgba(139, 90, 43, 0.14);
+  color: #6d4723;
+  border: 1px solid rgba(139, 90, 43, 0.22);
+}
+.pipeline-step-item.is-shared-step {
+  border-right: 2px solid rgba(139, 90, 43, 0.26);
 }
 .pipeline-step-item.active .step-num-pill {
   background: #8b5a2b;
   color: #ffffff;
+  border-color: #8b5a2b;
 }
 
 .step-text-wrap {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .step-title-row {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.83rem;
+  gap: 0.35rem;
+  font-size: clamp(0.76rem, 0.9vw, 0.84rem);
   font-weight: 600;
   color: #3b2f25;
+  white-space: nowrap;
+  min-width: 0;
+}
+.step-title-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .pipeline-step-item.active .step-title-row {
@@ -533,14 +554,50 @@
 }
 
 /* -------------------------------------------------------------------------
-   [STEP 0] 아이디어 노트
+   [공용] 아이디어 노트 (공용 보기 + 기획별 필터)
    ------------------------------------------------------------------------- */
 .ideas-container {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.15rem;
   max-width: 860px;
   margin: 0 auto;
+}
+
+.ideas-scope-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ideas-scope-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.scope-tab-btn {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-sub);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.scope-tab-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+.scope-tab-btn.active {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
 }
 
 .ideas-input-box {
@@ -617,6 +674,14 @@
   color: var(--color-primary);
   font-size: 0.68rem;
   font-weight: 600;
+  max-width: 155px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.idea-badge.is-book {
+  background: rgba(13, 148, 136, 0.12);
+  color: #0d9488;
 }
 
 .idea-card-body {
@@ -633,7 +698,7 @@
   justify-content: flex-end;
   gap: 0.4rem;
   padding-top: 0.5rem;
-  border-top: 1px dashed var(--border-subtle);
+  border-top: 1px solid var(--border-subtle);
 }
 
 .btn-idea-action {
@@ -653,6 +718,12 @@
   background: var(--bg-hover);
   color: var(--color-primary);
   border-color: var(--color-primary);
+}
+.btn-idea-action.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  font-weight: 600;
 }
 .btn-idea-action.danger:hover {
   color: var(--color-danger);
@@ -1119,7 +1190,7 @@
   color: var(--text-sub);
   padding: 0.4rem 0.95rem;
   background: rgba(139, 90, 43, 0.04);
-  border-bottom: 1px dashed var(--border-divider);
+  border-bottom: 1px solid var(--border-divider);
   line-height: 1.45;
   display: flex;
   align-items: center;
@@ -1196,7 +1267,7 @@
   font-weight: 600;
   color: var(--color-primary);
   background: var(--color-primary-soft);
-  border: 1px dashed rgba(139, 90, 43, 0.3);
+  border: 1px solid rgba(139, 90, 43, 0.3);
   cursor: pointer;
   transition: all 0.15s ease;
   width: 100%;
@@ -1219,7 +1290,7 @@
   font-weight: 600;
   color: var(--color-primary);
   background: var(--bg-card);
-  border: 1px dashed rgba(139, 90, 43, 0.4);
+  border: 1px solid rgba(139, 90, 43, 0.4);
   cursor: pointer;
   transition: all 0.15s ease;
   width: 100%;
@@ -1461,9 +1532,14 @@
 }
 
 .chap-hover-actions {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  z-index: 2;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -1504,9 +1580,14 @@
 }
 
 .sec-hover-actions {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 0.2rem;
+  z-index: 2;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -2346,9 +2427,14 @@
 
 /* 목차 조립대 chap-hover-actions와 100% 동일: 호버 시에만 수정/추가/삭제 노출 */
 .plot-stage-actions {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  z-index: 2;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -2390,6 +2476,7 @@
 }
 
 .plot-subplot-main {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2408,10 +2495,15 @@
 
 /* 목차 조립대 sec-hover-actions와 100% 동일: 호버 시에만 버튼 노출 */
 .plot-subplot-actions {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 0.25rem;
   flex-shrink: 0;
+  z-index: 2;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;

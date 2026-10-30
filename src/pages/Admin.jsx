@@ -10,12 +10,14 @@ import {
 } from 'lucide-react';
 import { DEFAULT_ADMIN_CONFIG, DEFAULT_EDITOR_PERSONA } from '../config/personaDefaults';
 import { aiService } from '../services/aiService';
+import { storageService } from '../services/storageService';
 import { calcAuthorStats } from '../utils/authorStats';
 import { trafficTracker } from '../utils/trafficTracker';
 import { OFFICIAL_GENRES } from '../data/genreConstants';
+import aiModelsDb from '../data/ai-models-db.json';
 
 export default function Admin() {
-  const { showToast, books = [], user, syncStatus, lastSyncedAt } = useStore();
+  const { showToast, books = [], user, syncStatus, lastSyncedAt, openConfirm } = useStore();
 
   // 1. 관리자 설정 상태 (로컬스토리지 캐싱)
   const [config, setConfig] = useState(() => {
@@ -93,8 +95,14 @@ export default function Admin() {
   };
 
   // 기본값 초기화
-  const handleResetDefaults = () => {
-    if (window.confirm('모든 집필 페르소나와 편집 페르소나 설정을 시스템 기본값으로 초기화하시겠습니까?')) {
+  const handleResetDefaults = async () => {
+    const ok = await openConfirm({
+      title: '시스템 기본값 초기화',
+      message: '모든 집필 페르소나와 편집 페르소나 설정을 시스템 기본값으로 초기화하시겠습니까?',
+      confirmText: '초기화',
+      danger: true
+    });
+    if (ok) {
       setConfig(DEFAULT_ADMIN_CONFIG);
       setAdminApiKeyInput('');
       localStorage.setItem('admin_ai_config', JSON.stringify(DEFAULT_ADMIN_CONFIG));
@@ -278,9 +286,15 @@ export default function Admin() {
   const overallPublishSuccessRate = totalBooks > 0 ? Math.round((totalPublishedBooksCount / totalBooks) * 100) : 0;
 
   // 3) 작가 분석 (기획 작가 vs 실제 출간 작가)
+  const cfgRaw = localStorage.getItem('bookstudio_config');
+  let cfgAuthor = '';
+  try { if (cfgRaw) cfgAuthor = JSON.parse(cfgRaw).defaultAuthor; } catch {}
+  const fallbackAuthor = (user?.displayName || cfgAuthor || '익명 작가').trim();
+
   const allAuthorsMap = new Map();
   books.forEach(b => {
-    const authorName = (b.author || '익명 작가').trim();
+    const rawAuthor = (b.author || '').trim();
+    const authorName = (rawAuthor && rawAuthor !== '작가' && rawAuthor !== '김연재') ? rawAuthor : fallbackAuthor;
     const isPub = b.isCompleted || (b.chapters || []).some(c => c.status === 'published' || (c.sections || []).some(s => s.status === 'published'));
     if (!allAuthorsMap.has(authorName)) {
       allAuthorsMap.set(authorName, { totalBooks: 0, publishedBooks: 0, completedBooks: 0 });
@@ -291,7 +305,7 @@ export default function Admin() {
     if (b.isCompleted) info.completedBooks++;
   });
 
-  const totalAuthorsCount = Math.max(allAuthorsMap.size, totalBooks > 0 ? 1 : 0);
+  const totalAuthorsCount = allAuthorsMap.size;
   let publishedAuthorsCount = 0;
   allAuthorsMap.forEach(info => {
     if (info.publishedBooks > 0) publishedAuthorsCount++;
@@ -315,13 +329,10 @@ export default function Admin() {
     });
   });
 
-  // 독서 서재(reader_history) 담김 수
-  let savedToShelfCount = 0;
-  try {
-    const rawHistory = localStorage.getItem('reader_history') || '[]';
-    const parsed = JSON.parse(rawHistory);
-    savedToShelfCount = Array.isArray(parsed) ? parsed.length : 0;
-  } catch {}
+  // 담은 작품(reader_shelf) 실제 유효 도서 담김 수 (삭제된 도서 제외)
+  const savedToShelfCount = storageService
+    .getShelfItems()
+    .filter(h => !h.isDeleted && books.some(b => b.id === h.bookId)).length;
 
   // 5) 장르별 출간 비중 및 성공률
   const genreGroup = {};
@@ -428,7 +439,7 @@ export default function Admin() {
               </span>
             </div>
 
-            {/* 2) 구동 모델 선택 (서재 관리와 100% 동일한 안정 모델) */}
+            {/* 2) 구동 모델 선택 (ai-models-db.json 동적 연동) */}
             <div className="admin-model-selector-row">
               <label className="subpanel-section-title">
                 <Layers size={14} className="text-primary-icon" />
@@ -440,21 +451,13 @@ export default function Admin() {
                 onChange={(e) => setConfig({ ...config, activeModel: e.target.value })}
               >
                 <option value="smart_cascade">
-                  ⭐ [스마트 자동 전환] 3.8 Flash 우선 ➔ 한도 소진 시 3.5 Lite ➔ 3.1 Lite ➔ Gemma 순차 전환 (권장)
+                  [스마트 자동 전환] 3.8 Flash 우선 ➔ 한도 소진 시 3.5 Lite ➔ 3.1 Lite ➔ Gemma 순차 전환 (권장)
                 </option>
-                <optgroup label="플래그십 모델">
-                  <option value="gemini-3.8-flash">🚀 Gemini 3.8 Flash (최신 플래그십)</option>
-                  <option value="gemini-3.7-flash">✨ Gemini 3.7 Flash (고지능 추론)</option>
-                  <option value="gemini-3.6-flash">Gemini 3.6 Flash (안정화 플래그십)</option>
-                </optgroup>
-                <optgroup label="Lite 대용량 모델">
-                  <option value="gemini-3.5-flash-lite">⚡ Gemini 3.5 Flash Lite (초고속 대용량)</option>
-                  <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (대용량 보조)</option>
-                </optgroup>
-                <optgroup label="Gemma 차세대 오픈 모델">
-                  <option value="gemma-4-31b-it">Gemma 4 31B (Google 차세대 오픈 모델)</option>
-                  <option value="gemma-4-26b-a4b-it">Gemma 4 26B (Google 경량 모델)</option>
-                </optgroup>
+                {(aiModelsDb.models || []).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} — {m.description}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -981,7 +984,7 @@ export default function Admin() {
                       <div className="genre-bar-track">
                         <div 
                           className="genre-bar-fill" 
-                          style={{ width: `${Math.max(8, gPubRate)}%` }}
+                          style={{ width: `${gPubRate}%` }}
                           title={`출간 성공률 ${gPubRate}%`}
                         />
                       </div>

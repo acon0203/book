@@ -36,7 +36,8 @@ export const bookService = {
     storageService.toggleBookPublishAll(bookId),
   updateBatchPublishSections: async (bookId, publishedSectionIds) =>
     storageService.updateBatchPublishSections(bookId, publishedSectionIds),
-  addSection: async (bookId, chapterId, title) => storageService.addSection(bookId, chapterId, title),
+  addSection: async (bookId, chapterId, title, insertIndex = null) =>
+    storageService.addSection(bookId, chapterId, title, insertIndex),
   updateSection: async (bookId, chapterId, sectionId, data) =>
     storageService.updateSection(bookId, chapterId, sectionId, data),
   deleteSection: async (bookId, chapterId, sectionId) =>

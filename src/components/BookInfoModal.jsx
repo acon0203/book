@@ -7,12 +7,12 @@ import './BookInfoModal.css';
 
 // 6종 모던 프리셋 표지 그라디언트 테마
 export const COVER_COLOR_PRESETS = [
-  { id: 'navy', label: '딥 네이비', value: 'linear-gradient(135deg, #1e293b, #0f172a)' },
-  { id: 'blue', label: '로열 블루', value: 'linear-gradient(135deg, #1e40af, #1e1b4b)' },
-  { id: 'emerald', label: '에메랄드 숲', value: 'linear-gradient(135deg, #065f46, #022c22)' },
-  { id: 'purple', label: '미드나잇 퍼플', value: 'linear-gradient(135deg, #581c87, #2e1065)' },
+  { id: 'walnut', label: '클래식 월넛', value: 'linear-gradient(135deg, #2b231d, #191410)' },
+  { id: 'emerald', label: '포레스트 그린', value: 'linear-gradient(135deg, #1b382b, #0d1e16)' },
   { id: 'sunset', label: '웜 선셋', value: 'linear-gradient(135deg, #9a3412, #451a03)' },
-  { id: 'wine', label: '딥 와인', value: 'linear-gradient(135deg, #831843, #500724)' }
+  { id: 'wine', label: '딥 와인', value: 'linear-gradient(135deg, #831843, #500724)' },
+  { id: 'purple', label: '미드나잇 퍼플', value: 'linear-gradient(135deg, #581c87, #2e1065)' },
+  { id: 'navy', label: '딥 네이비', value: 'linear-gradient(135deg, #1e293b, #0f172a)' }
 ];
 
 export default function BookInfoModal({
@@ -37,7 +37,7 @@ export default function BookInfoModal({
     const cfgRaw = localStorage.getItem('bookstudio_config');
     let cfgAuthor = '';
     try { if (cfgRaw) cfgAuthor = JSON.parse(cfgRaw).defaultAuthor; } catch {}
-    return user?.displayName || cfgAuthor || '김연재';
+    return user?.displayName || cfgAuthor || '익명 작가';
   };
 
   // 모달 열릴 때 상태 초기화

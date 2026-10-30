@@ -18,7 +18,7 @@ import { OFFICIAL_GENRES, getOfficialGenreId } from '../../data/genreConstants';
 import { PLOT_CATEGORIES, PLOT_LIBRARY, GENRE_RECOMMENDED_PLOTS } from '../../data/plotLibraryDb';
 
 // 제목 정제 헬퍼 (제1장, 1. 등의 접두사 중복 방지)
-const cleanTitle = (str) => (str || '').replace(/^제?\s*\d+\s*[장회편절단계권]?\s*[\.:\-]?\s*/i, '').trim();
+const cleanTitle = (str) => aiService.cleanOutlineTitle(str);
 
 // 도서별 실시간 진행 단계 태그 판별 헬퍼 (기획 / 뼈대 / 목차 / 집필 / 연재 / 완결)
 const getBookStageTag = (b) => {
@@ -167,23 +167,26 @@ const getNarrativeOptions = (genreKey) => {
 
 export default function Vault() {
   const {
-    vault, loadVault, deleteVaultItem, activeTagFilter, setTagFilter, showToast,
-    books, loadBooks, activeBook, setActiveBook, openBook, setView, deleteBook,
+    vault, loadVault, deleteVaultItem, activeTagFilter, setTagFilter, showToast, showActionToast,
+    books, loadBooks, activeBook, setActiveBook, openBook, setView, deleteBook, updateBookInfo,
     updateActiveBookPlanning, updateActiveBookCharacters, updateActiveBookPlotStages, openConfirm, openPrompt
   } = useStore();
 
   // 상단 5대 순차 파이프라인 단계 ('ideas' | 'proposal' | 'materials' | 'story' | 'outline')
   const [activeStep, setActiveStep] = useState('ideas');
 
-  // 새 작품 기획 생성 모달
+  // 새 작품 기획 생성 및 정보 수정 모달
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState(null);
   const [newProjectTitle, setNewProjectTitle] = useState('');
   const [newProjectGenre, setNewProjectGenre] = useState('novel');
 
-  // --- Step 0: 아이디어 노트 상태 ---
+  // --- Step 0: 아이디어 노트 상태 (전체보기 / 공용 / 현재 기획 3종 필터) ---
   const [quickIdeaInput, setQuickIdeaInput] = useState('');
+  const [ideaScopeFilter, setIdeaScopeFilter] = useState('ALL'); // 'ALL' | 'SHARED' | 'CURRENT'
   const [editingIdeaId, setEditingIdeaId] = useState(null);
   const [editingIdeaContent, setEditingIdeaContent] = useState('');
+  const [editingIdeaBookId, setEditingIdeaBookId] = useState('SHARED');
 
   // --- Step 1: 출간 기획서 상태 ---
   const [proposalLogline, setProposalLogline] = useState('');
@@ -191,7 +194,7 @@ export default function Vault() {
   const [proposalTarget, setProposalTarget] = useState('');
   const [proposalDiff, setProposalDiff] = useState('');
 
-  // --- Step 2: 글감 & 취재창고 상태 ---
+  // --- Step 2: 글감 & 취재창고 상태 (작품별 완전 분리) ---
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
   const [editingMaterialId, setEditingMaterialId] = useState(null); // null: 신규, string: 수정
   const [vaultCategory, setVaultCategory] = useState('ALL');
@@ -328,9 +331,94 @@ export default function Vault() {
   const [activeModelName, setActiveModelName] = useState('스마트 자동 전환');
   const chatBodyRef = useRef(null);
 
-  // 1. 초기 로드 및 도서 목록 동기화
+  // --- 아이디어 노트 & 글감·취재창고 되돌리기(Undo) / 다시 실행(Redo) 히스토리 스택 ---
+  const vaultHistoryRef = useRef([]); // [{ vault, desc }]
+  const vaultHistoryIdxRef = useRef(-1);
+
+  const pushVaultHistory = (newVaultSnapshot, desc = '') => {
+    const currentStack = vaultHistoryRef.current.slice(0, Math.max(0, vaultHistoryIdxRef.current + 1));
+    currentStack.push({
+      vault: structuredClone(newVaultSnapshot),
+      desc
+    });
+    if (currentStack.length > 40) currentStack.shift();
+    vaultHistoryRef.current = currentStack;
+    vaultHistoryIdxRef.current = currentStack.length - 1;
+  };
+
+  const ensureVaultHistoryInit = () => {
+    if (vaultHistoryRef.current.length === 0) {
+      pushVaultHistory(storageService.getVault(), '초기 상태');
+    }
+  };
+
+  const handleUndoVault = async () => {
+    if (vaultHistoryIdxRef.current <= 0) {
+      showToast('더 이상 되돌릴 작업이 없습니다.', 'info');
+      return;
+    }
+    vaultHistoryIdxRef.current -= 1;
+    const target = vaultHistoryRef.current[vaultHistoryIdxRef.current];
+    if (target) {
+      storageService.saveVault(structuredClone(target.vault));
+      await loadVault();
+      showToast(`되돌리기 실행${target.desc ? `: ${target.desc} 복원` : ''}`, 'info');
+    }
+  };
+
+  const handleRedoVault = async () => {
+    if (vaultHistoryIdxRef.current >= vaultHistoryRef.current.length - 1) {
+      showToast('다시 실행할 작업이 없습니다.', 'info');
+      return;
+    }
+    vaultHistoryIdxRef.current += 1;
+    const target = vaultHistoryRef.current[vaultHistoryIdxRef.current];
+    if (target) {
+      storageService.saveVault(structuredClone(target.vault));
+      await loadVault();
+      showToast(`다시 실행: ${target.desc || '다음 작업 복원'}`, 'info');
+    }
+  };
+
+  // 1. 초기 로드 및 도서 목록 동기화 (+ 기존 이동 처리된 아이디어 원본 자동 복구)
   useEffect(() => {
     loadBooks();
+    try {
+      const rawVault = storageService.getVault();
+      let recovered = false;
+      const migrated = [];
+      for (const item of rawVault) {
+        if (item.category === 'idea' && item.isMaterial === true && !item.sourceIdeaId) {
+          // 원본 아이디어를 아이디어 노트에 그대로 복원하고, 복제본으로 분리
+          const originalIdea = {
+            ...item,
+            isMaterial: false,
+            bookId: null,
+            tags: ['아이디어']
+          };
+          const clonedMaterial = {
+            ...item,
+            id: `vault_clone_${item.id}`,
+            sourceIdeaId: item.id,
+            isMaterial: true
+          };
+          migrated.push(clonedMaterial, originalIdea);
+          recovered = true;
+        } else {
+          migrated.push(item);
+        }
+      }
+      if (recovered) {
+        // 되돌리기(Ctrl+Z) 시 글감 보관 전 상태(원본만 있는 상태)로도 돌아갈 수 있게 히스토리 세팅
+        const prePromoteState = migrated.filter((v) => !v.sourceIdeaId);
+        storageService.saveVault(migrated);
+        vaultHistoryRef.current = [
+          { vault: structuredClone(prePromoteState), desc: '글감 보관 해제' },
+          { vault: structuredClone(migrated), desc: '글감 보관' }
+        ];
+        vaultHistoryIdxRef.current = 1;
+      }
+    } catch {}
     loadVault();
     try {
       const cfg = storageService.getConfig();
@@ -388,11 +476,50 @@ export default function Vault() {
       const recPlotIds = GENRE_RECOMMENDED_PLOTS[gKey] || GENRE_RECOMMENDED_PLOTS.novel;
       const defaultPlot = PLOT_LIBRARY.find((p) => p.id === recPlotIds[0]) || PLOT_LIBRARY[0];
 
-      // 플롯 뼈대 동기화
+      // 플롯 뼈대 동기화 (구버전 과도한 예시형 기본 타이틀이면 범용 표준 타이틀로 자동 갱신)
       if (Array.isArray(activeBook.plotStages) && activeBook.plotStages.length > 0) {
-        setPlotStages(structuredClone(activeBook.plotStages));
         const matched = PLOT_LIBRARY.find((p) => p.name === activeBook.plotStandardName || p.id === activeBook.plotStandardId);
-        setSelectedPlotTemplateId(matched ? matched.id : recPlotIds[0]);
+        const targetTemplate = matched || defaultPlot;
+        setSelectedPlotTemplateId(targetTemplate.id);
+
+        const hasCustomMemo = activeBook.plotStages.some((st) => (st.subplots || []).some((sp) => sp.memo && sp.memo.trim()));
+        const legacyTitles = [
+          '1부. 반드시 버려야 할 나쁜 습관 10가지',
+          '1장. 입문자가 가장 많이 하는 질문 TOP 5',
+          '1장. 대중이 믿고 있는 거짓 상식들',
+          '1장. 빚더미 밑바닥에서 피눈물 흘리던 시절',
+          '1장. 정글로 뛰어들던 첫날 (출발)',
+          '1부. 나를 마주하는 조용한 시간',
+          '1장. 그 시절의 유년과 풋내',
+          '봄의 기록. 싹을 틔우는 인내',
+          '1. 부치지 못한 첫 번째 편지 (어머니/아버지에게)',
+          '1장. 그늘진 현장의 생생한 목소리'
+        ];
+        const firstStageTitle = activeBook.plotStages[0]?.title || '';
+        const firstSubTitle = activeBook.plotStages[0]?.subplots?.[0]?.title || '';
+        const isLegacyExample = !hasCustomMemo && (
+          legacyTitles.includes(firstStageTitle) ||
+          firstSubTitle.includes('미루기 습관') ||
+          firstSubTitle.includes('여의도 입성') ||
+          firstSubTitle.includes('통장 잔고 0원') ||
+          firstSubTitle.includes('새벽 2시의 불 켜진 방')
+        );
+
+        if (isLegacyExample && targetTemplate?.stages) {
+          const refreshed = targetTemplate.stages.map((st, idx) => ({
+            id: `stage_${idx + 1}`,
+            title: st.title,
+            desc: st.desc || '',
+            subplots: (st.subplots || []).map((sp) => ({
+              title: typeof sp === 'string' ? sp : sp.title,
+              memo: ''
+            }))
+          }));
+          setPlotStages(refreshed);
+          updateActiveBookPlotStages(refreshed);
+        } else {
+          setPlotStages(structuredClone(activeBook.plotStages));
+        }
       } else {
         setSelectedPlotTemplateId(defaultPlot.id);
         const cloned = defaultPlot.stages.map((st, idx) => ({
@@ -439,7 +566,7 @@ export default function Vault() {
     }
   }, [activeBook]);
 
-  // Step 5 서사 뼈대 & 목차 조립대 되돌리기(Ctrl+Z / Cmd+Z) & 다시 실행(Ctrl+Y) 리스너
+  // 단계별 되돌리기(Ctrl+Z / Cmd+Z) & 다시 실행(Ctrl+Y) 리스너
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
       // 사용자가 인풋창이나 텍스트에어리어에서 직접 타이핑 중일 때는 브라우저 기본 텍스트 입력을 우선함
@@ -450,37 +577,73 @@ export default function Vault() {
 
       if (!isCmdOrCtrl) return;
 
+      const isVaultStep = activeStep === 'ideas' || activeStep === 'materials';
+
       if (e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
-          handleRedoStep5();
+          if (isVaultStep) handleRedoVault();
+          else handleRedoStep5();
         } else {
-          handleUndoStep5();
+          if (isVaultStep) handleUndoVault();
+          else handleUndoStep5();
         }
       } else if (e.key.toLowerCase() === 'y') {
         e.preventDefault();
-        handleRedoStep5();
+        if (isVaultStep) handleRedoVault();
+        else handleRedoStep5();
       }
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [activeBook, plotStages, draftChapters]);
+  }, [activeStep, activeBook, plotStages, draftChapters, vault]);
 
-  // 활성 단계 번호 계산 (1~5)
+  // 활성 단계 번호 계산 (아이디어 노트는 0, 출간 기획서~목차 조립은 1~4)
   const currentStepNumber = useMemo(() => {
-    const idx = PIPELINE_STEPS.findIndex((s) => s.id === activeStep);
-    return idx >= 0 ? idx + 1 : 1;
+    const found = PIPELINE_STEPS.find((s) => s.id === activeStep);
+    return found ? found.stepNum : 1;
   }, [activeStep]);
 
-  // 글감 및 아이디어 분리
-  const ideaNotes = useMemo(() => {
+  // 글감 및 아이디어 분리 (아이디어 노트는 공용 + 기획별 필터, 글감·취재창고는 작품별 분리)
+  const allIdeaNotes = useMemo(() => {
     return vault.filter((item) => (item.category === 'idea' || !item.category) && !item.isMaterial);
   }, [vault]);
 
-  const materials = useMemo(() => {
+  const sharedIdeasCount = useMemo(() => {
+    return allIdeaNotes.filter((item) => !item.bookId || item.bookId === 'SHARED').length;
+  }, [allIdeaNotes]);
+
+  const currentBookIdeasCount = useMemo(() => {
+    if (!activeBook) return 0;
+    return allIdeaNotes.filter((item) => item.bookId === activeBook.id).length;
+  }, [allIdeaNotes, activeBook]);
+
+  const ideaNotes = useMemo(() => {
+    if (ideaScopeFilter === 'ALL') return allIdeaNotes;
+    if (ideaScopeFilter === 'SHARED') {
+      return allIdeaNotes.filter((item) => !item.bookId || item.bookId === 'SHARED');
+    }
+    if (ideaScopeFilter === 'CURRENT') {
+      if (!activeBook) return allIdeaNotes;
+      return allIdeaNotes.filter((item) => item.bookId === activeBook.id);
+    }
+    return allIdeaNotes.filter((item) => item.bookId === ideaScopeFilter);
+  }, [allIdeaNotes, ideaScopeFilter, activeBook]);
+
+  // 글감·취재창고: 현재 선택된 기획(activeBook) 작품별로 완전 분리
+  const allMaterials = useMemo(() => {
     return vault.filter((item) => item.category !== 'idea' || item.isMaterial);
   }, [vault]);
+
+  const materials = useMemo(() => {
+    if (!activeBook) return [];
+    return allMaterials.filter((item) => item.bookId === activeBook.id);
+  }, [allMaterials, activeBook]);
+
+  const unassignedMaterialsCount = useMemo(() => {
+    return allMaterials.filter((item) => !item.bookId || item.bookId === 'SHARED').length;
+  }, [allMaterials]);
 
   const filteredMaterials = useMemo(() => {
     if (vaultCategory === 'ALL') return materials;
@@ -496,31 +659,71 @@ export default function Vault() {
     if (e) e.preventDefault();
     if (!quickIdeaInput.trim()) return;
     try {
+      ensureVaultHistoryInit();
+      const targetBookId = ideaScopeFilter === 'CURRENT' && activeBook ? activeBook.id : null;
+
       await bookService.createVaultItem({
         title: quickIdeaInput.trim().slice(0, 30),
         content: quickIdeaInput.trim(),
         category: 'idea',
         isMaterial: false,
+        bookId: targetBookId,
         tags: ['아이디어']
       });
       setQuickIdeaInput('');
       await loadVault();
+      pushVaultHistory(storageService.getVault(), '아이디어 추가');
       showToast('새 아이디어가 기록되었습니다.', 'info');
     } catch (err) {
       showToast(`기록 실패: ${err.message}`, 'error');
     }
   };
 
-  // 아이디어 승격 (글감 보관 오류 완벽 해결)
+  // 아이디어 복제 보관 & 보관 해제 토글 (원본은 아이디어 노트에 그대로 유지)
   const handlePromoteToVault = async (ideaItem) => {
+    const targetBookId =
+      (ideaItem.bookId && ideaItem.bookId !== 'SHARED' ? ideaItem.bookId : null) ||
+      activeBook?.id ||
+      null;
+    const targetBookObj = books.find((b) => b.id === targetBookId);
+
+    // 이미 해당 작품의 글감·취재창고에 복제되어 있는지 확인
+    const existingClone = allMaterials.find(
+      (m) => m.sourceIdeaId === ideaItem.id && (m.bookId || null) === targetBookId
+    );
+
     try {
-      await bookService.updateVaultItem(ideaItem.id, {
+      ensureVaultHistoryInit();
+
+      if (existingClone) {
+        // 이미 보관된 상태면 다시 눌렀을 때 보관 해제(복제본 삭제)
+        await bookService.deleteVaultItem(existingClone.id);
+        await loadVault();
+        pushVaultHistory(storageService.getVault(), '글감 보관 해제');
+        showToast('글감 보관이 해제되었습니다.', 'info');
+        return;
+      }
+
+      // 원본 아이디어는 그대로 두고 글감·취재창고에 복제 생성
+      await bookService.createVaultItem({
+        title: ideaItem.title || (ideaItem.content || '').slice(0, 30) || '아이디어 글감',
+        content: ideaItem.content,
+        category: 'idea',
         isMaterial: true,
-        category: 'idea', // 아이디어 발상 태그로 정확히 승격
+        sourceIdeaId: ideaItem.id,
+        bookId: targetBookId,
         tags: Array.from(new Set([...(ideaItem.tags || []), '아이디어', '글감']))
       });
       await loadVault();
-      showToast('아이디어가 글감·취재창고로 안전하게 보관되었습니다.', 'success');
+      pushVaultHistory(storageService.getVault(), '글감 보관');
+
+      const msg = targetBookObj
+        ? `'${targetBookObj.title}'의 글감·취재창고로 복제 보관되었습니다.`
+        : '글감·취재창고로 복제 보관되었습니다.';
+      showActionToast(msg, () => handleUndoVault(), null, {
+        yesText: '되돌리기 (Ctrl+Z)',
+        noText: '닫기'
+      });
     } catch (err) {
       showToast(`보관 실패: ${err.message}`, 'error');
     }
@@ -530,6 +733,7 @@ export default function Vault() {
   const handleOpenEditIdea = (idea) => {
     setEditingIdeaId(idea.id);
     setEditingIdeaContent(idea.content || '');
+    setEditingIdeaBookId(idea.bookId || 'SHARED');
   };
 
   const handleSaveEditIdea = async (ideaId) => {
@@ -538,13 +742,17 @@ export default function Vault() {
       return;
     }
     try {
+      ensureVaultHistoryInit();
+      const resolvedBookId = editingIdeaBookId && editingIdeaBookId !== 'SHARED' ? editingIdeaBookId : null;
       await bookService.updateVaultItem(ideaId, {
         title: editingIdeaContent.trim().slice(0, 30),
-        content: editingIdeaContent.trim()
+        content: editingIdeaContent.trim(),
+        bookId: resolvedBookId
       });
       setEditingIdeaId(null);
       setEditingIdeaContent('');
       await loadVault();
+      pushVaultHistory(storageService.getVault(), '아이디어 수정');
       showToast('아이디어가 수정되었습니다.', 'success');
     } catch (err) {
       showToast(`수정 실패: ${err.message}`, 'error');
@@ -553,8 +761,13 @@ export default function Vault() {
 
   const handleDeleteIdea = async (id) => {
     try {
+      ensureVaultHistoryInit();
       await deleteVaultItem(id);
-      showToast('아이디어가 삭제되었습니다.', 'info');
+      pushVaultHistory(storageService.getVault(), '아이디어 삭제');
+      showActionToast('아이디어가 삭제되었습니다.', () => handleUndoVault(), null, {
+        yesText: '되돌리기 (Ctrl+Z)',
+        noText: '닫기'
+      });
     } catch (err) {
       showToast(`삭제 실패: ${err.message}`, 'error');
     }
@@ -578,7 +791,7 @@ export default function Vault() {
     }
   };
 
-  // --- Step 2: 취재 자료 등록 및 수정 ---
+  // --- Step 2: 취재 자료 등록 및 수정 (현재 선택된 작품 전용) ---
   const handleOpenCreateMaterial = () => {
     setEditingMaterialId(null);
     setVaultTitle('');
@@ -599,6 +812,19 @@ export default function Vault() {
     setIsVaultModalOpen(true);
   };
 
+  // 기존 미지정 취재 자료를 현재 작품으로 일괄 귀속
+  const handleClaimUnassignedMaterials = async () => {
+    if (!activeBook) return;
+    ensureVaultHistoryInit();
+    const unassigned = allMaterials.filter((m) => !m.bookId || m.bookId === 'SHARED');
+    for (const item of unassigned) {
+      await bookService.updateVaultItem(item.id, { bookId: activeBook.id });
+    }
+    await loadVault();
+    pushVaultHistory(storageService.getVault(), '기존 자료 가져오기');
+    showToast(`기존 자료 ${unassigned.length}건이 '${activeBook.title}' 작품으로 귀속되었습니다.`, 'success');
+  };
+
   const handleCreateOrUpdateMaterial = async (e) => {
     e.preventDefault();
     if (!vaultTitle.trim() && !vaultContent.trim()) {
@@ -607,6 +833,7 @@ export default function Vault() {
     }
     try {
       setIsVaultSubmitting(true);
+      ensureVaultHistoryInit();
       const parsedTags = tagsInput
         .split(',')
         .map((t) => t.trim().replace(/^#/, ''))
@@ -623,17 +850,19 @@ export default function Vault() {
           content: vaultContent.trim(),
           category: targetCategory,
           isMaterial: true,
+          bookId: activeBook?.id || null,
           sourceRef: vaultSource.trim(),
           tags: finalTags
         });
         showToast('취재 자료가 성공적으로 수정되었습니다.', 'success');
       } else {
-        // 신규 취재 자료 등록
+        // 신규 취재 자료 등록 (현재 선택된 작품에 귀속)
         await bookService.createVaultItem({
           title: vaultTitle.trim() || '취재 자료',
           content: vaultContent.trim(),
           category: targetCategory,
           isMaterial: true,
+          bookId: activeBook?.id || null,
           sourceRef: vaultSource.trim(),
           tags: finalTags
         });
@@ -647,6 +876,7 @@ export default function Vault() {
       setTagsInput('');
       setIsVaultModalOpen(false);
       await loadVault();
+      pushVaultHistory(storageService.getVault(), editingMaterialId ? '취재 자료 수정' : '취재 자료 등록');
     } catch (err) {
       showToast(`저장 실패: ${err.message}`, 'error');
     } finally {
@@ -656,8 +886,13 @@ export default function Vault() {
 
   const handleDeleteMaterial = async (id) => {
     try {
+      ensureVaultHistoryInit();
       await deleteVaultItem(id);
-      showToast('취재 자료가 삭제되었습니다.', 'info');
+      pushVaultHistory(storageService.getVault(), '취재 자료 삭제');
+      showActionToast('취재 자료가 삭제되었습니다.', () => handleUndoVault(), null, {
+        yesText: '되돌리기 (Ctrl+Z)',
+        noText: '닫기'
+      });
     } catch (err) {
       showToast(`삭제 실패: ${err.message}`, 'error');
     }
@@ -920,15 +1155,20 @@ ${isFiction ? `
     setEditingStageTitle('');
   };
 
-  // 세부 꼭지 추가
-  const handleAddNewSubplot = async (sIdx) => {
+  // 세부 꼭지 추가 (insertAfterIdx가 주어지면 해당 꼭지 바로 아래에 삽입)
+  const handleAddNewSubplot = async (sIdx, insertAfterIdx = null) => {
     if (step5HistoryRef.current.length === 0) {
       pushStep5History(plotStages, draftChapters, '초기 상태');
     }
     const cloned = structuredClone(plotStages);
-    const subCount = (cloned[sIdx].subplots || []).length + 1;
-    cloned[sIdx].subplots.push({
-      title: `${sIdx + 1}.${subCount} 새로운 세부 꼭지`,
+    if (!cloned[sIdx].subplots) cloned[sIdx].subplots = [];
+    const targetIdx = (insertAfterIdx !== null && insertAfterIdx !== undefined)
+      ? insertAfterIdx + 1
+      : cloned[sIdx].subplots.length;
+    const subNum = targetIdx + 1;
+    const newTitle = `${sIdx + 1}.${subNum} 새로운 세부 꼭지`;
+    cloned[sIdx].subplots.splice(targetIdx, 0, {
+      title: newTitle,
       memo: ''
     });
     setPlotStages(cloned);
@@ -1103,6 +1343,9 @@ ${isFiction ? `
   };
 
   const handleAddNewChapter = async () => {
+    if (step5HistoryRef.current.length === 0) {
+      pushStep5History(plotStages, draftChapters, '초기 상태');
+    }
     const cloned = structuredClone(draftChapters);
     const newChapNum = cloned.length + 1;
     cloned.push({
@@ -1113,6 +1356,7 @@ ${isFiction ? `
       ]
     });
     await saveDraftOutline(cloned);
+    pushStep5History(plotStages, cloned, '새 챕터 추가');
     showToast('새 챕터가 추가되었습니다.', 'info');
   };
 
@@ -1123,28 +1367,44 @@ ${isFiction ? `
       confirmText: '삭제'
     });
     if (!ok) return;
+    if (step5HistoryRef.current.length === 0) {
+      pushStep5History(plotStages, draftChapters, '초기 상태');
+    }
     const cloned = structuredClone(draftChapters);
     cloned.splice(cIdx, 1);
     await saveDraftOutline(cloned);
-    showToast('챕터가 삭제되었습니다.', 'info');
+    pushStep5History(plotStages, cloned, '챕터 삭제');
+    showToast('챕터가 삭제되었습니다. (되돌리려면 Ctrl+Z)', 'info');
   };
 
-  const handleAddNewSection = async (cIdx) => {
+  const handleAddNewSection = async (cIdx, insertAfterIdx = null) => {
+    if (step5HistoryRef.current.length === 0) {
+      pushStep5History(plotStages, draftChapters, '초기 상태');
+    }
     const cloned = structuredClone(draftChapters);
-    const secCount = (cloned[cIdx].sections || []).length + 1;
-    cloned[cIdx].sections.push({
-      id: `draft_sec_${Date.now()}`,
-      title: `${cIdx + 1}.${secCount} 새로운 소목차`
+    if (!cloned[cIdx].sections) cloned[cIdx].sections = [];
+    const targetIdx = (insertAfterIdx !== null && insertAfterIdx !== undefined)
+      ? insertAfterIdx + 1
+      : cloned[cIdx].sections.length;
+    const secNum = targetIdx + 1;
+    cloned[cIdx].sections.splice(targetIdx, 0, {
+      id: `draft_sec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      title: `${cIdx + 1}.${secNum} 새로운 소목차`
     });
     await saveDraftOutline(cloned);
+    pushStep5History(plotStages, cloned, '소목차 추가');
     showToast('새 소목차가 추가되었습니다.', 'info');
   };
 
   const handleDeleteSection = async (cIdx, sIdx) => {
+    if (step5HistoryRef.current.length === 0) {
+      pushStep5History(plotStages, draftChapters, '초기 상태');
+    }
     const cloned = structuredClone(draftChapters);
     cloned[cIdx].sections.splice(sIdx, 1);
     await saveDraftOutline(cloned);
-    showToast('소목차가 삭제되었습니다.', 'info');
+    pushStep5History(plotStages, cloned, '소목차 삭제');
+    showToast('소목차가 삭제되었습니다. (되돌리려면 Ctrl+Z)', 'info');
   };
 
   // 인라인 수정 커밋
@@ -1561,7 +1821,25 @@ ${isFiction ? `
     }
   };
 
-  // 새 기획 프로젝트 생성
+  // 새 기획 모달 열기
+  const handleOpenNewProjectModal = () => {
+    setEditingProjectId(null);
+    setNewProjectTitle('');
+    setNewProjectGenre('novel');
+    setIsNewProjectModalOpen(true);
+  };
+
+  // 기존 기획 프로젝트 정보 수정 모달 열기
+  const handleOpenEditProjectModal = (e, book) => {
+    if (e) e.stopPropagation();
+    const matchedGenre = book.genreKey || OFFICIAL_GENRES.find((g) => g.label === book.genre)?.id || 'novel';
+    setEditingProjectId(book.id);
+    setNewProjectTitle(book.title || '');
+    setNewProjectGenre(matchedGenre);
+    setIsNewProjectModalOpen(true);
+  };
+
+  // 새 기획 프로젝트 생성 및 기존 프로젝트 정보 수정
   const handleCreateNewProject = async (e) => {
     e.preventDefault();
     if (!newProjectTitle.trim()) {
@@ -1570,6 +1848,19 @@ ${isFiction ? `
     }
     try {
       const selectedGenre = OFFICIAL_GENRES.find((g) => g.id === newProjectGenre) || OFFICIAL_GENRES[0];
+
+      if (editingProjectId) {
+        await updateBookInfo(editingProjectId, {
+          title: newProjectTitle.trim(),
+          genre: selectedGenre.label,
+          genreKey: newProjectGenre
+        });
+        setIsNewProjectModalOpen(false);
+        setEditingProjectId(null);
+        setNewProjectTitle('');
+        return;
+      }
+
       const recPlotIds = GENRE_RECOMMENDED_PLOTS[newProjectGenre] || GENRE_RECOMMENDED_PLOTS.novel;
       const defaultPlot = PLOT_LIBRARY.find((p) => p.id === recPlotIds[0]) || PLOT_LIBRARY[0];
 
@@ -1596,10 +1887,11 @@ ${isFiction ? `
       await loadBooks();
       setActiveBook(newBook);
       setIsNewProjectModalOpen(false);
+      setEditingProjectId(null);
       setNewProjectTitle('');
       showToast(`'${newBook.title}' 새 기획 프로젝트가 생성되었습니다.`, 'success');
     } catch (err) {
-      showToast(`기획 생성 실패: ${err.message}`, 'error');
+      showToast(`기획 저장 실패: ${err.message}`, 'error');
     }
   };
 
@@ -1643,26 +1935,19 @@ ${isFiction ? `
           <div className="top-book-meta">
             <span className="top-book-title">{activeBook?.title || '작품 미선택'}</span>
             <span className="top-genre-badge">
-              {activeBook?.genreKey ? PLOT_TEMPLATES[activeBook.genreKey]?.name.split(' ')[0] : (activeBook?.genre || '에세이')}
+              {activeBook?.genre || OFFICIAL_GENRES.find((g) => g.id === activeBook?.genreKey)?.label || '소설'}
             </span>
             <div className="top-progress-pill">
-              기획 파이프라인 <span>{currentStepNumber} / 5단계</span>
+              {activeStep === 'ideas' ? (
+                <>아이디어 노트 <span>전체 공용</span></>
+              ) : (
+                <>기획 파이프라인 <span>{currentStepNumber} / 4단계</span></>
+              )}
             </div>
           </div>
         </div>
 
         <div className="preview-right">
-          {activeBook && (
-            <button
-              type="button"
-              className="btn-vault-top-delete"
-              onClick={(e) => handleDeleteProject(e, activeBook.id, activeBook.title)}
-              title="현재 기획 프로젝트 삭제"
-            >
-              <Trash2 size={13} />
-              <span>프로젝트 삭제</span>
-            </button>
-          )}
           <button className="btn-goto-studio" onClick={handleSendToStudio}>
             <PenTool size={14} />
             집필 스튜디오로 이동
@@ -1683,7 +1968,7 @@ ${isFiction ? `
                 <span className="vault-col-sub">PROJECTS</span>
                 <h2 className="vault-col-title">기획 서가</h2>
               </div>
-              <button className="btn-new-project" onClick={() => setIsNewProjectModalOpen(true)}>
+              <button className="btn-new-project" onClick={handleOpenNewProjectModal}>
                 <Plus size={14} />
                 새 기획
               </button>
@@ -1704,22 +1989,33 @@ ${isFiction ? `
                       className={`project-card ${isActive ? 'active' : ''}`}
                       onClick={() => setActiveBook(b)}
                     >
-                      {/* 우측 상단 호버 오버레이 삭제 버튼 */}
-                      <button
-                        type="button"
-                        className="btn-delete-project"
-                        onClick={(e) => handleDeleteProject(e, b.id, b.title)}
-                        title={`'${b.title}' 프로젝트 삭제`}
-                        aria-label="프로젝트 삭제"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                      {/* 우측 상단 호버 오버레이 수정 / 삭제 버튼 */}
+                      <div className="project-card-actions">
+                        <button
+                          type="button"
+                          className="btn-edit-project"
+                          onClick={(e) => handleOpenEditProjectModal(e, b)}
+                          title={`'${b.title}' 프로젝트 정보 수정`}
+                          aria-label="프로젝트 정보 수정"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-delete-project"
+                          onClick={(e) => handleDeleteProject(e, b.id, b.title)}
+                          title={`'${b.title}' 프로젝트 삭제`}
+                          aria-label="프로젝트 삭제"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
 
                       <div className="project-cover-bar" />
                       <div className="project-meta-wrap">
                         <span className="project-title" title={b.title}>{b.title}</span>
                         <div className="project-sub-row">
-                          <span className="project-genre">{b.genreKey ? PLOT_TEMPLATES[b.genreKey]?.name.split(' ')[0] : (b.genre || '에세이')}</span>
+                          <span className="project-genre">{b.genre || OFFICIAL_GENRES.find((g) => g.id === b.genreKey)?.label || '소설'}</span>
                           <span className={`project-step-badge stage-${stageInfo.stage}`}>
                             {stageInfo.label}
                           </span>
@@ -1736,19 +2032,20 @@ ${isFiction ? `
           <section className="vault-main-canvas">
             <nav className="pipeline-step-bar">
               {PIPELINE_STEPS.map((step) => {
-                const Icon = step.icon;
                 const isActive = activeStep === step.id;
                 return (
                   <button
                     key={step.id}
                     type="button"
-                    className={`pipeline-step-item ${isActive ? 'active' : ''}`}
+                    className={`pipeline-step-item ${isActive ? 'active' : ''} ${step.isShared ? 'is-shared-step' : ''}`}
                     onClick={() => setActiveStep(step.id)}
+                    title={`${step.title} — ${step.desc}`}
                   >
-                    <div className="step-num-pill">{`0${step.stepNum + 1}`}</div>
+                    <div className={`step-num-pill ${step.isShared ? 'shared-pill' : ''}`}>
+                      {step.badgeLabel || `0${step.stepNum}`}
+                    </div>
                     <div className="step-text-wrap">
                       <div className="step-title-row">
-                        <Icon size={14} />
                         <span>{step.title}</span>
                       </div>
                       <span className="step-desc">{step.desc}</span>
@@ -1759,21 +2056,51 @@ ${isFiction ? `
             </nav>
 
             <div className="pipeline-content-viewport">
-              {!activeBook ? (
+              {!activeBook && activeStep !== 'ideas' ? (
                 <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-muted)' }}>
                   좌측 기획 서가에서 작품을 선택하거나 새 기획을 시작해 주세요.
                 </div>
               ) : (
                 <>
-                  {/* [STEP 0] 아이디어 노트 */}
+                  {/* [공용] 아이디어 노트 (전체 보기 / 공용 / 현재 기획 3종 필터) */}
                   {activeStep === 'ideas' && (
                     <div className="ideas-container">
+                      {/* 상단 3종 필터 버튼 */}
+                      <div className="ideas-scope-bar">
+                        <div className="ideas-scope-tabs">
+                          <button
+                            type="button"
+                            className={`scope-tab-btn ${ideaScopeFilter === 'ALL' ? 'active' : ''}`}
+                            onClick={() => setIdeaScopeFilter('ALL')}
+                          >
+                            전체 보기 ({allIdeaNotes.length})
+                          </button>
+                          <button
+                            type="button"
+                            className={`scope-tab-btn ${ideaScopeFilter === 'SHARED' ? 'active' : ''}`}
+                            onClick={() => setIdeaScopeFilter('SHARED')}
+                          >
+                            공용 ({sharedIdeasCount})
+                          </button>
+                          {activeBook && (
+                            <button
+                              type="button"
+                              className={`scope-tab-btn ${ideaScopeFilter === 'CURRENT' ? 'active' : ''}`}
+                              onClick={() => setIdeaScopeFilter('CURRENT')}
+                            >
+                              현재 기획 ({currentBookIdeasCount})
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 아이디어 등록 폼 */}
                       <form onSubmit={handleAddQuickIdea} className="ideas-input-box">
-                        <Sun size={15} style={{ color: 'var(--color-primary)' }} />
+                        <Sun size={15} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
                         <input
                           type="text"
                           className="ideas-input"
-                          placeholder="스쳐 지나가는 찰나의 영감이나 단상을 자유롭게 적어보세요... (Enter 등록)"
+                          placeholder="스쳐 지나가는 아이디어나 메모를 자유롭게 적어보세요... (Enter 등록)"
                           value={quickIdeaInput}
                           onChange={(e) => setQuickIdeaInput(e.target.value)}
                         />
@@ -1786,19 +2113,44 @@ ${isFiction ? `
                       <div className="ideas-card-grid">
                         {ideaNotes.length === 0 ? (
                           <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
-                            아직 기록된 아이디어가 없습니다. 상단 입력창에서 단상을 기록해 보세요.
+                            {ideaScopeFilter === 'ALL'
+                              ? '아직 기록된 아이디어가 없습니다. 상단 입력창에서 아이디어를 기록해 보세요.'
+                              : '선택한 필터에 해당하는 아이디어가 없습니다.'}
                           </div>
                         ) : (
                           ideaNotes.map((idea) => {
                             const isEditing = editingIdeaId === idea.id;
+                            const ownerBook = idea.bookId && idea.bookId !== 'SHARED'
+                              ? books.find((b) => b.id === idea.bookId)
+                              : null;
+                            const promoteTargetBook = ownerBook || activeBook;
+                            const targetBookId = promoteTargetBook?.id || null;
+                            const isSavedAsMaterial = allMaterials.some(
+                              (m) => m.sourceIdeaId === idea.id && (m.bookId || null) === targetBookId
+                            );
                             return (
                               <div key={idea.id} className="idea-card">
                                 <div className="idea-card-header">
-                                  <span className="idea-badge">단상 메모</span>
+                                  <span className={`idea-badge ${ownerBook ? 'is-book' : ''}`} title={ownerBook ? ownerBook.title : '공용'}>
+                                    {ownerBook ? ownerBook.title : '공용'}
+                                  </span>
                                   <span>{new Date(idea.createdAt).toLocaleDateString('ko-KR')}</span>
                                 </div>
                                 {isEditing ? (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '6px 0' }}>
+                                    <select
+                                      className="vault-form-control"
+                                      style={{ padding: '0.3rem 0.5rem', fontSize: '0.76rem' }}
+                                      value={editingIdeaBookId || 'SHARED'}
+                                      onChange={(e) => setEditingIdeaBookId(e.target.value)}
+                                    >
+                                      <option value="SHARED">공용</option>
+                                      {books.map((b) => (
+                                        <option key={b.id} value={b.id}>
+                                          {b.title}
+                                        </option>
+                                      ))}
+                                    </select>
                                     <textarea
                                       className="vault-form-control"
                                       rows={3}
@@ -1833,7 +2185,7 @@ ${isFiction ? `
                                       type="button"
                                       className="btn-idea-action"
                                       onClick={() => handleOpenEditIdea(idea)}
-                                      title="아이디어 수정"
+                                      title="아이디어 내용 및 소속 기획 수정"
                                     >
                                       <Edit2 size={12} />
                                       수정
@@ -1841,11 +2193,18 @@ ${isFiction ? `
                                   )}
                                   <button
                                     type="button"
-                                    className="btn-idea-action"
+                                    className={`btn-idea-action ${isSavedAsMaterial ? 'active' : ''}`}
                                     onClick={() => handlePromoteToVault(idea)}
+                                    title={
+                                      isSavedAsMaterial
+                                        ? '클릭하여 글감 보관 해제'
+                                        : promoteTargetBook
+                                        ? `'${promoteTargetBook.title}' 작품의 글감·취재창고로 복제 보관`
+                                        : '글감·취재창고로 복제 보관'
+                                    }
                                   >
                                     <Bookmark size={13} />
-                                    글감 보관
+                                    {isSavedAsMaterial ? '글감 보관됨' : '글감 보관'}
                                   </button>
                                   <button
                                     type="button"
@@ -1864,7 +2223,7 @@ ${isFiction ? `
                     </div>
                   )}
 
-                  {/* [STEP 1] 출간 기획서 */}
+                  {/* [STEP 01] 출간 기획서 */}
                   {activeStep === 'proposal' && (
                     <div className="proposal-container">
                       <div className="proposal-top-notice">
@@ -1944,7 +2303,7 @@ ${isFiction ? `
                     </div>
                   )}
 
-                  {/* [STEP 2] 글감 & 취재창고 */}
+                  {/* [STEP 02] 글감 & 취재창고 (작품별 전용 분리) */}
                   {activeStep === 'materials' && (
                     <div className="materials-container">
                       <div className="materials-filter-bar">
@@ -1969,8 +2328,20 @@ ${isFiction ? `
 
                       <div className="materials-grid">
                         {filteredMaterials.length === 0 ? (
-                          <div style={{ gridColumn: '1 / -1', padding: '3.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
+                          <div style={{ gridColumn: '1 / -1', padding: '3.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.84rem', lineHeight: 1.7 }}>
                             해당 분류의 취재 자료가 없습니다. 상단의 [취재 자료 등록] 버튼을 눌러 보관해 보세요.
+                            {unassignedMaterialsCount > 0 && activeBook && (
+                              <div style={{ marginTop: '0.6rem' }}>
+                                <button
+                                  type="button"
+                                  className="btn-idea-action"
+                                  style={{ display: 'inline-flex' }}
+                                  onClick={handleClaimUnassignedMaterials}
+                                >
+                                  미지정 기존 자료 {unassignedMaterialsCount}건 현재 작품으로 가져오기
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           filteredMaterials.map((item) => {
@@ -2556,6 +2927,14 @@ ${isFiction ? `
                                                 >
                                                   <Edit2 size={11} />
                                                 </button>
+                                                <button 
+                                                  type="button" 
+                                                  className="mini-icon-btn" 
+                                                  onClick={() => handleAddNewSubplot(sIdx, spIdx)} 
+                                                  title="아래에 세부 꼭지 추가"
+                                                >
+                                                  <Plus size={12} />
+                                                </button>
                                                 <button type="button" className="mini-icon-btn danger" onClick={() => handleDeleteSubplot(sIdx, spIdx)} title="꼭지 삭제">
                                                   <Trash2 size={11} />
                                                 </button>
@@ -2854,6 +3233,14 @@ ${isFiction ? `
                                           </button>
                                           <button
                                             type="button"
+                                            className="mini-icon-btn"
+                                            onClick={() => handleAddNewSection(cIdx, sIdx)}
+                                            title="아래에 소목차 추가"
+                                          >
+                                            <Plus size={12} />
+                                          </button>
+                                          <button
+                                            type="button"
                                             className="mini-icon-btn danger"
                                             onClick={() => handleDeleteSection(cIdx, sIdx)}
                                             title="소목차 삭제"
@@ -2955,9 +3342,10 @@ ${isFiction ? `
           모달 팝업 모음 (VaultModals 컴포넌트로 분리 관리)
           ===================================================================== */}
       <VaultModals
-        // 1. 새 프로젝트
+        // 1. 새 프로젝트 / 수정
         isNewProjectModalOpen={isNewProjectModalOpen}
         setIsNewProjectModalOpen={setIsNewProjectModalOpen}
+        editingProjectId={editingProjectId}
         newProjectTitle={newProjectTitle}
         setNewProjectTitle={setNewProjectTitle}
         newProjectGenre={newProjectGenre}

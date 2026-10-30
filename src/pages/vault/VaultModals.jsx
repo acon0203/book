@@ -4,11 +4,12 @@ import { OFFICIAL_GENRES } from '../../data/genreConstants';
 import { VAULT_CATEGORIES } from '../../data/vaultConstants';
 
 // =============================================================================
-// 1. 새 기획 프로젝트 생성 모달
+// 1. 새 기획 프로젝트 생성 및 정보 수정 모달
 // =============================================================================
 export function NewProjectModal({
   isOpen,
   onClose,
+  editingId,
   title,
   setTitle,
   genre,
@@ -23,7 +24,7 @@ export function NewProjectModal({
         <div className="vault-modal-header">
           <h3 className="vault-modal-title">
             <BookOpen size={18} style={{ color: 'var(--color-primary)' }} />
-            새 작품 기획 시작
+            {editingId ? '기획 프로젝트 정보 수정' : '새 작품 기획 시작'}
           </h3>
           <button type="button" className="mini-icon-btn" onClick={onClose} aria-label="닫기">
             <X size={15} />
@@ -32,7 +33,7 @@ export function NewProjectModal({
         <form onSubmit={onSubmit}>
           <div className="vault-modal-body">
             <div className="vault-form-group">
-              <label>작품 가제</label>
+              <label>{editingId ? '작품 제목' : '작품 가제'}</label>
               <input
                 type="text"
                 className="vault-form-control"
@@ -63,7 +64,7 @@ export function NewProjectModal({
               취소
             </button>
             <button type="submit" className="btn-add-idea">
-              기획 시작하기
+              {editingId ? '수정 저장' : '기획 시작하기'}
             </button>
           </div>
         </form>
@@ -371,9 +372,10 @@ export function OutlinePlanModal({
 // 통합 기본 내보내기 컴포넌트
 // =============================================================================
 export default function VaultModals({
-  // 1. 새 프로젝트
+  // 1. 새 프로젝트 / 수정
   isNewProjectModalOpen,
   setIsNewProjectModalOpen,
+  editingProjectId,
   newProjectTitle,
   setNewProjectTitle,
   newProjectGenre,
@@ -427,6 +429,7 @@ export default function VaultModals({
       <NewProjectModal
         isOpen={isNewProjectModalOpen}
         onClose={() => setIsNewProjectModalOpen(false)}
+        editingId={editingProjectId}
         title={newProjectTitle}
         setTitle={setNewProjectTitle}
         genre={newProjectGenre}

@@ -447,7 +447,7 @@
 /* 방향 3: 루틴 섹션 하단 미니멀 최근 활동 피드 */
 .routine-recent-feed {
   padding-top: 14px;
-  border-top: 1px dashed var(--border-color);
+  border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   gap: 8px;

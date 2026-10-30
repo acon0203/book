@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { bookService } from '../services/bookService';
+import { storageService } from '../services/storageService';
 import { authService } from '../services/authService';
 import { cloudSyncService } from '../services/cloudSyncService';
 import { checkIsAdmin } from '../config/adminSecurity';
+import { trafficTracker } from '../utils/trafficTracker';
 
 export const useStore = create((set, get) => {
   const initialTheme = localStorage.getItem('book_theme') || 'light';
@@ -465,19 +467,31 @@ export const useStore = create((set, get) => {
 
         localStorage.setItem('last_active_book_id', bookId);
         localStorage.setItem('book_current_view', 'reader');
+        trafficTracker.recordReaderView();
 
         // 독서 이력(reader_history) 실시간 갱신
         try {
           const targetChap = book?.chapters?.find(c => c.id === targetChapId);
-          const historyRaw = localStorage.getItem('reader_history') || '[]';
-          const prevHistory = JSON.parse(historyRaw);
+          const targetChapIdx = (book?.chapters || []).findIndex(c => c.id === targetChapId);
+          const prevHistory = storageService.getReadingHistory();
+          // storageService.getReadingHistory() 로드 완료
+          const existingEntry = prevHistory.find(h => h.bookId === book.id);
           
           // 작성자/필명 안전 매핑 (단순 '작가' 방지)
           const cfgRaw = localStorage.getItem('bookstudio_config');
           let cfgAuthor = '';
           try { if (cfgRaw) cfgAuthor = JSON.parse(cfgRaw).defaultAuthor; } catch {}
-          const userAuthor = get().user?.displayName || cfgAuthor || '김연재';
-          const resolvedAuthor = book?.author && book.author !== '작가' ? book.author : userAuthor;
+          const userAuthor = get().user?.displayName || cfgAuthor || '익명 작가';
+          const resolvedAuthor = book?.author && book.author !== '작가' && book.author !== '김연재' ? book.author : userAuthor;
+
+          // 실제 챕터 본문 글자수 계산
+          let chapWords = 0;
+          (targetChap?.sections || []).forEach(s => {
+            const text = (s.content || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+            chapWords += text.length;
+          });
+          const totalChaps = book?.chapters?.length || 0;
+          const isLastChap = totalChaps > 0 && targetChapIdx === totalChaps - 1 && chapWords > 0;
 
           const newEntry = {
             bookId: book.id,
@@ -487,11 +501,13 @@ export const useStore = create((set, get) => {
             genre: book.genre || '소설',
             chapterId: targetChapId,
             chapterTitle: targetChap?.title || '1화',
+            wordsCount: Math.max(existingEntry?.wordsCount || 0, chapWords),
+            isCompleted: Boolean(existingEntry?.isCompleted || isLastChap),
             coverColor: book.coverColor || 'linear-gradient(135deg, #1b382b, #0d1e16)',
             readAt: new Date().toISOString()
           };
           const updatedHistory = [newEntry, ...prevHistory.filter(h => h.bookId !== book.id)].slice(0, 30);
-          localStorage.setItem('reader_history', JSON.stringify(updatedHistory));
+          storageService.saveReadingHistory(updatedHistory);
         } catch (e) {
           console.error('Failed to update reader_history:', e);
         }
@@ -515,7 +531,34 @@ export const useStore = create((set, get) => {
       const { activeBook } = get();
       if (!activeBook) return;
       const targetChap = activeBook.chapters?.find(c => c.id === chapterId);
+      const targetChapIdx = (activeBook.chapters || []).findIndex(c => c.id === chapterId);
       const targetSecId = targetChap?.sections?.[0]?.id || null;
+
+      try {
+        const prevHistory = storageService.getReadingHistory();
+        // storageService.getReadingHistory() 로드 완료
+        let chapWords = 0;
+        (targetChap?.sections || []).forEach(s => {
+          const text = (s.content || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+          chapWords += text.length;
+        });
+        const totalChaps = activeBook.chapters?.length || 0;
+        const isLastChap = totalChaps > 0 && targetChapIdx === totalChaps - 1 && chapWords > 0;
+
+        const updatedHistory = prevHistory.map(h => {
+          if (h.bookId !== activeBook.id) return h;
+          return {
+            ...h,
+            chapterId,
+            chapterTitle: targetChap?.title || h.chapterTitle,
+            wordsCount: (h.wordsCount || 0) + chapWords,
+            isCompleted: Boolean(h.isCompleted || isLastChap),
+            readAt: new Date().toISOString()
+          };
+        });
+        localStorage.setItem('reader_history', JSON.stringify(updatedHistory));
+      } catch {}
+
       set({
         activeChapterId: chapterId,
         activeSectionId: targetSecId
@@ -1092,13 +1135,15 @@ export const useStore = create((set, get) => {
       }
     },
 
-    addSection: async (chapterId, title) => {
+    addSection: async (chapterId, title, insertIndex = null) => {
       const { activeBook } = get();
       if (!activeBook) return;
       try {
-        const updatedBook = await bookService.addSection(activeBook.id, chapterId, title);
+        const updatedBook = await bookService.addSection(activeBook.id, chapterId, title, insertIndex);
         const targetChap = updatedBook.chapters.find(c => c.id === chapterId);
-        const newSec = targetChap?.sections[targetChap.sections.length - 1];
+        const newSec = (insertIndex !== null && insertIndex !== undefined && targetChap?.sections?.[insertIndex])
+          ? targetChap.sections[insertIndex]
+          : targetChap?.sections[targetChap.sections.length - 1];
         set({
           activeBook: updatedBook,
           activeChapterId: chapterId,
@@ -1241,10 +1286,40 @@ export const useStore = create((set, get) => {
     deleteBook: async (bookId) => {
       try {
         await bookService.deleteBook(bookId);
-        set(state => ({
-          books: state.books.filter(b => b.id !== bookId),
-          activeBook: state.activeBook?.id === bookId ? null : state.activeBook
-        }));
+        if (localStorage.getItem('last_active_book_id') === bookId) {
+          localStorage.removeItem('last_active_book_id');
+        }
+        try {
+          const raw = localStorage.getItem('reader_history') || '[]';
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            const updatedHistory = parsed.map(h =>
+              h.bookId === bookId ? { ...h, isDeleted: true } : h
+            );
+            storageService.saveReadingHistory(updatedHistory);
+          }
+        } catch (e) {
+          console.error('Failed to mark deleted book in reader_history:', e);
+        }
+        try {
+          const shelfRaw = localStorage.getItem('reader_shelf') || '[]';
+          const shelfParsed = JSON.parse(shelfRaw);
+          if (Array.isArray(shelfParsed)) {
+            const updatedShelf = shelfParsed.map(s =>
+              s.bookId === bookId ? { ...s, isDeleted: true } : s
+            );
+            localStorage.setItem('reader_shelf', JSON.stringify(updatedShelf));
+          }
+        } catch (e) {
+          console.error('Failed to mark deleted book in reader_shelf:', e);
+        }
+        set(state => {
+          const remaining = state.books.filter(b => b.id !== bookId);
+          return {
+            books: remaining,
+            activeBook: state.activeBook?.id === bookId ? (remaining[0] || null) : state.activeBook
+          };
+        });
         get().markUnsynced();
         get().showToast('도서가 삭제되었습니다.', 'info');
       } catch (err) {

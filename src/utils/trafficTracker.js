@@ -42,51 +42,71 @@ export const trafficTracker = {
   },
 
   /**
-   * 내부 원본 통계 조회
+   * 내부 원본 통계 조회 (레거시 하드코딩 오프셋 142/86 자동 정화 포함)
    */
   getRawMetrics: () => {
     try {
       const raw = localStorage.getItem(TRAFFIC_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!parsed.v2Clean) {
+          const daily = parsed.dailyVisits || {};
+          const realTotalVisits = Object.values(daily).reduce((acc, v) => acc + (Number(v) || 0), 0);
+          let realReaderViews = 0;
+          try {
+            const hist = JSON.parse(localStorage.getItem('reader_history') || '[]');
+            if (Array.isArray(hist)) realReaderViews = hist.length;
+          } catch {}
+          const cleaned = {
+            totalVisits: realTotalVisits,
+            readerViews: parsed.readerViews === 86 ? realReaderViews : Math.max(0, (parsed.readerViews || 0) - 86),
+            dailyVisits: daily,
+            createdAt: parsed.createdAt || new Date().toISOString(),
+            v2Clean: true
+          };
+          localStorage.setItem(TRAFFIC_KEY, JSON.stringify(cleaned));
+          return cleaned;
+        }
+        return parsed;
+      }
     } catch {}
 
-    // 초기값 기본 생성
+    // 초기값 기본 생성 (100% 실제 카운트만 집계)
     const defaultData = {
-      totalVisits: 142,
-      readerViews: 86,
+      totalVisits: 0,
+      readerViews: 0,
       dailyVisits: {},
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      v2Clean: true
     };
     return defaultData;
   },
 
   /**
-   * 대시보드 표시용 집계 통계 산출
+   * 대시보드 표시용 집계 통계 산출 (가짜 보정치 없는 100% 실측 데이터)
    */
-  getSummary: (booksCount = 0) => {
+  getSummary: () => {
     const raw = trafficTracker.getRawMetrics();
     const todayStr = new Date().toISOString().slice(0, 10);
 
-    // 최소 도서 수 대비 현실적인 방문객 볼륨 보정
-    const baseVisits = Math.max(raw.totalVisits || 0, booksCount * 18 + 45);
-    const todayCount = raw.dailyVisits?.[todayStr] || Math.max(1, Math.round(baseVisits * 0.08));
+    const totalVisitors = raw.totalVisits || 0;
+    const todayVisitors = raw.dailyVisits?.[todayStr] || 0;
 
-    // 최근 7일 방문자 합산
+    // 최근 7일 실제 방문자 합산
     let weeklyCount = 0;
     const now = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
       const key = d.toISOString().slice(0, 10);
-      weeklyCount += raw.dailyVisits?.[key] || Math.max(1, Math.round((baseVisits / 10) * (0.8 + Math.sin(i) * 0.2)));
+      weeklyCount += raw.dailyVisits?.[key] || 0;
     }
 
     return {
-      totalVisitors: baseVisits,
-      todayVisitors: todayCount,
+      totalVisitors,
+      todayVisitors,
       weeklyVisitors: weeklyCount,
-      readerSessions: Math.max(raw.readerViews || 0, Math.round(baseVisits * 0.62)),
-      weeklyGrowthRate: 14.2 // 전주 대비 성장률(%)
+      readerSessions: raw.readerViews || 0
     };
   }
 };

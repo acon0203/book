@@ -358,12 +358,26 @@ export const calcAuthorStats = (books = [], baseStats = {}, currentUid = null) =
   // 전체 완주율
   const overallRate = totalChapters > 0 ? Math.round((finalCompletedChaps / totalChapters) * 100) : 0;
 
-  // 🌟 실제 일자별 집필 데이터 기반 이번 주 루틴 및 연속 스트릭 계산
+  // 실제 일자별 집필 데이터 기반 이번 주 루틴 및 연속 스트릭 계산
   const weeklyRoutine = calcWeeklyRoutine(books);
   const streak = weeklyRoutine.streak;
 
-  // 주간 작성량 추정 (최근 집필분)
-  const weeklyWords = Math.min(finalTotalWords, Math.max(Math.floor(finalTotalWords * 0.35), finalTotalWords > 0 ? 3200 : 0));
+  // 이번 주 실제 작성된 섹션 글자수 합산 (가짜 비율/최소값 보정 완전 제거)
+  const weeklyDatesSet = new Set((weeklyRoutine?.days || []).map(d => d.date));
+  let weeklyWords = 0;
+  books.forEach(b => {
+    const bookDate = (b.updatedAt || b.createdAt || '').slice(0, 10);
+    (b.chapters || []).forEach(c => {
+      const chapDate = (c.updatedAt || c.publishedAt || bookDate).slice(0, 10);
+      (c.sections || []).forEach(s => {
+        const secDate = (s.updatedAt || s.publishedAt || chapDate).slice(0, 10);
+        if (secDate && weeklyDatesSet.has(secDate)) {
+          const wCount = s.wordCount || (s.content ? s.content.replace(/<[^>]+>/g, '').trim().length : 0);
+          weeklyWords += wCount;
+        }
+      });
+    });
+  });
 
   // 원고지 매수 (200자 1매 기준)
   const manuscriptPages = Math.ceil(finalTotalWords / 200);
@@ -855,10 +869,6 @@ export const calcReaderStats = (historyList = [], books = []) => {
           });
           entryWords = bookAllWords > 0 ? Math.round(bookAllWords / matchedBook.chapters.length) : 0;
         }
-      }
-      // 외부/가상 작품 등 본문 텍스트가 직접 없는 경우 표준 1화 분량(약 4,200자) 적용
-      if (entryWords === 0) {
-        entryWords = 4200;
       }
     }
 

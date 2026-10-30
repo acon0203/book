@@ -84,7 +84,7 @@
 
 /* 드롭존 (Dropzone) */
 .import-dropzone {
-  border: 2px dashed var(--border-color);
+  border: 1.5px solid var(--border-color);
   border-radius: 12px;
   background-color: var(--bg-main);
   padding: 3rem 1.5rem;
