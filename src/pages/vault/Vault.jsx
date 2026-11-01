@@ -4,6 +4,7 @@ import { useStore } from '../../store';
 import { bookService } from '../../services/bookService';
 import { aiService } from '../../services/aiService';
 import { storageService } from '../../services/storageService';
+import { marked } from 'marked';
 import ModelQuotasModal from '../../components/ai/ModelQuotasModal';
 import VaultModals from './VaultModals';
 import {
@@ -19,6 +20,14 @@ import { PLOT_CATEGORIES, PLOT_LIBRARY, GENRE_RECOMMENDED_PLOTS } from '../../da
 
 // 제목 정제 헬퍼 (제1장, 1. 등의 접두사 중복 방지)
 const cleanTitle = (str) => aiService.cleanOutlineTitle(str);
+
+// 한글 조사 결합 시 marked 파서의 볼드 누락 버그 방지 렌더러
+const renderMarkdown = (text) => {
+  if (!text) return '';
+  // **단어**로, **[단어]**라는 처럼 한글 조사가 바로 붙어 파서가 놓치는 패턴을 <strong> 태그로 선제 치환
+  const preprocessed = text.replace(/\*\*([^\*\n]+?)\*\*/g, '<strong>$1</strong>');
+  return marked.parse(preprocessed, { breaks: true, gfm: true });
+};
 
 // 도서별 실시간 진행 단계 태그 판별 헬퍼 (기획 / 뼈대 / 목차 / 집필 / 연재 / 완결)
 const getBookStageTag = (b) => {
@@ -318,11 +327,11 @@ export default function Vault() {
   const [draggedItem, setDraggedItem] = useState(null); // { type: 'chapter' | 'section', chapterId, sectionId, cIdx, sIdx }
   const [dragOverTarget, setDragOverTarget] = useState(null); // { type, id, position: 'top' | 'bottom' }
 
-  // --- 우측 3열: AI 기획 어시스턴트 & 쿼터 모달 상태 ---
+  // --- 우측 3열: 책임 편집장(기획 코칭) & 쿼터 모달 상태 ---
   const [aiChatMessages, setAiChatMessages] = useState([
     {
       role: 'assistant',
-      text: '반갑습니다, 작가님. 도서 기획 및 플롯 설계를 돕는 AI 기획 어시스턴트입니다.\n로그라인 진단, 장르별 서사 보강, 목차 구성 등 기획 전반에 대해 언제든 질문해 주세요.'
+      text: '반갑습니다, 작가님. 도서 기획과 서사 설계를 총괄하는 책임 편집장입니다.\n로그라인 진단, 타깃 독자 분석, 뼈대·목차 조립 등 기획 전반에 대해 상의해 주세요.'
     }
   ]);
   const [aiChatInput, setAiChatInput] = useState('');
@@ -1784,7 +1793,7 @@ ${isFiction ? `
     showToast(`'${activeBook.title}' 집필 스튜디오로 이동했습니다.`, 'info');
   };
 
-  // 우측 3열: AI 기획 질의응답
+  // 우측 3열: 책임 편집장 실시간 기획 & 서사 코칭
   const handleSendAiMessage = async (customText) => {
     const textToSend = customText || aiChatInput.trim();
     if (!textToSend || isAiChatLoading) return;
@@ -1795,17 +1804,24 @@ ${isFiction ? `
     setIsAiChatLoading(true);
 
     try {
-      const planningContext = `
-[작품명]: ${activeBook?.title || '미정'}
-[로그라인]: ${proposalLogline || '미정'}
-[기획의도]: ${proposalIntention || '미정'}
-[타깃독자]: ${proposalTarget || '미정'}
-[플롯단계]: ${plotStages.map((s) => s.title).join(' -> ')}
-      `.trim();
+      const res = await aiService.chatWithPlanningEditor({
+        book: activeBook,
+        proposalLogline,
+        proposalIntention,
+        proposalTarget,
+        plotStages,
+        message: textToSend,
+        history: aiChatMessages
+      });
 
-      const prompt = `당신은 출판사 전문 기획 편집장입니다. 아래 작가의 기획서 맥락을 참고하여 질문에 대해 전문적이고 명쾌한 조언을 한국어로 답변하세요.\n\n${planningContext}\n\n[질문]: ${textToSend}`;
-      const response = await aiService.generateText(prompt);
-      setAiChatMessages((prev) => [...prev, { role: 'assistant', text: response }]);
+      setAiChatMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          text: res.content,
+          restructureData: res.restructureData
+        }
+      ]);
     } catch (err) {
       setAiChatMessages((prev) => [
         ...prev,
@@ -1819,6 +1835,28 @@ ${isFiction ? `
         }
       }, 50);
     }
+  };
+
+  // 책임 편집장이 제안한 플롯 뼈대 원클릭 직접 반영 핸들러
+  const handleApplyAiStages = async (newStages) => {
+    if (!newStages || newStages.length === 0) return;
+    const ok = await openConfirm({
+      title: '플롯 뼈대 개편안 반영',
+      message: `책임 편집장이 제안한 총 ${newStages.length}개 단계를 현재 플롯 뼈대에 반영하시겠습니까?\n'확인'을 누르면 새 기획안으로 조립대가 즉시 업데이트됩니다.`,
+      confirmText: '뼈대에 반영',
+      danger: false
+    });
+    if (!ok) return;
+
+    setPlotStages(newStages);
+    if (activeBook) {
+      updateBookInfo(activeBook.id, {
+        stages: newStages,
+        plotStages: newStages
+      });
+    }
+    pushVaultHistory({ ...vault, stages: newStages }, '책임 편집장 뼈대 개편안 반영');
+    showToast(`총 ${newStages.length}개 단계가 플롯 뼈대에 성공적으로 반영되었습니다.`, 'success');
   };
 
   // 새 기획 모달 열기
@@ -2080,7 +2118,7 @@ ${isFiction ? `
                             className={`scope-tab-btn ${ideaScopeFilter === 'SHARED' ? 'active' : ''}`}
                             onClick={() => setIdeaScopeFilter('SHARED')}
                           >
-                            공용 ({sharedIdeasCount})
+                            미분류 ({sharedIdeasCount})
                           </button>
                           {activeBook && (
                             <button
@@ -2131,9 +2169,6 @@ ${isFiction ? `
                             return (
                               <div key={idea.id} className="idea-card">
                                 <div className="idea-card-header">
-                                  <span className={`idea-badge ${ownerBook ? 'is-book' : ''}`} title={ownerBook ? ownerBook.title : '공용'}>
-                                    {ownerBook ? ownerBook.title : '공용'}
-                                  </span>
                                   <span>{new Date(idea.createdAt).toLocaleDateString('ko-KR')}</span>
                                 </div>
                                 {isEditing ? (
@@ -2144,7 +2179,7 @@ ${isFiction ? `
                                       value={editingIdeaBookId || 'SHARED'}
                                       onChange={(e) => setEditingIdeaBookId(e.target.value)}
                                     >
-                                      <option value="SHARED">공용</option>
+                                      <option value="SHARED">미분류</option>
                                       {books.map((b) => (
                                         <option key={b.id} value={b.id}>
                                           {b.title}
@@ -3270,21 +3305,63 @@ ${isFiction ? `
         </div>
 
         {/* -----------------------------------------------------------------
-            3. 우측 3열: AI 기획 어시스턴트 카드 + 독립 쿼터 바 (sample-vault 1:1)
+            3. 우측 3열: 책임 편집장 (기획 코칭) + 독립 쿼터 바 (sample-vault 1:1)
            ----------------------------------------------------------------- */}
         <aside className="vault-ai-col-wrap">
           <div className="vault-ai-card">
             <div className="ai-col-header">
               <div className="ai-col-title-wrap">
                 <Bot size={16} style={{ color: 'var(--color-primary)' }} />
-                <span className="ai-col-title">AI 기획 어시스턴트</span>
+                <span className="ai-col-title">책임 편집장 (기획 코칭)</span>
               </div>
             </div>
 
             <div className="ai-chat-body" ref={chatBodyRef}>
               {aiChatMessages.map((msg, mIdx) => (
                 <div key={mIdx} className={`ai-msg-bubble ${msg.role}`}>
-                  {msg.text}
+                  {msg.role === 'assistant' ? (
+                    <>
+                      <div
+                        className="ai-msg-markdown"
+                        dangerouslySetInnerHTML={{
+                          __html: renderMarkdown(msg.text || '')
+                        }}
+                      />
+                      {msg.restructureData && msg.restructureData.stages && msg.restructureData.stages.length > 0 && (
+                        <div className="vault-ai-restructure-card">
+                          <div className="restructure-card-head">
+                            <span className="restructure-card-badge">편집장의 뼈대 개편안 제안</span>
+                            <span className="restructure-card-count">
+                              총 {msg.restructureData.stages.length}개 단계
+                            </span>
+                          </div>
+                          {msg.restructureData.explanation && (
+                            <p className="restructure-card-exp">{msg.restructureData.explanation}</p>
+                          )}
+                          <div className="restructure-preview-list">
+                            {msg.restructureData.stages.map((stg, sIdx) => (
+                              <div key={sIdx} className="restructure-stg-item">
+                                <span className="stg-num">{sIdx + 1}.</span>
+                                <span className="stg-title">{stg.title}</span>
+                                {stg.subplots && stg.subplots.length > 0 && (
+                                  <span className="stg-sub-count">({stg.subplots.length}개 꼭지)</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-apply-vault-restructure"
+                            onClick={() => handleApplyAiStages(msg.restructureData.stages)}
+                          >
+                            <Check size={14} /> 이 기획안을 내 플롯 뼈대에 직접 반영하기
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="ai-msg-user-text">{msg.text}</div>
+                  )}
                 </div>
               ))}
               {isAiChatLoading && (
@@ -3307,14 +3384,19 @@ ${isFiction ? `
             </div>
 
             <div className="ai-input-wrap">
-              <input
-                type="text"
+              <textarea
                 className="ai-input"
+                rows={1}
                 placeholder="기획 고민이나 보완점을 질문하세요..."
                 value={aiChatInput}
                 onChange={(e) => setAiChatInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSendAiMessage();
+                  if (e.key === 'Enter') {
+                    if (e.shiftKey) return; // Shift + Enter는 줄바꿈 허용
+                    if (e.nativeEvent.isComposing) return; // 한글 조합 중복 방지
+                    e.preventDefault();
+                    handleSendAiMessage();
+                  }
                 }}
               />
               <button type="button" className="btn-add-idea" onClick={() => handleSendAiMessage()} disabled={isAiChatLoading}>

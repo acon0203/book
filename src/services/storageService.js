@@ -655,7 +655,17 @@ export const storageService = {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.READER_SHELF) || '[]';
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(item => {
+        const cats = Array.isArray(item.categories) && item.categories.length > 0
+          ? item.categories
+          : (item.category ? [item.category] : [DEFAULT_SHELF_CATEGORIES[0]]);
+        return {
+          ...item,
+          categories: cats,
+          category: cats[0]
+        };
+      });
     } catch {
       return [];
     }
@@ -674,12 +684,59 @@ export const storageService = {
 
   updateShelfItemCategory: (bookId, newCategory) => {
     const updated = storageService.getShelfItems().map(item =>
-      item.bookId === bookId ? { ...item, category: newCategory } : item
+      item.bookId === bookId
+        ? { ...item, category: newCategory, categories: [newCategory] }
+        : item
     );
     return storageService.saveShelfItems(updated);
   },
 
-  toggleShelfItem: (book, defaultCategory = DEFAULT_SHELF_CATEGORIES[0]) => {
+  // 특정 도서의 복수 카테고리 토글 (다중 선택/해제)
+  toggleShelfCategory: (bookId, targetCat) => {
+    const list = storageService.getShelfItems();
+    const updated = list.map(item => {
+      if (item.bookId !== bookId) return item;
+      const curCats = Array.isArray(item.categories) && item.categories.length > 0
+        ? [...item.categories]
+        : [item.category || DEFAULT_SHELF_CATEGORIES[0]];
+      let nextCats;
+      if (curCats.includes(targetCat)) {
+        if (curCats.length <= 1) return item; // 최소 1개는 유지
+        nextCats = curCats.filter(c => c !== targetCat);
+      } else {
+        nextCats = [...curCats, targetCat];
+      }
+      return { ...item, categories: nextCats, category: nextCats[0] };
+    });
+    return storageService.saveShelfItems(updated);
+  },
+
+  addShelfItemWithCategories: (book, categories = []) => {
+    const list = storageService.getShelfItems().filter(item => item.bookId !== book.id);
+    const firstChap = book.publishedChapters?.[0] || book.chapters?.[0];
+    const availableCats = storageService.getShelfCategories();
+    const safeCategories = Array.isArray(categories) && categories.length > 0
+      ? categories
+      : (availableCats[0] ? [availableCats[0]] : ['미분류']);
+    const newEntry = {
+      bookId: book.id,
+      bookTitle: book.title,
+      subtitle: book.subtitle || '',
+      author: book.author || '작가 미상',
+      genre: book.genre || '소설',
+      coverColor: book.coverColor || 'linear-gradient(135deg, #1b382b, #0d1e16)',
+      chapterId: firstChap?.id || null,
+      chapterTitle: firstChap?.title || '1화',
+      category: safeCategories[0],
+      categories: safeCategories,
+      savedAt: new Date().toISOString()
+    };
+    const updated = [newEntry, ...list];
+    storageService.saveShelfItems(updated);
+    return { added: true, list: updated };
+  },
+
+  toggleShelfItem: (book, defaultCategory = null) => {
     const list = storageService.getShelfItems();
     const exists = list.some(item => item.bookId === book.id);
     if (exists) {
@@ -687,6 +744,8 @@ export const storageService = {
       storageService.saveShelfItems(updated);
       return { added: false, list: updated };
     }
+    const availableCats = storageService.getShelfCategories();
+    const initCat = defaultCategory || (availableCats[0] || '미분류');
     const firstChap = book.publishedChapters?.[0] || book.chapters?.[0];
     const newEntry = {
       bookId: book.id,
@@ -697,7 +756,8 @@ export const storageService = {
       coverColor: book.coverColor || 'linear-gradient(135deg, #1b382b, #0d1e16)',
       chapterId: firstChap?.id || null,
       chapterTitle: firstChap?.title || '1화',
-      category: defaultCategory,
+      category: initCat,
+      categories: [initCat],
       savedAt: new Date().toISOString()
     };
     const updated = [newEntry, ...list];
@@ -708,15 +768,16 @@ export const storageService = {
   getShelfCategories: () => {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.READER_SHELF_CATEGORIES);
-      const parsed = raw ? JSON.parse(raw) : DEFAULT_SHELF_CATEGORIES;
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_SHELF_CATEGORIES;
+      if (raw === null) return DEFAULT_SHELF_CATEGORIES;
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      return DEFAULT_SHELF_CATEGORIES;
+      return [];
     }
   },
 
   saveShelfCategories: (categories) => {
-    const safeList = Array.isArray(categories) && categories.length > 0 ? categories : DEFAULT_SHELF_CATEGORIES;
+    const safeList = Array.isArray(categories) ? categories : [];
     localStorage.setItem(STORAGE_KEYS.READER_SHELF_CATEGORIES, JSON.stringify(safeList));
     return safeList;
   },

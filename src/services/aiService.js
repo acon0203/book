@@ -523,6 +523,9 @@ ${stagesText}
     const systemPrompt = `[출판 총괄 편집장 기본 지침]:
 ${editorPersona.systemPrompt}
 
+[중요 대화 원칙]:
+이미 작가와 대화가 진행 중이므로, 답변 첫머리에 "출판사 전문 기획 편집장입니다", "반갑습니다" 같은 상투적인 자기소개나 중복 인사는 절대 하지 마세요. 곧바로 본론과 핵심 솔루션부터 명쾌하게 답변하세요.
+
 [현재 작업 중인 도서 정보]
 - 도서명: ${book.title}
 - 부제: ${book.subtitle || '없음'}
@@ -595,6 +598,112 @@ ${bestsellerGuide}
     }
 
     // 화면 표출용 텍스트에서 restructure_json 코드 블록은 깔끔하게 제거
+    const displayContent = raw.replace(/```restructure_json[\s\S]*?```/, '').trim();
+
+    return {
+      content: displayContent,
+      restructureData
+    };
+  },
+
+  // 1-2. 기획서재(Vault) 전용: 책임 편집장 실시간 기획 & 서사 코칭
+  async chatWithPlanningEditor({
+    book,
+    proposalLogline = '',
+    proposalIntention = '',
+    proposalTarget = '',
+    plotStages = [],
+    message,
+    history = []
+  }) {
+    const adminConfig = getAdminAiConfig();
+    const editorPersona = adminConfig.commonPersonas?.editor || {
+      temperature: 0.45,
+      systemPrompt: '당신은 출판계에서 20년 경력을 가진 밀리언셀러 총괄 책임 편집장(Editor-in-Chief)입니다. 작가의 고유 문체를 존중하면서 책의 기획 의도와 유기적 흐름을 완벽하게 다듬어주는 든든한 파트너입니다.'
+    };
+
+    const stagesSummary = plotStages && plotStages.length > 0
+      ? plotStages.map((s, idx) => `${idx + 1}. ${s.title}${s.subplots && s.subplots.length > 0 ? ` (세부: ${s.subplots.map(sp => sp.title).join(', ')})` : ''}`).join('\n')
+      : '아직 설정된 플롯 단계가 없습니다.';
+
+    const systemPrompt = `[출판 총괄 책임 편집장 - 도서 기획 및 플롯 뼈대 코칭 지침]:
+${editorPersona.systemPrompt}
+
+[중요 대화 원칙]:
+1. 이미 작가와 대화가 진행 중이므로, 답변 첫머리에 "출판사 전문 기획 편집장입니다", "반갑습니다" 같은 상투적인 자기소개나 중복 인사는 절대 하지 마세요. 곧바로 본론과 명쾌한 피드백/해결책부터 직행하세요.
+2. 기획과 서사의 완성도를 위해 출판 전문가 관점에서 날카로우면서도 따뜻하게 조언하세요.
+
+[현재 기획 중인 작품 정보]
+- 도서명: ${book?.title || '미정'}
+- 로그라인: ${proposalLogline || '미정'}
+- 기획의도: ${proposalIntention || '미정'}
+- 타깃독자: ${proposalTarget || '미정'}
+- 현재 플롯 뼈대 단계:
+${stagesSummary}
+
+[★ 뼈대 구성 / 목차 조립대 반영 요청 처리 규칙 ★]:
+작가가 "뼈대 짜줘", "목차 조립대에 반영해줘", "플롯 구성해줘", "이 리스트로 단계 나눠줘" 등 뼈대/목차 구성을 요청하거나 지시하는 경우:
+1. 답변 본문에 편집장의 기획 의도와 단계별 서사 흐름을 친절하게 설명하세요.
+2. 그리고 답변 맨 마지막에 반드시 아래 형식의 특수 코드 블록(JSON)을 정확히 첨부하세요:
+\`\`\`restructure_json
+{
+  "explanation": "편집장의 기획안 사유 요약 (1~2줄)",
+  "stages": [
+    {
+      "title": "단계/챕터 제목 (1단계, 1장 같은 번호 없이 순수 제목만)",
+      "desc": "해당 단계의 핵심 목표나 서사 전개 요약 (1줄)",
+      "subplots": [
+        { "title": "세부 꼭지/소제목 1" },
+        { "title": "세부 꼭지/소제목 2" }
+      ]
+    }
+  ]
+}
+\`\`\`
+이렇게 작성하면 시스템이 자동으로 [이 기획안을 내 플롯 뼈대에 직접 반영하기] 버튼을 생성하여 작가의 조립대에 원클릭으로 꽂아 넣습니다.
+일반 질문이나 평가인 경우에는 일반 마크다운 텍스트로 자연스럽게 답변하세요.`;
+
+    let historyContext = '';
+    if (history && history.length > 0) {
+      historyContext = history.slice(-6).map(m => `${m.role === 'user' ? '작가' : '편집장'}: ${m.text || m.content}`).join('\n\n') + '\n\n';
+    }
+
+    const fullPrompt = `${historyContext}작가: ${message}\n\n편집장:`;
+
+    const raw = await aiService.generateWithCustomSettings({
+      systemPrompt,
+      userPrompt: fullPrompt,
+      temperature: editorPersona.temperature || 0.45,
+      modelId: adminConfig.activeModel || 'smart_cascade',
+      customApiKey: adminConfig.adminApiKey || undefined
+    });
+
+    let restructureData = null;
+    const jsonMatch = raw.match(/```restructure_json([\s\S]*?)```/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1].trim());
+        const stages = parsed.stages || (parsed.chapters ? parsed.chapters.map(c => ({
+          title: c.title,
+          desc: c.desc || '',
+          subplots: c.sections || []
+        })) : []);
+
+        restructureData = {
+          explanation: parsed.explanation || '새로운 기획 뼈대가 생성되었습니다.',
+          stages: stages.map(s => ({
+            title: aiService.cleanOutlineTitle(s.title),
+            desc: s.desc || '',
+            subplots: (s.subplots || []).map(sp => ({
+              title: aiService.cleanOutlineTitle(sp.title || sp)
+            }))
+          }))
+        };
+      } catch (e) {
+        console.warn('restructure_json parsing error in planning:', e);
+      }
+    }
+
     const displayContent = raw.replace(/```restructure_json[\s\S]*?```/, '').trim();
 
     return {

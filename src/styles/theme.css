@@ -268,16 +268,116 @@ body.light-mode .btn-primary:hover {
   font-weight: 700;
 }
 
-.modal-close-btn {
+/* ========================================================
+   [전역 공통 X버튼 & 닫기/삭제 아이콘 버튼 통일 테마]
+   ======================================================== */
+
+/* 1. 모달 및 패널 우상단 닫기 X 버튼 */
+.modal-close-btn,
+.btn-close {
   background: transparent;
   border: none;
+  outline: none;
   color: var(--text-dim);
   cursor: pointer;
-  display: flex;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: var(--transition);
+  flex-shrink: 0;
 }
-.modal-close-btn:hover {
+.modal-close-btn:hover,
+.btn-close:hover {
   color: var(--text-main);
+  background: var(--bg-hover);
+}
+.modal-close-btn:active,
+.btn-close:active {
+  transform: scale(0.94);
+}
+
+/* 2. 칩, 태그, 뱃지, 카테고리 내부의 미니 삭제 X 버튼 */
+.chip-del-btn,
+.btn-chip-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  margin-left: 3px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+.chip-del-btn:hover,
+.btn-chip-del:hover {
+  opacity: 1;
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.14);
+}
+body.light-mode .chip-del-btn:hover,
+body.light-mode .btn-chip-del:hover {
+  background: rgba(185, 28, 28, 0.1);
+  color: var(--danger);
+}
+.chip-del-btn:active,
+.btn-chip-del:active {
+  transform: scale(0.9);
+}
+
+/* 3. 액티브/선택된 칩 내부에서의 X버튼 반전 대비 */
+.active .chip-del-btn,
+.active .btn-chip-del,
+.selected .chip-del-btn,
+.selected .btn-chip-del {
+  opacity: 0.8;
+  color: #ffffff;
+}
+.active .chip-del-btn:hover,
+.active .btn-chip-del:hover,
+.selected .chip-del-btn:hover,
+.selected .btn-chip-del:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+/* 4. 마이크로 인라인 아이콘 버튼 */
+.mini-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  border-radius: 4px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.mini-icon-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
+}
+.mini-icon-btn.danger:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .modal-body {
@@ -335,3 +435,90 @@ select.form-control option {
   font-size: 0.92rem;
   padding: 0.4rem;
 }
+
+/* ==========================================================================
+   서재 카테고리 복수 선택 팝업 스타일
+   ========================================================================== */
+.shelf-select-modal {
+  max-width: 440px;
+  width: 90%;
+  animation: modalScaleIn 0.18s ease-out;
+}
+
+.shelf-select-modal-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.shelf-select-guide {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1.1rem;
+}
+
+.shelf-select-guide strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.shelf-category-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.shelf-category-check-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.shelf-category-check-item input[type="checkbox"] {
+  display: none;
+}
+
+.shelf-category-check-item:hover {
+  border-color: var(--primary);
+  background: var(--bg-surface-hover);
+}
+
+.shelf-category-check-item.checked {
+  border-color: var(--primary);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.shelf-category-check-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border-glass);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  transition: all 0.15s ease;
+}
+
+.shelf-category-check-item.checked .shelf-category-check-box {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.shelf-category-check-label {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-main);
+  flex: 1;
+}
+

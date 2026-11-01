@@ -9,7 +9,9 @@ import {
   TrendingUp,
   Bookmark,
   BookmarkCheck,
-  MessageSquare
+  MessageSquare,
+  X,
+  Check
 } from 'lucide-react';
 import { useStore } from '../store';
 import { OFFICIAL_GENRES } from '../data/genreConstants';
@@ -70,19 +72,61 @@ export default function ExploreSerial() {
     return user?.displayName || cfgAuthor || '작가 미상';
   };
 
+  // 복수 카테고리 선택 팝업 상태 (카테고리가 2개 이상일 때만 노출)
+  const [shelfModalBook, setShelfModalBook] = useState(null);
+  const [selectedCatsForModal, setSelectedCatsForModal] = useState([]);
+
   // 담은 작품 담기 / 빼기 토글 액션 (storageService 일원화)
   const handleToggleShelf = (e, book) => {
     e.stopPropagation();
-    const { added, list } = storageService.toggleShelfItem({
+    const isAlreadySaved = savedBookIds.has(book.id);
+
+    // 1) 이미 담겨있는 상태이면 즉시 서재에서 제거
+    if (isAlreadySaved) {
+      const updatedList = storageService.removeShelfItem(book.id);
+      setSavedBookIds(new Set(updatedList.map(h => h.bookId)));
+      showToast(`'${book.title}' 도서가 담은 작품에서 제거되었습니다.`, 'info');
+      return;
+    }
+
+    // 2) 새로 담는 경우: 서재 카테고리가 2개 이상 복수로 존재할 때만 선택 팝업 오픈
+    const cats = storageService.getShelfCategories();
+    if (cats.length > 1) {
+      setShelfModalBook(book);
+      setSelectedCatsForModal([cats[0]]); // 첫 번째 카테고리 기본 선택
+      return;
+    }
+
+    // 3) 카테고리가 0개 또는 1개일 때는 팝업 없이 즉시 보관
+    const targetCats = cats.length === 1 ? [cats[0]] : ['미분류'];
+    const { list } = storageService.addShelfItemWithCategories({
       ...book,
       author: getDisplayAuthor(book)
-    });
+    }, targetCats);
     setSavedBookIds(new Set(list.map(h => h.bookId)));
-    if (added) {
-      showToast(`'${book.title}' 도서가 담은 작품에 추가되었습니다.`, 'success');
-    } else {
-      showToast(`'${book.title}' 도서가 담은 작품에서 제거되었습니다.`, 'info');
-    }
+    showToast(`'${book.title}' 도서가 서재에 담겼습니다.`, 'success');
+  };
+
+  const handleToggleCatInModal = (cat) => {
+    setSelectedCatsForModal(prev => {
+      if (prev.includes(cat)) {
+        return prev.filter(c => c !== cat);
+      } else {
+        return [...prev, cat];
+      }
+    });
+  };
+
+  const handleConfirmAddShelf = () => {
+    if (!shelfModalBook) return;
+    const catsToSave = selectedCatsForModal.length > 0 ? selectedCatsForModal : ['미분류'];
+    const { list } = storageService.addShelfItemWithCategories({
+      ...shelfModalBook,
+      author: getDisplayAuthor(shelfModalBook)
+    }, catsToSave);
+    setSavedBookIds(new Set(list.map(h => h.bookId)));
+    showToast(`'${shelfModalBook.title}' 도서가 서재에 담겼습니다.`, 'success');
+    setShelfModalBook(null);
   };
 
   // 연재 데이터 가공 & 통계 집계: 100% 실제 데이터 기반 집계
@@ -357,6 +401,75 @@ export default function ExploreSerial() {
           )}
         </section>
       </main>
+
+      {/* 복수 카테고리 선택 팝업 (서재에 카테고리가 2개 이상일 때만 표시) */}
+      {shelfModalBook && (
+        <div className="modal-overlay" onClick={() => setShelfModalBook(null)}>
+          <div className="modal-box shelf-select-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Bookmark size={18} className="modal-title-icon" />
+                <h3 className="modal-title">서재 카테고리 선택</h3>
+              </div>
+              <button
+                type="button"
+                className="btn-icon modal-close-btn"
+                onClick={() => setShelfModalBook(null)}
+                title="닫기"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body shelf-select-modal-body">
+              <p className="shelf-select-guide">
+                <strong>{shelfModalBook.title}</strong> 도서를 담을 카테고리를 선택하세요. (복수 선택 가능)
+              </p>
+
+              <div className="shelf-category-checklist">
+                {storageService.getShelfCategories().map((cat) => {
+                  const isChecked = selectedCatsForModal.includes(cat);
+                  return (
+                    <label
+                      key={cat}
+                      className={`shelf-category-check-item ${isChecked ? 'checked' : ''}`}
+                      onClick={() => handleToggleCatInModal(cat)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}}
+                        aria-label={cat}
+                      />
+                      <span className="shelf-category-check-box">
+                        {isChecked && <Check size={12} strokeWidth={3} />}
+                      </span>
+                      <span className="shelf-category-check-label">{cat}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShelfModalBook(null)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleConfirmAddShelf}
+              >
+                선택한 카테고리에 담기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -960,17 +960,37 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  margin-left: 2px;
-  border-radius: 3px;
-  opacity: 0.7;
+  width: 17px;
+  height: 17px;
+  margin-left: 3px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.55;
+  cursor: pointer;
   transition: all 0.15s ease;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 .shelf-cat-del-btn:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.12);
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.shelf-cat-chip.active .shelf-cat-del-btn {
+  color: #ffffff;
+  opacity: 0.8;
+}
+
+.shelf-cat-chip.active .shelf-cat-del-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
 }
 
 .btn-add-shelf-category {
@@ -994,23 +1014,93 @@
   background: rgba(139, 90, 43, 0.06);
 }
 
-.shelf-card-cat-select {
+/* 담은 작품 카드 내 복수 카테고리 태그 칩 바 */
+.shelf-card-cats-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.shelf-card-cat-pill {
   font-size: 0.68rem;
   font-weight: 600;
-  padding: 1.5px 5.5px;
+  padding: 1.5px 6px;
   border-radius: 4px;
   background: rgba(139, 90, 43, 0.08);
   color: var(--primary);
-  border: 1px solid rgba(139, 90, 43, 0.25);
-  cursor: pointer;
-  outline: none;
-  flex-shrink: 0;
-  max-width: 115px;
-  text-overflow: ellipsis;
-  transition: all 0.15s ease;
+  border: 1px solid rgba(139, 90, 43, 0.22);
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
-.shelf-card-cat-select:hover {
+.btn-shelf-card-cat-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px dashed var(--border-color);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.35;
+}
+.btn-shelf-card-cat-add:hover {
   border-color: var(--primary);
-  background: rgba(139, 90, 43, 0.14);
+  color: var(--primary);
+  background: rgba(139, 90, 43, 0.08);
+}
+
+/* 카테고리 다중 선택 팝오버 */
+.shelf-cat-popover-box {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.65rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.shelf-cat-popover-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-glass);
+  padding-bottom: 0.3rem;
+}
+
+.shelf-cat-popover-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.shelf-cat-popover-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  user-select: none;
+}
+.shelf-cat-popover-label:hover {
+  color: var(--primary);
+}
+.shelf-cat-popover-label input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--primary);
 }

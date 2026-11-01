@@ -659,7 +659,7 @@
 .idea-card-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   font-size: 0.7rem;
   color: var(--text-muted);
 }
@@ -1678,14 +1678,14 @@
 }
 
 .ai-msg-bubble {
-  padding: 0.8rem 0.95rem;
+  padding: 0.85rem 1rem;
   border-radius: 8px;
   font-size: 0.82rem;
-  line-height: 1.55;
+  line-height: 1.6;
   background: var(--bg-surface);
   color: var(--text-main);
   border: 1px solid var(--border-subtle);
-  word-break: break-all;
+  word-break: break-word;
 }
 .ai-msg-bubble.assistant {
   border-left: 3px solid var(--color-primary);
@@ -1695,6 +1695,187 @@
   border-color: var(--border-focus);
   color: var(--color-primary);
   align-self: flex-end;
+}
+.ai-msg-user-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* AI 기획 어시스턴트 마크다운 가독성 서식 */
+.ai-msg-markdown {
+  word-break: break-word;
+}
+.ai-msg-markdown h1,
+.ai-msg-markdown h2,
+.ai-msg-markdown h3,
+.ai-msg-markdown h4 {
+  margin-top: 0.75rem;
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.35;
+}
+.ai-msg-markdown h1:first-child,
+.ai-msg-markdown h2:first-child,
+.ai-msg-markdown h3:first-child,
+.ai-msg-markdown h4:first-child {
+  margin-top: 0;
+}
+.ai-msg-markdown h1 { font-size: 1.02rem; }
+.ai-msg-markdown h2 { font-size: 0.95rem; }
+.ai-msg-markdown h3 { font-size: 0.9rem; }
+.ai-msg-markdown h4 { font-size: 0.85rem; }
+
+.ai-msg-markdown p {
+  margin: 0.45rem 0;
+  line-height: 1.65;
+}
+.ai-msg-markdown p:first-child {
+  margin-top: 0;
+}
+.ai-msg-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-msg-markdown strong {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.ai-msg-markdown blockquote {
+  margin: 0.5rem 0;
+  padding: 0.45rem 0.75rem;
+  border-left: 3px solid var(--color-primary);
+  background: rgba(196, 138, 84, 0.08);
+  border-radius: 0 4px 4px 0;
+  color: var(--text-main);
+  font-style: normal;
+}
+
+.ai-msg-markdown ul,
+.ai-msg-markdown ol {
+  margin: 0.45rem 0;
+  padding-left: 1.25rem;
+}
+
+.ai-msg-markdown li {
+  margin-bottom: 0.3rem;
+  line-height: 1.55;
+}
+
+.ai-msg-markdown hr {
+  border: none;
+  border-top: 1px dashed var(--border-divider);
+  margin: 0.75rem 0;
+}
+
+.ai-msg-markdown code {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.82em;
+  font-family: monospace;
+}
+
+/* 책임 편집장의 플롯 뼈대 개편안 카드 */
+.vault-ai-restructure-card {
+  margin-top: 0.85rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-focus);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 8px;
+  padding: 0.85rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.restructure-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.restructure-card-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.restructure-card-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.restructure-card-exp {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.restructure-preview-list {
+  max-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--bg-surface);
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-divider);
+}
+
+.restructure-stg-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+}
+
+.restructure-stg-item .stg-num {
+  font-weight: 700;
+  color: var(--color-primary);
+  min-width: 16px;
+}
+
+.restructure-stg-item .stg-title {
+  font-weight: 600;
+  color: var(--text-main);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.restructure-stg-item .stg-sub-count {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.btn-apply-vault-restructure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(196, 138, 84, 0.25);
+}
+.btn-apply-vault-restructure:hover {
+  background: #b37943;
+  transform: translateY(-1px);
+}
+.btn-apply-vault-restructure:active {
+  transform: translateY(0);
 }
 
 .ai-quick-prompts {
@@ -1727,6 +1908,7 @@
 .ai-input-wrap {
   padding: 0.65rem 0.85rem;
   display: flex;
+  align-items: flex-end;
   gap: 0.45rem;
   border-top: 1px solid var(--border-divider);
   background: var(--bg-card);
@@ -1742,6 +1924,16 @@
   font-size: 0.82rem;
   color: var(--text-main);
   outline: none;
+  resize: none;
+  min-height: 38px;
+  max-height: 120px;
+  line-height: 1.45;
+  overflow-y: auto;
+  font-family: var(--font-family);
+  box-sizing: border-box;
+}
+.ai-input:focus {
+  border-color: var(--color-primary);
 }
 
 /* 독립 쿼터 바 (v5-quota-pill-bar) */

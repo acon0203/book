@@ -40,6 +40,7 @@ export default function Library() {
   const [shelfItems, setShelfItems] = useState([]);
   const [shelfCategories, setShelfCategories] = useState(DEFAULT_SHELF_CATEGORIES);
   const [selectedShelfCategory, setSelectedShelfCategory] = useState('all');
+  const [openCatPopupBookId, setOpenCatPopupBookId] = useState(null);
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
@@ -60,6 +61,14 @@ export default function Library() {
     loadReadingAndShelfData();
     bookService.getStats().then(setBaseStats).catch(console.error);
   }, [loadBooks]);
+
+  // 카테고리 팝오버 바깥 클릭 시 닫기
+  useEffect(() => {
+    if (!openCatPopupBookId) return;
+    const handleGlobalClick = () => setOpenCatPopupBookId(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, [openCatPopupBookId]);
 
   // ESC 키로 새 책 만들기 모달 닫기
   useEffect(() => {
@@ -149,9 +158,15 @@ export default function Library() {
     showToast('담은 작품 목록에서 제거되었습니다.', 'info');
   };
 
-  const handleChangeShelfItemCategory = (bookId, newCat) => {
-    setShelfItems(storageService.updateShelfItemCategory(bookId, newCat));
-    showToast(`카테고리가 '${newCat}'(으)로 변경되었습니다.`, 'success');
+  const getItemCategories = (item) => {
+    if (Array.isArray(item.categories) && item.categories.length > 0) return item.categories;
+    if (item.category) return [item.category];
+    return [shelfCategories[0] || '읽고 싶은 책'];
+  };
+
+  const handleToggleItemCategory = (bookId, targetCat) => {
+    const updated = storageService.toggleShelfCategory(bookId, targetCat);
+    setShelfItems(updated);
   };
 
   const handleAddShelfCategory = async () => {
@@ -175,14 +190,9 @@ export default function Library() {
 
   const handleDeleteShelfCategory = async (e, catName) => {
     e.stopPropagation();
-    if (shelfCategories.length <= 1) {
-      showToast('최소 1개의 카테고리는 유지되어야 합니다.', 'info');
-      return;
-    }
-    const fallbackCat = shelfCategories.find(c => c !== catName) || '읽고 싶은 책';
     const ok = await openConfirm({
       title: '카테고리 삭제',
-      message: `'${catName}' 카테고리를 삭제하시겠습니까?\n해당 카테고리에 담긴 작품들은 '${fallbackCat}' 카테고리로 이동됩니다.`,
+      message: `'${catName}' 카테고리를 삭제하시겠습니까?\n해당 카테고리가 삭제되면 다른 카테고리가 없는 도서는 '미분류'로 분류됩니다.`,
       danger: true,
       confirmText: '삭제'
     });
@@ -190,18 +200,22 @@ export default function Library() {
 
     const nextCats = storageService.saveShelfCategories(shelfCategories.filter(c => c !== catName));
     setShelfCategories(nextCats);
-
-    const nextItems = storageService.saveShelfItems(
-      shelfItems.map(item =>
-        (item.category || shelfCategories[0]) === catName ? { ...item, category: fallbackCat } : item
-      )
-    );
-    setShelfItems(nextItems);
-
     if (selectedShelfCategory === catName) {
       setSelectedShelfCategory('all');
     }
-    showToast(`'${catName}' 카테고리가 삭제되었습니다.`, 'info');
+
+    const nextItems = storageService.saveShelfItems(
+      shelfItems.map(item => {
+        const cats = getItemCategories(item).filter(c => c !== catName);
+        const safeCats = cats.length > 0 ? cats : ['미분류'];
+        return {
+          ...item,
+          categories: safeCats,
+          category: safeCats[0]
+        };
+      })
+    );
+    setShelfItems(nextItems);
   };
 
   // 도서 완결/연재중 전환 확인 팝업 (openConfirm 기반 재확인)
@@ -283,8 +297,11 @@ export default function Library() {
   const filteredAndSortedShelf = shelfItems
     .filter((item) => {
       if (selectedShelfCategory === 'all') return true;
-      const itemCat = item.category || shelfCategories[0] || '읽고 싶은 책';
-      return itemCat === selectedShelfCategory;
+      const itemCats = getItemCategories(item);
+      if (shelfCategories.length === 0 || selectedShelfCategory === '미분류') {
+        return itemCats.length === 0 || itemCats.includes('미분류') || shelfCategories.length === 0;
+      }
+      return itemCats.includes(selectedShelfCategory);
     })
     .sort((a, b) => {
       if (shelfSortBy === 'title') return (a.bookTitle || '').localeCompare(b.bookTitle || '', 'ko');
@@ -822,32 +839,41 @@ export default function Library() {
                     <span className="shelf-cat-count">{shelfItems.length}</span>
                   </button>
 
-                  {shelfCategories.map((cat) => {
-                    const count = shelfItems.filter(
-                      (item) => (item.category || shelfCategories[0] || '읽고 싶은 책') === cat
-                    ).length;
-                    const isActive = selectedShelfCategory === cat;
-                    return (
-                      <div
-                        key={cat}
-                        className={`shelf-cat-chip ${isActive ? 'active' : ''}`}
-                        onClick={() => setSelectedShelfCategory(cat)}
-                      >
-                        <span>{cat}</span>
-                        <span className="shelf-cat-count">{count}</span>
-                        {shelfCategories.length > 1 && (
+                  {shelfCategories.length === 0 ? (
+                    <button
+                      type="button"
+                      className={`shelf-cat-chip ${selectedShelfCategory === '미분류' ? 'active' : ''}`}
+                      onClick={() => setSelectedShelfCategory('미분류')}
+                    >
+                      <span>미분류</span>
+                      <span className="shelf-cat-count">{shelfItems.length}</span>
+                    </button>
+                  ) : (
+                    shelfCategories.map((cat) => {
+                      const count = shelfItems.filter(
+                        (item) => getItemCategories(item).includes(cat)
+                      ).length;
+                      const isActive = selectedShelfCategory === cat;
+                      return (
+                        <div
+                          key={cat}
+                          className={`shelf-cat-chip ${isActive ? 'active' : ''}`}
+                          onClick={() => setSelectedShelfCategory(cat)}
+                        >
+                          <span>{cat}</span>
+                          <span className="shelf-cat-count">{count}</span>
                           <button
                             type="button"
-                            className="shelf-cat-del-btn"
+                            className="shelf-cat-del-btn chip-del-btn"
                             title={`'${cat}' 카테고리 삭제`}
                             onClick={(e) => handleDeleteShelfCategory(e, cat)}
                           >
                             <X size={11} />
                           </button>
-                        )}
-                      </div>
-                    );
-                  })}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
 
                 <button
@@ -885,9 +911,7 @@ export default function Library() {
                     const matchedBook = books.find(b => b.id === item.bookId);
                     const isDeletedBook = Boolean(item.isDeleted || (!isBooksLoading && !matchedBook));
                     const displayAuthor = resolveDisplayAuthor(item.author, matchedBook);
-                    const currentCat = shelfCategories.includes(item.category)
-                      ? item.category
-                      : (shelfCategories[0] || '읽고 싶은 책');
+                    const itemCats = getItemCategories(item);
 
                     const handleCardClick = () => {
                       if (isDeletedBook) {
@@ -914,22 +938,8 @@ export default function Library() {
                           <div>
                             <div className="card-top-header">
                               <div className="card-badges-left">
-                                {isDeletedBook ? (
+                                {isDeletedBook && (
                                   <span className="status-pill deleted-pill">삭제된 작품</span>
-                                ) : (
-                                  <select
-                                    className="shelf-card-cat-select"
-                                    value={currentCat}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => handleChangeShelfItemCategory(item.bookId, e.target.value)}
-                                    title="카테고리 변경"
-                                  >
-                                    {shelfCategories.map((cat) => (
-                                      <option key={cat} value={cat}>
-                                        {cat}
-                                      </option>
-                                    ))}
-                                  </select>
                                 )}
                                 <span className="genre-label">글 {displayAuthor}</span>
                               </div>
