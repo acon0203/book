@@ -31,7 +31,7 @@ export default function Library() {
   const {
     books, loadBooks, openBook, openReader, deleteBook, isBooksLoading, showToast,
     isNewBookModalOpen, setNewBookModalOpen, setView, activeBook, user, openConfirm, openPrompt,
-    toggleBookCompleted
+    toggleBookCompleted, markUnsynced, lastSyncedAt
   } = useStore();
 
   const [baseStats, setBaseStats] = useState({ totalWordsGenerated: 0, totalChaptersCompleted: 0, aiGenerationsCount: 0 });
@@ -60,7 +60,7 @@ export default function Library() {
     loadBooks();
     loadReadingAndShelfData();
     bookService.getStats().then(setBaseStats).catch(console.error);
-  }, [loadBooks]);
+  }, [loadBooks, lastSyncedAt]);
 
   // 카테고리 팝오버 바깥 클릭 시 닫기
   useEffect(() => {
@@ -149,12 +149,14 @@ export default function Library() {
   const handleRemoveHistory = (e, bookId) => {
     e.stopPropagation();
     setReadingHistory(storageService.removeReadingHistoryItem(bookId));
+    markUnsynced();
     showToast('최근 읽은 작품 목록에서 제거되었습니다.', 'info');
   };
 
   const handleRemoveShelfItem = (e, bookId) => {
     e.stopPropagation();
     setShelfItems(storageService.removeShelfItem(bookId));
+    markUnsynced();
     showToast('담은 작품 목록에서 제거되었습니다.', 'info');
   };
 
@@ -167,6 +169,7 @@ export default function Library() {
   const handleToggleItemCategory = (bookId, targetCat) => {
     const updated = storageService.toggleShelfCategory(bookId, targetCat);
     setShelfItems(updated);
+    markUnsynced();
   };
 
   const handleAddShelfCategory = async () => {
@@ -184,6 +187,7 @@ export default function Library() {
     }
     const nextCats = storageService.saveShelfCategories([...shelfCategories, trimmed]);
     setShelfCategories(nextCats);
+    markUnsynced();
     setSelectedShelfCategory(trimmed);
     showToast(`'${trimmed}' 카테고리가 추가되었습니다.`, 'success');
   };
@@ -200,6 +204,7 @@ export default function Library() {
 
     const nextCats = storageService.saveShelfCategories(shelfCategories.filter(c => c !== catName));
     setShelfCategories(nextCats);
+    markUnsynced();
     if (selectedShelfCategory === catName) {
       setSelectedShelfCategory('all');
     }
@@ -216,6 +221,7 @@ export default function Library() {
       })
     );
     setShelfItems(nextItems);
+    markUnsynced();
   };
 
   // 도서 완결/연재중 전환 확인 팝업 (openConfirm 기반 재확인)

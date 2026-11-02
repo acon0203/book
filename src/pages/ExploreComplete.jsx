@@ -40,6 +40,8 @@ export default function ExploreComplete() {
   const setView = useStore((state) => state.setView);
   const user = useStore((state) => state.user);
   const showToast = useStore((state) => state.showToast);
+  const markUnsynced = useStore((state) => state.markUnsynced);
+  const lastSyncedAt = useStore((state) => state.lastSyncedAt);
 
   // 담은 작품(reader_shelf) 담김 상태 추적
   const [savedBookIds, setSavedBookIds] = useState(() => new Set());
@@ -52,7 +54,7 @@ export default function ExploreComplete() {
   useEffect(() => {
     loadBooks();
     syncSavedBooks();
-  }, [loadBooks]);
+  }, [loadBooks, lastSyncedAt]);
 
   // 필터 상태
   const [selectedGenre, setSelectedGenre] = useState('all');
@@ -81,6 +83,7 @@ export default function ExploreComplete() {
     if (isAlreadySaved) {
       const updatedList = storageService.removeShelfItem(book.id);
       setSavedBookIds(new Set(updatedList.map(h => h.bookId)));
+      markUnsynced();
       showToast(`'${book.title}' 도서가 담은 작품에서 제거되었습니다.`, 'info');
       return;
     }
@@ -100,6 +103,7 @@ export default function ExploreComplete() {
       author: getDisplayAuthor(book)
     }, targetCats);
     setSavedBookIds(new Set(list.map(h => h.bookId)));
+    markUnsynced();
     showToast(`'${book.title}' 도서가 서재에 담겼습니다.`, 'success');
   };
 
@@ -121,6 +125,7 @@ export default function ExploreComplete() {
       author: getDisplayAuthor(shelfModalBook)
     }, catsToSave);
     setSavedBookIds(new Set(list.map(h => h.bookId)));
+    markUnsynced();
     showToast(`'${shelfModalBook.title}' 도서가 서재에 담겼습니다.`, 'success');
     setShelfModalBook(null);
   };

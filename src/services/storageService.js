@@ -643,6 +643,7 @@ export const storageService = {
   saveReadingHistory: (list) => {
     const safeList = Array.isArray(list) ? list : [];
     localStorage.setItem(STORAGE_KEYS.READER_HISTORY, JSON.stringify(safeList));
+    localStorage.setItem('reader_data_updated_at', new Date().toISOString());
     return safeList;
   },
 
@@ -674,6 +675,7 @@ export const storageService = {
   saveShelfItems: (list) => {
     const safeList = Array.isArray(list) ? list : [];
     localStorage.setItem(STORAGE_KEYS.READER_SHELF, JSON.stringify(safeList));
+    localStorage.setItem('reader_data_updated_at', new Date().toISOString());
     return safeList;
   },
 
@@ -779,6 +781,7 @@ export const storageService = {
   saveShelfCategories: (categories) => {
     const safeList = Array.isArray(categories) ? categories : [];
     localStorage.setItem(STORAGE_KEYS.READER_SHELF_CATEGORIES, JSON.stringify(safeList));
+    localStorage.setItem('reader_data_updated_at', new Date().toISOString());
     return safeList;
   },
 

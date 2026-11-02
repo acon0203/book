@@ -236,6 +236,15 @@ export const cloudSyncService = {
       batch.set(personaDocRef, { ...cleanPersona, updatedAt: new Date().toISOString() }, { merge: true });
     }
 
+    // [7] 독서 기록·담은 작품·카테고리 동기화 (users/{userKey}/config/reader_data)
+    const readerDataDocRef = doc(db, 'users', userKey, 'config', 'reader_data');
+    batch.set(readerDataDocRef, {
+      readingHistory: JSON.parse(JSON.stringify(storageService.getReadingHistory())),
+      shelfItems: JSON.parse(JSON.stringify(storageService.getShelfItems())),
+      shelfCategories: JSON.parse(JSON.stringify(storageService.getShelfCategories())),
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
     // 배치 커밋 실행
     await batch.commit();
 
@@ -323,9 +332,18 @@ export const cloudSyncService = {
       config = configSnap.data();
     }
 
+    // 3-1. users/{userKey}/config/reader_data 문서 조회
+    let readerData = null;
+    try {
+      const readerDataSnap = await getDoc(doc(db, 'users', userKey, 'config', 'reader_data'));
+      if (readerDataSnap.exists()) {
+        readerData = readerDataSnap.data();
+      }
+    } catch {}
+
     // 4. 레거시(단일 문서 snapshot) fallback 검사
     // 만약 새 컬렉션에 도서가 없고 레거시 문서에 데이터가 남아있는 경우
-    if (books.length === 0 && vault.length === 0) {
+    if (books.length === 0 && vault.length === 0 && !readerData) {
       console.log('[CloudSync] 신규 컬렉션 비어있음 ➔ 레거시 스냅샷 경로 탐색 중...');
       let legacyDocSnap = await getDoc(doc(db, 'users', uid));
       if (!legacyDocSnap.exists() || !legacyDocSnap.data()?.books) {
@@ -340,7 +358,7 @@ export const cloudSyncService = {
       }
     }
 
-    if (books.length === 0 && vault.length === 0) {
+    if (books.length === 0 && vault.length === 0 && !readerData) {
       return {
         exists: false,
         message: '클라우드에 저장된 백업 데이터가 없습니다.'
@@ -417,6 +435,25 @@ export const cloudSyncService = {
       console.warn('[CloudSync] 작가 페르소나 복원 경고:', e);
     }
 
+    // 독서 기록·담은 작품·카테고리 복원
+    try {
+      const readerDataSnap = await getDoc(doc(db, 'users', userKey, 'config', 'reader_data'));
+      if (readerDataSnap.exists()) {
+        const rData = readerDataSnap.data();
+        if (Array.isArray(rData.shelfCategories)) {
+          storageService.saveShelfCategories(rData.shelfCategories);
+        }
+        if (Array.isArray(rData.shelfItems)) {
+          storageService.saveShelfItems(rData.shelfItems);
+        }
+        if (Array.isArray(rData.readingHistory)) {
+          storageService.saveReadingHistory(rData.readingHistory);
+        }
+      }
+    } catch (e) {
+      console.warn('[CloudSync] 담은 작품 및 카테고리 복원 경고:', e);
+    }
+
     // 일자별 집필 기록(dailyWritingLogs) 복원 및 덮어쓰지 않고 날짜별 병합 (같은 날짜는 큰 값 유지)
     try {
       const statsSnap = await getDoc(doc(db, 'users', userKey, 'stats', 'summary'));
@@ -482,6 +519,11 @@ export const cloudSyncService = {
           const vt = new Date(v.updatedAt || v.createdAt).getTime();
           if (vt > latest) latest = vt;
         }
+      }
+      const readerUpdatedStr = localStorage.getItem('reader_data_updated_at');
+      if (readerUpdatedStr) {
+        const rt = new Date(readerUpdatedStr).getTime();
+        if (rt > latest) latest = rt;
       }
     } catch (e) {
       console.warn('[CloudSync] getLocalLatestModifiedTime error:', e);
