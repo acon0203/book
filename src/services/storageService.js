@@ -468,7 +468,21 @@ export const storageService = {
 
   // --- 1-2. 창작실 (아이디어 노트, 기획서, 인물 관계도, 스토리라인 뼈대) ---
   updateBookPlanning: (bookId, planningData) => {
-    return storageService.updateBook(bookId, planningData);
+    const proposal = planningData?.proposal || planningData || {};
+    const merged = {
+      ...planningData,
+      proposal: {
+        logline: proposal.logline || '',
+        intention: proposal.intention || '',
+        target: proposal.target || '',
+        diff: proposal.diff || ''
+      },
+      logline: proposal.logline || '',
+      intention: proposal.intention || '',
+      target: proposal.target || '',
+      diff: proposal.diff || ''
+    };
+    return storageService.updateBook(bookId, merged);
   },
 
   updateBookCharacters: (bookId, characters) => {
@@ -839,5 +853,54 @@ export const storageService = {
       storageService.saveShelfCategories(backupObj.shelfCategories);
     }
     return true;
+  },
+
+  // --- 7. AI 대화 히스토리 (기획 코칭 & 총괄 편집장 세션 저장) ---
+  getAiChatHistory: (bookId, type = 'planning') => {
+    try {
+      const key = `bookstudio_ai_hist_${bookId || 'common'}_${type}`;
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  saveAiChatHistory: (bookId, type = 'planning', sessions = []) => {
+    try {
+      const key = `bookstudio_ai_hist_${bookId || 'common'}_${type}`;
+      localStorage.setItem(key, JSON.stringify(sessions.slice(0, 30)));
+    } catch (err) {
+      console.warn('[StorageService] AI 대화 히스토리 저장 실패:', err);
+    }
+  },
+
+  archiveAiChatSession: (bookId, type = 'planning', messages = []) => {
+    if (!Array.isArray(messages) || messages.length === 0) return null;
+    const userMsg = messages.find(m => m.role === 'user');
+    if (!userMsg) return null;
+
+    const titleText = (userMsg.text || userMsg.content || '').trim();
+    const shortTitle = titleText.length > 28 ? titleText.slice(0, 28) + '...' : titleText;
+
+    const session = {
+      id: `ai_sess_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      title: shortTitle || '코칭 대화',
+      messageCount: messages.length,
+      messages: messages
+    };
+
+    const existing = storageService.getAiChatHistory(bookId, type);
+    const updated = [session, ...existing.filter(s => s.id !== session.id)];
+    storageService.saveAiChatHistory(bookId, type, updated);
+    return session;
+  },
+
+  deleteAiChatSession: (bookId, type = 'planning', sessionId) => {
+    const existing = storageService.getAiChatHistory(bookId, type);
+    const updated = existing.filter(s => s.id !== sessionId);
+    storageService.saveAiChatHistory(bookId, type, updated);
+    return updated;
   }
 };

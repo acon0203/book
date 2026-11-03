@@ -394,14 +394,14 @@ export function VersionModal({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box modal-box-version" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+        <div className="modal-header" style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <History size={20} className="text-primary" />
-            <h2>버전 관리</h2>
-            <span className="version-book-title-badge">《{activeBook.title}》</span>
+            <History size={18} style={{ color: 'var(--primary)' }} />
+            <h2 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>버전 관리</h2>
+            <span className="version-book-title-badge">{activeBook.title}</span>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>
-            <X size={20} />
+          <button className="modal-close-btn" onClick={onClose} title="닫기">
+            <X size={18} />
           </button>
         </div>
         <div className="modal-body" style={{ maxHeight: '65vh', overflowY: 'auto' }}>
@@ -468,13 +468,10 @@ export function VersionModal({
             </div>
           )}
         </div>
-        <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>
+        <div className="modal-footer" style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border-color)', padding: '0.75rem 1.4rem' }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             * 되돌리기를 실행하면 현재 화면의 원고가 해당 시점의 데이터로 교체됩니다.
           </div>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            닫기
-          </button>
         </div>
       </div>
     </div>

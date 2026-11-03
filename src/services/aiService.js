@@ -484,7 +484,18 @@ ${stagesText}
   },
 
   // 1-2. AI 총괄 편집장 (Book Editor-in-Chief) 전역 대화형 에이전트
-  consultEditorChief: async ({ book, message, history = [], vaultNotes = [] }) => {
+  consultEditorChief: async (params) => {
+    const resolvedBook = params.book || {
+      title: params.bookTitle || '미정',
+      subtitle: params.bookSubtitle || '',
+      genre: params.genre || '',
+      chapters: params.chapters || []
+    };
+    const message = params.message || params.currentMessage || '';
+    const history = params.history || [];
+    const vaultNotes = Array.isArray(params.vaultNotes) ? params.vaultNotes : [];
+    const book = resolvedBook;
+
     const cleanFn = aiService.cleanOutlineTitle;
     const outlineSummary = (book.chapters || []).map((c, i) => {
       const secList = (c.sections || []).map((s, j) => `    ${i + 1}.${j + 1} ${cleanFn(s.title)}`).join('\n');
@@ -606,6 +617,191 @@ ${bestsellerGuide}
     };
   },
 
+    // 1-2. 기획서재(Vault) 전용: 책임 편집장 파이프라인 단계별 실시간 기획 코칭
+  async chatWithPlanningEditor({
+    book,
+    currentStep = 'proposal',
+    proposalTitle = '',
+    proposalGenre = '',
+    proposalLogline = '',
+    proposalIntention = '',
+    proposalTarget = '',
+    proposalDiff = '',
+    proposalAuthor = '',
+    plotStages = [],
+    narrativeConfig = null,
+    narrativeOptions = null,
+    message,
+    history = []
+  }) {
+    const adminConfig = getAdminAiConfig();
+    const editorPersona = adminConfig.commonPersonas?.editor || {
+      temperature: 0.45,
+      systemPrompt: '당신은 출판계에서 20년 경력을 가진 밀리언셀러 총괄 책임 편집장(Editor-in-Chief)입니다. 작가의 고유 문체를 존중하면서 책의 기획 의도와 유기적 흐름을 완벽하게 다듬어주는 든든한 파트너입니다.'
+    };
+
+    const stagesSummary = plotStages && plotStages.length > 0
+      ? plotStages.map((s, idx) => `${idx + 1}. ${s.title}${s.subplots && s.subplots.length > 0 ? ` (세부: ${s.subplots.map(sp => sp.title).join(', ')})` : ''}`).join('\n')
+      : '아직 설정된 플롯 단계가 없습니다.';
+
+    const stepLabelMap = {
+      ideas: 'Step 00 아이디어 노트 (발상 및 소재 확장)',
+      proposal: 'Step 01 출간 기획서 (제목, 장르, 핵심 컨셉, 기획의도, 타깃독자, 차별점, 저자전문성)',
+      materials: 'Step 02 글감 & 취재창고 (취재 자료 및 레퍼런스 수집)',
+      story: 'Step 03 작품 서사 설정 & 인물 (화자, 청자, 문체, 인물 프로필, 실사례/원칙)',
+      outline: 'Step 04 & 05 목차 및 플롯 뼈대 조립 (단락/챕터/꼭지 설계)'
+    };
+    const currentStepName = stepLabelMap[currentStep] || '기획 파이프라인';
+
+    const systemPrompt = `[출판 총괄 책임 편집장 - 도서 기획 파이프라인 코칭 지침]:
+${editorPersona.systemPrompt}
+
+[중요 대화 원칙]:
+1. 이미 작가와 대화가 진행 중이므로, 답변 첫머리에 "출판사 전문 기획 편집장입니다", "반갑습니다" 같은 상투적인 자기소개나 중복 인사는 절대 하지 마세요. 곧바로 본론과 명쾌한 피드백/해결책부터 직행하세요.
+2. 기획과 서사의 완성도를 위해 출판 전문가 관점에서 날카로우면서도 따뜻하게 조언하세요.
+
+[현재 기획 중인 작품 정보]
+- 도서명(가제): ${proposalTitle || book?.title || '미정'}
+- 장르: ${proposalGenre || book?.genre || '미정'}
+- 핵심 컨셉: ${proposalLogline || '미정'}
+- 기획의도: ${proposalIntention || '미정'}
+- 타깃독자: ${proposalTarget || '미정'}
+- 차별점: ${proposalDiff || '미정'}
+- 저자소개/전문성: ${proposalAuthor || narrativeConfig?.authorBackground || '미정'}
+- 현재 플롯 뼈대 단계:
+${stagesSummary}
+
+[★ 매우 중요: 현재 작가가 작업 중인 파이프라인 단계 ★]
+현재 작가는 [ ${currentStepName} ] 화면에서 작업 중입니다!
+작가의 현재 작업 단계에 맞추어 아래 지침을 반드시 철저하게 준수하세요:
+
+--------------------------------------------------------------------------------
+1. 현재 단계가 [ Step 01 출간 기획서 (proposal) ] 인 경우:
+- 작가는 지금 책의 뼈대나 목차를 짜는 단계가 아니라, "출간 기획서 5대 요소"를 다듬는 중입니다.
+- **★ 절대 목차나 플롯 단계(1단계, 2단계...)로 건너뛰거나 월권하지 마세요! ★**
+- 작가가 기획서 작성, 도서명, 컨셉, 기획의도, 타깃 독자, 차별점, 저자 소개를 묻거나 작성을 요청하면, 출판 투고 수준의 단단한 문장으로 구체적 피드백과 대안을 작성하세요.
+- 작가가 출간기획서 작성이나 초안 제안을 요청하는 경우, 설명 후 답변 맨 끝에 아래 형식의 특수 코드 블록(JSON)을 반드시 첨부하세요:
+\`\`\`proposal_json
+{
+  "title": "도서명(가제)",
+  "genre": "장르 (소설, 경제/경영, 인문, 자기계발, 에세이, 과학/기술 등)",
+  "logline": "1줄 핵심 컨셉",
+  "intention": "기획 의도 및 집필 배경",
+  "target": "타깃 독자층",
+  "diff": "기존 도서 대비 차별점",
+  "author": "저자 소개 및 전문성"
+}
+\`\`\`
+이렇게 작성하면 시스템이 자동으로 [이 기획안을 내 출간기획서에 직접 반영하기] 버튼을 생성하여 작가의 기획서 폼에 원클릭으로 채워 넣습니다.
+(출간 기획서 단계에서는 restructure_json을 절대 출력하지 마세요.)
+
+--------------------------------------------------------------------------------
+2. 현재 단계가 [ Step 03 작품 서사 설정 & 인물 (story) ] 인 경우:
+- 화자(시점), 청자(대상 독자), 기본 어투(문체) 3요소와 인물/화자 프로필 설정에 집중하세요.
+- 비문학(논픽션)의 경우, 작가가 설정한 [다룰 핵심 소주제들]과 [화자의 전개 방식 및 서술 특성(예: 질문형 탐구, 실패담 공유, 쉬운 일상 비유 등)]을 깊이 있게 검토하고 조언하세요.
+- 화면 선택지: 화자(${narrativeOptions?.speakers?.map(s => `"${s.label}"`).join(', ') || '3인칭, 1인칭 등'}), 청자(${narrativeOptions?.listeners?.map(l => `"${l.label}"`).join(', ') || '일반 독자 등'}), 어투(${narrativeOptions?.tones?.map(t => `"${t.label}"`).join(', ') || '설명체, 단정체 등'})
+- 아직 뼈대나 목차 조립대로 넘어가지 마세요.
+
+--------------------------------------------------------------------------------
+3. 현재 단계가 [ Step 04 & 05 목차 및 플롯 뼈대 조립 (outline) ] 인 경우:
+- 이때 비로소 장/절 구성과 플롯 뼈대 단계를 집중적으로 코칭하세요.
+- 작가가 "뼈대 짜줘", "목차 조립대에 반영해줘", "플롯 구성해줘" 등을 요청할 때만 맨 마지막에 아래 코드 블록(JSON)을 첨부하세요:
+\`\`\`restructure_json
+{
+  "explanation": "편집장의 기획안 사유 요약 (1~2줄)",
+  "stages": [
+    {
+      "title": "단계/챕터 제목 (번호 없이 순수 제목만)",
+      "desc": "해당 단계의 핵심 목표나 서사 전개 요약 (1줄)",
+      "subplots": [
+        { "title": "세부 꼭지/소제목 1" },
+        { "title": "세부 꼭지/소제목 2" }
+      ]
+    }
+  ]
+}
+\`\`\`
+(다른 단계에서는 restructure_json을 절대 생성하지 마세요.)
+
+--------------------------------------------------------------------------------
+4. 현재 단계가 [ Step 00 아이디어 노트 (ideas) ] 또는 [ Step 02 글감창고 (materials) ] 인 경우:
+- 참신한 소재 발상, 모티브 브레인스토밍, 취재 자료 보강 등에 집중 조언하세요.`;
+
+    let historyContext = '';
+    if (history && history.length > 0) {
+      historyContext = history.slice(-6).map(m => `${m.role === 'user' ? '작가' : '편집장'}: ${m.text || m.content}`).join('\n\n') + '\n\n';
+    }
+
+    const fullPrompt = `${historyContext}작가: ${message}\n\n편집장:`;
+
+    const raw = await aiService.generateWithCustomSettings({
+      systemPrompt,
+      userPrompt: fullPrompt,
+      temperature: editorPersona.temperature || 0.45,
+      modelId: adminConfig.activeModel || 'smart_cascade',
+      customApiKey: adminConfig.adminApiKey || undefined
+    });
+
+    let restructureData = null;
+    let proposalData = null;
+
+    // 1. proposal_json 추출 (출간기획서 단계)
+    const propMatch = raw.match(/\`\`\`proposal_json([\s\S]*?)\`\`\`/);
+    if (propMatch) {
+      try {
+        const parsed = JSON.parse(propMatch[1].trim());
+        proposalData = {
+          title: parsed.title || '',
+          genre: parsed.genre || '',
+          logline: parsed.logline || parsed.coreConcept || '',
+          intention: parsed.intention || '',
+          target: parsed.target || '',
+          diff: parsed.diff || '',
+          author: parsed.author || ''
+        };
+      } catch (e) {
+        console.warn('proposal_json parsing error:', e);
+      }
+    }
+
+    // 2. restructure_json 추출 (목차/뼈대 단계)
+    const jsonMatch = raw.match(/\`\`\`restructure_json([\s\S]*?)\`\`\`/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1].trim());
+        const stages = parsed.stages || (parsed.chapters ? parsed.chapters.map(c => ({
+          title: c.title,
+          desc: c.desc || '',
+          subplots: c.sections || []
+        })) : []);
+
+        restructureData = {
+          explanation: parsed.explanation || '새로운 기획 뼈대가 생성되었습니다.',
+          stages: stages.map(s => ({
+            title: aiService.cleanOutlineTitle(s.title),
+            desc: s.desc || '',
+            subplots: (s.subplots || []).map(sp => ({
+              title: aiService.cleanOutlineTitle(sp.title || sp)
+            }))
+          }))
+        };
+      } catch (e) {
+        console.warn('restructure_json parsing error in planning:', e);
+      }
+    }
+
+    const displayContent = raw
+      .replace(/\`\`\`proposal_json[\s\S]*?\`\`\`/, '')
+      .replace(/\`\`\`restructure_json[\s\S]*?\`\`\`/, '')
+      .trim();
+
+    return {
+      content: displayContent,
+      restructureData,
+      proposalData
+    };
+  },
+
   // 1-2. 기획서재(Vault) 전용: 책임 편집장 실시간 기획 & 서사 코칭
   async chatWithPlanningEditor({
     book,
@@ -613,6 +809,8 @@ ${bestsellerGuide}
     proposalIntention = '',
     proposalTarget = '',
     plotStages = [],
+    narrativeConfig = null,
+    narrativeOptions = null,
     message,
     history = []
   }) {
@@ -640,6 +838,13 @@ ${editorPersona.systemPrompt}
 - 타깃독자: ${proposalTarget || '미정'}
 - 현재 플롯 뼈대 단계:
 ${stagesSummary}
+
+[★ 화면의 서사 3요소(화자, 청자, 어투) 실제 선택지 및 설정 상태 ★]
+- 1. 화자 (시점) 화면 선택지: ${narrativeOptions?.speakers?.map(s => `"${s.label}"(${s.id})`).join(', ') || '3인칭 제한적, 1인칭 주인공 등'}
+- 2. 청자 (대상 독자) 화면 선택지: ${narrativeOptions?.listeners?.map(l => `"${l.label}"(${l.id})`).join(', ') || '불특정 독자, 특정 청자 등'}
+- 3. 기본 어투 (문체) 화면 선택지: ${narrativeOptions?.tones?.map(t => `"${t.label}"(${t.id})`).join(', ') || '~했다 과거형, ~한다 현재형 등'}
+- 현재 설정값: 화자=${narrativeConfig?.speaker === 'custom' ? `사용자지정("${narrativeConfig?.customSpeaker}")` : (narrativeConfig?.speaker || '미정')}, 청자=${narrativeConfig?.listener === 'custom' ? `사용자지정("${narrativeConfig?.customListener}")` : (narrativeConfig?.listener || '미정')}, 어투=${narrativeConfig?.tone === 'custom' ? `사용자지정("${narrativeConfig?.customTone}")` : (narrativeConfig?.tone || '미정')}
+※ 중요: 작가가 화자, 청자, 어투 설정을 물어보거나 어떻게 정해야 할지 상담할 때는, 반드시 위 화면에 존재하는 실제 선택지 명칭(예: "[1인칭 실천가 (경험담 공유)]")을 콕 짚어서 추천하고, 특별한 인물/어투가 필요하다면 "[사용자 지정 (직접 입력)]"을 선택하고 어떤 문구를 적을지(예: "3년 차 사모펀드 운용역") 구체적으로 짚어주세요.
 
 [★ 뼈대 구성 / 목차 조립대 반영 요청 처리 규칙 ★]:
 작가가 "뼈대 짜줘", "목차 조립대에 반영해줘", "플롯 구성해줘", "이 리스트로 단계 나눠줘" 등 뼈대/목차 구성을 요청하거나 지시하는 경우:

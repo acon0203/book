@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "books",
+  "name": "yeonjae",
+  "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-10-17",
   "assets": {
     "directory": "./dist",

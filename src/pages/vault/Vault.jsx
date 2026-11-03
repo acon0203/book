@@ -12,7 +12,7 @@ import {
   ChevronLeft, Bookmark, Compass, PenTool, CheckCircle, ChevronRight,
   Send, AlertCircle, RefreshCw, Bot, Sparkles, Save, Info, Sliders,
   HelpCircle, Lightbulb, Sun, MessageSquare, Zap, ChevronDown, ChevronUp,
-  PanelLeftClose, PanelRightClose, Columns2, GripVertical
+  PanelLeftClose, PanelRightClose, Columns2, GripVertical, RotateCcw, Clock
 } from 'lucide-react';
 import { PIPELINE_STEPS, VAULT_CATEGORIES } from '../../data/vaultConstants';
 import { OFFICIAL_GENRES, getOfficialGenreId } from '../../data/genreConstants';
@@ -73,6 +73,9 @@ const getDefaultNarrativeConfig = (genreKey) => {
       speaker: 'third_limited',
       listener: 'unspecified_reader',
       tone: 'past_plain',
+      customSpeaker: '',
+      customListener: '',
+      customTone: '',
       worldSetting: '',
       relationshipMemo: '',
       authorBackground: '',
@@ -90,7 +93,9 @@ const getDefaultNarrativeConfig = (genreKey) => {
       relationshipMemo: '',
       authorBackground: '',
       caseStudyMemo: '',
-      coreMessage: ''
+      coreMessage: '',
+      subTopics: '',
+      narrativeApproach: ''
     };
   }
 
@@ -102,7 +107,9 @@ const getDefaultNarrativeConfig = (genreKey) => {
     relationshipMemo: '',
     authorBackground: '',
     caseStudyMemo: '',
-    coreMessage: ''
+    coreMessage: '',
+    subTopics: '',
+    narrativeApproach: ''
   };
 };
 
@@ -117,19 +124,22 @@ const getNarrativeOptions = (genreKey) => {
         { id: 'third_limited', label: '3인칭 제한적 시점' },
         { id: 'first_protagonist', label: '1인칭 주인공 시점' },
         { id: 'first_observer', label: '1인칭 관찰자 시점' },
-        { id: 'third_omniscient', label: '3인칭 전지적 시점' }
+        { id: 'third_omniscient', label: '3인칭 전지적 시점' },
+        { id: 'custom', label: '사용자 지정 (직접 입력)' }
       ],
       listeners: [
         { id: 'unspecified_reader', label: '불특정 독자' },
         { id: 'specific_character', label: '특정 청자 (서간체)' },
-        { id: 'future_someone', label: '미래의 누군가' }
+        { id: 'future_someone', label: '미래의 누군가' },
+        { id: 'custom', label: '사용자 지정 (직접 입력)' }
       ],
       tones: genreKey === 'webnovel' ? [
         { id: 'present_plain', label: '~한다 (현재형/속도감)' },
         { id: 'past_plain', label: '~했다 (과거형 서술)' }
       ] : [
         { id: 'past_plain', label: '~했다 (과거형 서술)' },
-        { id: 'present_plain', label: '~한다 (현재형/생동감)' }
+        { id: 'present_plain', label: '~한다 (현재형/생동감)' },
+        { id: 'custom', label: '사용자 지정 (직접 입력)' }
       ]
     };
   }
@@ -139,17 +149,20 @@ const getNarrativeOptions = (genreKey) => {
       speakers: [
         { id: 'first_author', label: "1인칭 작가 ('나')" },
         { id: 'first_observer', label: "관찰자 ('나')" },
-        { id: 'virtual_speaker', label: '가상의 화자' }
+        { id: 'virtual_speaker', label: '가상의 화자' },
+        { id: 'custom', label: '사용자 지정 (직접 입력)' }
       ],
       listeners: [
         { id: 'myself', label: '나 자신 (독백)' },
         { id: 'unknown_you', label: '이름 모를 당신' },
-        { id: 'precious_person', label: '소중한 그 사람' }
+        { id: 'precious_person', label: '소중한 그 사람' },
+        { id: 'custom', label: '사용자 지정 (직접 입력)' }
       ],
       tones: [
         { id: 'plain', label: '~했다 / ~다 (평어체)' },
         { id: 'polite_soft', label: '~해요 (부드러운 대화체)' },
-        { id: 'polite_formal', label: '~합니다 (정중한 경어체)' }
+        { id: 'polite_formal', label: '~합니다 (정중한 경어체)' },
+        { id: 'custom', label: '사용자 지정 (직접 입력)' }
       ]
     };
   }
@@ -159,17 +172,20 @@ const getNarrativeOptions = (genreKey) => {
     speakers: [
       { id: 'expert_objective', label: '저자/전문가 (객관적 관찰)' },
       { id: 'friendly_mentor', label: '친근한 멘토 / 길잡이' },
-      { id: 'first_practitioner', label: '1인칭 실천가 (경험담 공유)' }
+      { id: 'first_practitioner', label: '1인칭 실천가 (경험담 공유)' },
+        { id: 'custom', label: '사용자 지정 (직접 입력)' }
     ],
     listeners: [
       { id: 'readers', label: "'독자 여러분' (일반 독자)" },
       { id: 'beginners', label: '초심자 / 입문자' },
-      { id: 'colleagues', label: '동료 실무자 / 전문가' }
+      { id: 'colleagues', label: '동료 실무자 / 전문가' },
+        { id: 'custom', label: '사용자 지정 (직접 입력)' }
     ],
     tones: [
       { id: 'formal_explain', label: '~합니다 / ~입니다 (설명체)' },
       { id: 'assertive', label: '~이다 / ~한다 (단정체)' },
-      { id: 'friendly_soft', label: '~해요 / ~해보세요 (친근체)' }
+      { id: 'friendly_soft', label: '~해요 / ~해보세요 (친근체)' },
+        { id: 'custom', label: '사용자 지정 (직접 입력)' }
     ]
   };
 };
@@ -198,10 +214,15 @@ export default function Vault() {
   const [editingIdeaBookId, setEditingIdeaBookId] = useState('SHARED');
 
   // --- Step 1: 출간 기획서 상태 ---
+  const [proposalTitle, setProposalTitle] = useState('');
+  const [proposalGenre, setProposalGenre] = useState('소설');
+  const [proposalAuthor, setProposalAuthor] = useState('');
   const [proposalLogline, setProposalLogline] = useState('');
   const [proposalIntention, setProposalIntention] = useState('');
   const [proposalTarget, setProposalTarget] = useState('');
   const [proposalDiff, setProposalDiff] = useState('');
+  const proposalDebounceTimerRef = useRef(null);
+  const [proposalSaveStatus, setProposalSaveStatus] = useState('saved'); // 'saved' | 'saving'
 
   // --- Step 2: 글감 & 취재창고 상태 (작품별 완전 분리) ---
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
@@ -337,8 +358,11 @@ export default function Vault() {
   const [aiChatInput, setAiChatInput] = useState('');
   const [isAiChatLoading, setIsAiChatLoading] = useState(false);
   const [isQuotaModalOpen, setIsQuotaModalOpen] = useState(false);
+  const [isAiHistoryOpen, setIsAiHistoryOpen] = useState(false);
+  const [aiHistorySessions, setAiHistorySessions] = useState([]);
   const [activeModelName, setActiveModelName] = useState('스마트 자동 전환');
   const chatBodyRef = useRef(null);
+  const lastLoadedBookIdRef = useRef(null);
 
   // --- 아이디어 노트 & 글감·취재창고 되돌리기(Undo) / 다시 실행(Redo) 히스토리 스택 ---
   const vaultHistoryRef = useRef([]); // [{ vault, desc }]
@@ -452,23 +476,35 @@ export default function Vault() {
       } catch {}
     };
     window.addEventListener('ai_config_updated', handleConfigUpdate);
-    return () => window.removeEventListener('ai_config_updated', handleConfigUpdate);
+
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleGlobalSave();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('ai_config_updated', handleConfigUpdate);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
-  // activeBook 변경 시 기획서, 인물, 플롯, 가목차 동기화
+  // activeBook 변경 시 기획서, 인물, 플롯, 가목차 동기화 (도서 변경 시에만 초기화하여 작성 중 덮어쓰기 방지)
   useEffect(() => {
+    if (!activeBook) return;
+    if (lastLoadedBookIdRef.current === activeBook.id) return;
+    lastLoadedBookIdRef.current = activeBook.id;
+
     if (activeBook) {
-      if (activeBook.proposal) {
-        setProposalLogline(activeBook.proposal.logline || '');
-        setProposalIntention(activeBook.proposal.intention || '');
-        setProposalTarget(activeBook.proposal.target || '');
-        setProposalDiff(activeBook.proposal.diff || '');
-      } else {
-        setProposalLogline('');
-        setProposalIntention('');
-        setProposalTarget('');
-        setProposalDiff('');
-      }
+      setProposalTitle(activeBook.title || '');
+      setProposalGenre(activeBook.genre || OFFICIAL_GENRES.find((g) => g.id === activeBook.genreKey)?.label || '소설');
+      const prop = activeBook.proposal || {};
+      setProposalAuthor(prop.author || prop.authorBackground || activeBook.authorBackground || activeBook.narrativeConfig?.authorBackground || '');
+      setProposalLogline(prop.logline || activeBook.logline || '');
+      setProposalIntention(prop.intention || activeBook.intention || '');
+      setProposalTarget(prop.target || activeBook.target || '');
+      setProposalDiff(prop.diff || activeBook.diff || '');
 
       // 공식 10대 장르 정규화
       const gKey = getOfficialGenreId(activeBook.genre || activeBook.genreKey);
@@ -782,18 +818,153 @@ export default function Vault() {
     }
   };
 
+  const handleUpdateProposalTitle = async (newTitle) => {
+    setProposalTitle(newTitle);
+    if (!activeBook || !newTitle.trim() || newTitle.trim() === activeBook.title) return;
+    try {
+      await updateBookInfo(activeBook.id, { title: newTitle.trim() });
+    } catch (err) {
+      console.error('Failed to sync proposal title:', err);
+    }
+  };
+
+  const handleUpdateProposalGenre = async (newGenre) => {
+    setProposalGenre(newGenre);
+    if (!activeBook || newGenre === activeBook.genre) return;
+    try {
+      const gId = getOfficialGenreId(newGenre);
+      await updateBookInfo(activeBook.id, { genre: newGenre, genreKey: gId });
+      setCurrentGenreKey(gId);
+    } catch (err) {
+      console.error('Failed to sync proposal genre:', err);
+    }
+  };
+
+  // --- Step 1: 출간 기획서 실시간 자동 저장(Auto-Save) 핸들러 ---
+  const handleProposalFieldChange = (field, value) => {
+    if (field === 'logline') setProposalLogline(value);
+    else if (field === 'intention') setProposalIntention(value);
+    else if (field === 'target') setProposalTarget(value);
+    else if (field === 'diff') setProposalDiff(value);
+    else if (field === 'author') {
+      setProposalAuthor(value);
+      setNarrativeConfig((prev) => ({ ...prev, authorBackground: value }));
+    }
+
+    if (!activeBook?.id) return;
+    setProposalSaveStatus('saving');
+
+    if (proposalDebounceTimerRef.current) {
+      clearTimeout(proposalDebounceTimerRef.current);
+    }
+
+    proposalDebounceTimerRef.current = setTimeout(async () => {
+      try {
+        const updatedData = {
+          logline: field === 'logline' ? value : proposalLogline,
+          intention: field === 'intention' ? value : proposalIntention,
+          target: field === 'target' ? value : proposalTarget,
+          diff: field === 'diff' ? value : proposalDiff,
+          author: field === 'author' ? value : proposalAuthor,
+          authorBackground: field === 'author' ? value : proposalAuthor
+        };
+        await updateActiveBookPlanning({
+          proposal: updatedData,
+          authorBackground: updatedData.author,
+          narrativeConfig: {
+            ...(activeBook.narrativeConfig || {}),
+            authorBackground: updatedData.author
+          },
+          ...updatedData
+        });
+        setProposalSaveStatus('saved');
+      } catch (err) {
+        console.error('Failed to auto-save proposal:', err);
+        setProposalSaveStatus('saved');
+      }
+    }, 600);
+  };
+
+  // --- 기획서재 전체 통합 저장 핸들러 (스튜디오 글로벌 저장과 동일) ---
+  const handleGlobalSave = async () => {
+    if (!activeBook) return;
+    try {
+      const trimmedTitle = proposalTitle.trim();
+      if (trimmedTitle && (trimmedTitle !== activeBook.title || proposalGenre !== activeBook.genre)) {
+        const gId = getOfficialGenreId(proposalGenre);
+        await updateBookInfo(activeBook.id, {
+          title: trimmedTitle,
+          genre: proposalGenre,
+          genreKey: gId
+        });
+        setCurrentGenreKey(gId);
+      }
+
+      const proposalData = {
+        logline: proposalLogline,
+        intention: proposalIntention,
+        target: proposalTarget,
+        diff: proposalDiff,
+        author: proposalAuthor,
+        authorBackground: proposalAuthor
+      };
+
+      await updateActiveBookPlanning({
+        proposal: proposalData,
+        authorBackground: proposalAuthor.trim(),
+        narrativeConfig: {
+          ...(activeBook.narrativeConfig || {}),
+          authorBackground: proposalAuthor.trim(),
+          ...(narrativeConfig || {})
+        },
+        ...proposalData
+      });
+
+      await bookService.updateBook(activeBook.id, {
+        narrativeConfig,
+        plotStages
+      });
+
+      setProposalSaveStatus('saved');
+      showToast('현재 기획 내용이 모두 안전하게 저장되었습니다.', 'success');
+    } catch (err) {
+      showToast(`기획 저장 실패: ${err.message}`, 'error');
+    }
+  };
+
   // --- Step 1: 출간 기획서 저장 ---
   const handleSaveProposal = async (e) => {
     if (e) e.preventDefault();
     if (!activeBook) return;
     try {
+      const trimmedTitle = proposalTitle.trim();
+      if (trimmedTitle && (trimmedTitle !== activeBook.title || proposalGenre !== activeBook.genre)) {
+        const gId = getOfficialGenreId(proposalGenre);
+        await updateBookInfo(activeBook.id, {
+          title: trimmedTitle,
+          genre: proposalGenre,
+          genreKey: gId
+        });
+        setCurrentGenreKey(gId);
+      }
+
       const proposalData = {
         logline: proposalLogline.trim(),
         intention: proposalIntention.trim(),
         target: proposalTarget.trim(),
-        diff: proposalDiff.trim()
+        diff: proposalDiff.trim(),
+        author: proposalAuthor.trim(),
+        authorBackground: proposalAuthor.trim()
       };
-      await updateActiveBookPlanning(proposalData);
+      await updateActiveBookPlanning({
+        proposal: proposalData,
+        authorBackground: proposalAuthor.trim(),
+        narrativeConfig: {
+          ...(activeBook.narrativeConfig || {}),
+          authorBackground: proposalAuthor.trim()
+        },
+        ...proposalData
+      });
       showToast('출간 기획서가 저장되었습니다.', 'success');
     } catch (err) {
       showToast(`기획서 저장 실패: ${err.message}`, 'error');
@@ -947,24 +1118,23 @@ export default function Vault() {
 아래 항목 중 해당 장르에 맞는 값만 선택하여 오직 JSON 형식으로만 응답하세요(마크다운 코드블록 없이 순수 JSON만 출력):
 
 ${isFiction ? `
-- speaker: "third_limited"(3인칭 제한적 시점) 또는 "first_hero"(1인칭 주인공 시점) 또는 "third_omniscient"(3인칭 전지적 시점) 중 택1
-- listener: "unspecified_reader"(불특정 독자) 또는 "specific_character"(극중 특정 인물) 중 택1
-- tone: "past_plain"(~했다 과거형) 또는 "present_plain"(~한다 현재형 웹소설) 중 택1
+- speaker: "third_limited"(3인칭 제한적 시점), "first_protagonist"(1인칭 주인공 시점), "first_observer"(1인칭 관찰자 시점), "third_omniscient"(3인칭 전지적 시점) 중 택1
+- listener: "unspecified_reader"(불특정 독자), "specific_character"(특정 청자 서간체), "future_someone"(미래의 누군가) 중 택1
+- tone: "past_plain"(~했다 과거형), "present_plain"(~한다 현재형) 중 택1
 - worldSetting: "배경 및 세계관 한 줄 요약"
 - relationshipMemo: "주요 인물 간 긴장 관계 한 줄 요약"
 ` : isEssay ? `
-- speaker: "first_author"(1인칭 '나') 또는 "first_humble"(1인칭 '저') 중 택1
-- listener: "myself"(나 자신 독백) 또는 "intimate_friend"(친근한 누군가/편지) 또는 "anonymous_reader"(익명의 독자) 중 택1
-- tone: "plain"(~했다 평어체) 또는 "haeyo"(~해요 대화체) 또는 "formal"(~합니다 경어체) 중 택1
+- speaker: "first_author"(1인칭 작가 '나'), "first_observer"(관찰자 '나'), "virtual_speaker"(가상의 화자) 중 택1
+- listener: "myself"(나 자신 독백), "unknown_you"(이름 모를 당신), "precious_person"(소중한 그 사람) 중 택1
+- tone: "plain"(~했다 평어체), "polite_soft"(~해요 대화체), "polite_formal"(~합니다 경어체) 중 택1
 - worldSetting: "에세이의 주된 공간/계절적 분위기 메모"
 - relationshipMemo: "글에 등장하는 주요 인연들과의 정서적 관계"
 ` : `
-- speaker: "expert_objective"(저자/전문가 객관적 서술) 또는 "mentor_first"(1:1 코치/멘토 '나') 중 택1
-- listener: "readers"('독자 여러분') 또는 "you"('당신') 또는 "none"(호칭 생략) 중 택1
-- tone: "formal_explain"(~합니다 설명체) 또는 "assertive_plain"(~이다 단정체) 또는 "coaching"(~해볼까요?) 중 택1
-- authorBackground: "이 책을 서술하는 저자의 전문적 자격/배경"
-- caseStudyMemo: "독자를 설득할 핵심 실사례 및 데이터 메모"
-- coreMessage: "반드시 전달해야 할 한 줄 핵심 메시지"
+- speaker: "expert_objective"(저자/전문가 객관적 관찰), "friendly_mentor"(친근한 멘토/길잡이), "first_practitioner"(1인칭 실천가 경험담 공유) 중 택1
+- listener: "readers"('독자 여러분' 일반 독자), "beginners"(초심자/입문자), "colleagues"(동료 실무자/전문가) 중 택1
+- tone: "formal_explain"(~합니다 설명체), "assertive"(~이다 단정체), "friendly_soft"(~해요 친근체) 중 택1
+- subTopics: "책 전체를 관통하여 다룰 3~5가지 핵심 소주제들 (예: 1. ..., 2. ..., 3. ...)"
+- narrativeApproach: "이 책에서 화자가 주제를 풀어내는 고유한 서술 방식 및 화자 캐릭터 (예: 실패담 기반의 솔직한 조언, 소크라테스식 문답, 진료실 비유 상담 등)"
 `}
 `.trim();
 
@@ -1793,6 +1963,139 @@ ${isFiction ? `
     showToast(`'${activeBook.title}' 집필 스튜디오로 이동했습니다.`, 'info');
   };
 
+  // 파이프라인 단계별 맞춤 퀵 프롬프트 목록
+  const getStepQuickPrompts = () => {
+    switch (activeStep) {
+      case 'proposal':
+        return [
+          { label: '핵심 컨셉 진단', prompt: '현재 도서명(가제)과 핵심 컨셉의 대중적 매력도와 시장성을 날카롭게 진단해줘.' },
+          { label: '타깃 독자 구체화', prompt: '타깃 독자층을 더 뾰족하고 생생한 실제 구매자 페르소나로 좁혀서 정의해줘.' },
+          { label: '기존 도서 차별점', prompt: '동일 분야 베스트셀러 대비 이 책만이 가진 결정적 차별점 3가지를 도출해줘.' }
+        ];
+      case 'story':
+        return [
+          { label: '화자·청자 추천', prompt: '현재 기획의도를 독자에게 가장 강렬하게 전달할 최적의 화자와 청자 조합을 추천해줘.' },
+          { label: '기본 어투 추천', prompt: '이 장르와 타깃 독자의 몰입을 극대화할 수 있는 문체와 어투를 제안해줘.' },
+          { label: '집필 원칙 조언', prompt: '이 책을 집필할 때 흔히 빠지기 쉬운 함정과 반드시 고수해야 할 집필 원칙을 알려줘.' }
+        ];
+      case 'outline':
+        return [
+          { label: '목차 표준 비교', prompt: '베스트셀러 목차 표준과 비교하여 현재 뼈대의 사각지대나 누락된 꼭지를 짚어줘.' },
+          { label: '플롯 갈등 보강', prompt: '현재 플롯의 클라이맥스 갈등과 독자의 몰입도를 높일 전개 텐션을 보강해줘.' },
+          { label: '4단계 뼈대 제안', prompt: '이 책의 기획을 기승전결(또는 4단계 비문학 뼈대)로 나누어 목차 조립대에 반영할 수 있게 제안해줘.' }
+        ];
+      case 'ideas':
+        return [
+          { label: '소재 확장 발상', prompt: '현재 아이디어에서 파생할 수 있는 참신한 소재와 극적인 반전 모티브를 제안해줘.' },
+          { label: '트렌드 키워드', prompt: '요즘 독자들이 반응하는 이 분야의 최신 트렌드 키워드와 후킹 요소를 분석해줘.' },
+          { label: '핵심 갈등 설정', prompt: '이 발상을 단숨에 몰입감 넘치는 이야기로 바꿀 핵심 갈등과 딜레마를 제안해줘.' }
+        ];
+      case 'materials':
+        return [
+          { label: '근거 자료 보강', prompt: '이 주장의 설득력을 높이기 위해 추가로 수집해야 할 데이터, 연구 결과, 인터뷰를 조언해줘.' },
+          { label: '실사례 취재 팁', prompt: '독자의 공감을 얻기 위한 실제 성공/실패 사례를 발굴하는 취재 질문을 추천해줘.' },
+          { label: '글감 카테고리화', prompt: '수집한 글감들을 목차의 흐름에 따라 체계적으로 분류하는 가이드를 제시해줘.' }
+        ];
+      default:
+        return [
+          { label: '로그라인 평가', prompt: '현재 로그라인의 매력도를 출판 관점에서 평가해줘.' },
+          { label: '플롯 갈등 보강', prompt: '현재 플롯의 클라이맥스 갈등과 전개를 보강해줘.' },
+          { label: '목차 표준 비교', prompt: '베스트셀러 목차 표준과 비교하여 사각지대를 짚어줘.' }
+        ];
+    }
+  };
+
+  // 책임 편집장 대화 초기화 (새 대화 시작 및 기존 세션 자동 보관)
+  const handleResetPlanningChat = () => {
+    const userMsgs = aiChatMessages.filter(m => m.role === 'user');
+    if (userMsgs.length > 0) {
+      storageService.archiveAiChatSession(activeBook?.id, 'planning', aiChatMessages);
+    }
+    const stepNames = {
+      ideas: '아이디어 발상',
+      proposal: '출간 기획서',
+      materials: '글감 & 취재창고',
+      story: '작품 서사 & 인물 설정',
+      outline: '목차 & 플롯 뼈대'
+    };
+    setAiChatMessages([
+      {
+        role: 'assistant',
+        text: `새 기획 상담을 시작합니다, 작가님. 현재 **${stepNames[activeStep] || '도서 기획'}** 단계에 머물고 계시네요. 어떤 부분을 중점적으로 다듬어볼까요?`
+      }
+    ]);
+    showToast('새 대화가 시작되었습니다. 이전 대화는 기록에 보관되었습니다.', 'info');
+  };
+
+  // 대화 히스토리 모달 열기
+  const handleOpenAiHistory = () => {
+    const sessions = storageService.getAiChatHistory(activeBook?.id, 'planning');
+    setAiHistorySessions(sessions);
+    setIsAiHistoryOpen(true);
+  };
+
+  // 과거 대화 세션 복원
+  const handleRestoreAiSession = (session) => {
+    if (!session?.messages) return;
+    const userMsgs = aiChatMessages.filter(m => m.role === 'user');
+    if (userMsgs.length > 0) {
+      storageService.archiveAiChatSession(activeBook?.id, 'planning', aiChatMessages);
+    }
+    setAiChatMessages(session.messages);
+    setIsAiHistoryOpen(false);
+    showToast(`'${session.title}' 대화 기록을 복원했습니다.`, 'success');
+  };
+
+  // 과거 대화 세션 삭제
+  const handleDeleteAiSession = (sessionId, e) => {
+    e.stopPropagation();
+    const updated = storageService.deleteAiChatSession(activeBook?.id, 'planning', sessionId);
+    setAiHistorySessions(updated);
+    showToast('대화 기록이 삭제되었습니다.', 'info');
+  };
+
+  // 책임 편집장이 제안한 출간 기획안 원클릭 반영 핸들러
+  const handleApplyAiProposal = async (propData) => {
+    if (!propData) return;
+    const ok = await openConfirm({
+      title: '출간 기획서 자동 반영',
+      message: '책임 편집장이 제안한 기획안을 현재 출간 기획서에 적용하시겠습니까?\n입력 중이던 항목들이 새 제안으로 깔끔하게 업데이트됩니다.',
+      confirmText: '기획서에 반영',
+      danger: false
+    });
+    if (!ok) return;
+
+    if (propData.title) {
+      setProposalTitle(propData.title);
+      if (activeBook?.id) updateBookInfo(activeBook.id, { title: propData.title });
+    }
+    if (propData.genre) {
+      setProposalGenre(propData.genre);
+      if (activeBook?.id) updateBookInfo(activeBook.id, { genre: propData.genre });
+    }
+    if (propData.logline) setProposalLogline(propData.logline);
+    if (propData.intention) setProposalIntention(propData.intention);
+    if (propData.target) setProposalTarget(propData.target);
+    if (propData.diff) setProposalDiff(propData.diff);
+    if (propData.author) {
+      setProposalAuthor(propData.author);
+      setNarrativeConfig(prev => ({ ...prev, authorBackground: propData.author }));
+    }
+
+    if (activeBook?.id) {
+      updateActiveBookPlanning({
+        proposalTitle: propData.title || proposalTitle,
+        proposalGenre: propData.genre || proposalGenre,
+        proposalLogline: propData.logline || proposalLogline,
+        proposalIntention: propData.intention || proposalIntention,
+        proposalTarget: propData.target || proposalTarget,
+        proposalDiff: propData.diff || proposalDiff,
+        proposalAuthor: propData.author || proposalAuthor
+      });
+    }
+    showToast('출간 기획서에 성공적으로 반영되었습니다.', 'success');
+  };
+
   // 우측 3열: 책임 편집장 실시간 기획 & 서사 코칭
   const handleSendAiMessage = async (customText) => {
     const textToSend = customText || aiChatInput.trim();
@@ -1806,10 +2109,17 @@ ${isFiction ? `
     try {
       const res = await aiService.chatWithPlanningEditor({
         book: activeBook,
+        currentStep: activeStep,
+        proposalTitle,
+        proposalGenre,
+        proposalAuthor,
         proposalLogline,
         proposalIntention,
         proposalTarget,
+        proposalDiff,
         plotStages,
+        narrativeConfig,
+        narrativeOptions: getNarrativeOptions(currentGenreKey),
         message: textToSend,
         history: aiChatMessages
       });
@@ -1819,13 +2129,15 @@ ${isFiction ? `
         {
           role: 'assistant',
           text: res.content,
-          restructureData: res.restructureData
+          restructureData: res.restructureData,
+          proposalData: res.proposalData
         }
       ]);
     } catch (err) {
+      console.error('[PlanningEditor Error]:', err);
       setAiChatMessages((prev) => [
         ...prev,
-        { role: 'assistant', text: '죄송합니다. AI 응답 생성 중 일시적인 오류가 발생했습니다. 다시 시도해 주세요.' }
+        { role: 'assistant', text: `죄송합니다. AI 응답 생성 중 오류가 발생했습니다: ${err.message || '일시적 네트워크 지연'}` }
       ]);
     } finally {
       setIsAiChatLoading(false);
@@ -1986,6 +2298,15 @@ ${isFiction ? `
         </div>
 
         <div className="preview-right">
+          <button
+            type="button"
+            className="btn-vault-global-save"
+            onClick={handleGlobalSave}
+            title="현재 기획 전체 저장 (Ctrl+S)"
+          >
+            <Save size={14} />
+            <span>기획 저장</span>
+          </button>
           <button className="btn-goto-studio" onClick={handleSendToStudio}>
             <PenTool size={14} />
             집필 스튜디오로 이동
@@ -2264,19 +2585,50 @@ ${isFiction ? `
                       <div className="proposal-top-notice">
                         <div className="notice-left">
                           <Info size={16} />
-                          단행본 1권을 관통하는 4대 기획 축을 정리하면 집필 방향이 흔들리지 않습니다.
+                          단행본 1권을 관통하는 5대 기획 축을 정리하면 집필 방향이 흔들리지 않습니다.
                         </div>
-                        <button type="button" className="btn-save-proposal" onClick={handleSaveProposal}>
-                          <Save size={14} />
-                          기획서 저장
-                        </button>
+                      </div>
+
+                      {/* 도서 기본 메타: 제목(가제) 및 장르 (1줄 가로 배치 및 상호 연동) */}
+                      <div className="proposal-meta-card">
+                        <div className="proposal-meta-field flex-title">
+                          <label className="proposal-meta-label">
+                            <BookOpen size={14} style={{ color: 'var(--color-primary)' }} />
+                            제목(가제)
+                          </label>
+                          <input
+                            type="text"
+                            className="proposal-meta-input"
+                            placeholder="도서 제목(가제)을 입력하세요"
+                            value={proposalTitle}
+                            onChange={(e) => setProposalTitle(e.target.value)}
+                            onBlur={(e) => handleUpdateProposalTitle(e.target.value)}
+                          />
+                        </div>
+                        <div className="proposal-meta-field flex-genre">
+                          <label className="proposal-meta-label">
+                            <Layers size={14} style={{ color: 'var(--color-primary)' }} />
+                            장르
+                          </label>
+                          <select
+                            className="proposal-meta-select"
+                            value={proposalGenre}
+                            onChange={(e) => handleUpdateProposalGenre(e.target.value)}
+                          >
+                            {OFFICIAL_GENRES.map((g) => (
+                              <option key={g.id} value={g.label}>
+                                {g.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
 
                       <div className="proposal-section-card">
                         <div className="proposal-label-row">
                           <label className="proposal-label">
                             <Sparkles size={15} style={{ color: 'var(--color-primary)' }} />
-                            1. 핵심 로그라인 (Core Logline)
+                            1. 핵심 컨셉
                           </label>
                           <span className="proposal-hint">책 전체를 한 문장으로 정의하는 핵심 명제</span>
                         </div>
@@ -2284,7 +2636,7 @@ ${isFiction ? `
                           className="proposal-textarea"
                           placeholder="매일 쏟아지는 자극과 피로에 지친 독자들에게, 밤의 고요한 서재에서 건져 올린 단단한 위로를 전하는 이야기."
                           value={proposalLogline}
-                          onChange={(e) => setProposalLogline(e.target.value)}
+                          onChange={(e) => handleProposalFieldChange('logline', e.target.value)}
                         />
                       </div>
 
@@ -2292,7 +2644,7 @@ ${isFiction ? `
                         <div className="proposal-label-row">
                           <label className="proposal-label">
                             <PenTool size={15} style={{ color: 'var(--color-primary)' }} />
-                            2. 기획 의도 및 집필 배경 (Intention)
+                            2. 기획 의도 및 집필 배경
                           </label>
                           <span className="proposal-hint">왜 지금 이 책을 써야 하는가?</span>
                         </div>
@@ -2300,7 +2652,7 @@ ${isFiction ? `
                           className="proposal-textarea"
                           placeholder="누구나 고독한 순간을 마주하지만, 그 시간을 어떻게 보내느냐에 따라 삶의 결이 달라집니다."
                           value={proposalIntention}
-                          onChange={(e) => setProposalIntention(e.target.value)}
+                          onChange={(e) => handleProposalFieldChange('intention', e.target.value)}
                         />
                       </div>
 
@@ -2308,7 +2660,7 @@ ${isFiction ? `
                         <div className="proposal-label-row">
                           <label className="proposal-label">
                             <Users size={15} style={{ color: 'var(--color-primary)' }} />
-                            3. 타깃 독자층 (Target Audience)
+                            3. 타깃 독자층
                           </label>
                           <span className="proposal-hint">누가 이 책을 읽고 공감할 것인가?</span>
                         </div>
@@ -2316,7 +2668,7 @@ ${isFiction ? `
                           className="proposal-textarea"
                           placeholder="직장과 일상에서 번아웃을 겪는 20~40대, 나만의 온전한 회복 루틴을 찾고 싶은 독자."
                           value={proposalTarget}
-                          onChange={(e) => setProposalTarget(e.target.value)}
+                          onChange={(e) => handleProposalFieldChange('target', e.target.value)}
                         />
                       </div>
 
@@ -2324,7 +2676,7 @@ ${isFiction ? `
                         <div className="proposal-label-row">
                           <label className="proposal-label">
                             <Compass size={15} style={{ color: 'var(--color-primary)' }} />
-                            4. 기존 도서 대비 차별점 (Differentiation)
+                            4. 기존 도서 대비 차별점
                           </label>
                           <span className="proposal-hint">유사 베스트셀러와 다른 나만의 독창성</span>
                         </div>
@@ -2332,7 +2684,23 @@ ${isFiction ? `
                           className="proposal-textarea"
                           placeholder="단순한 감성 힐링 문구 나열을 지양하고, 실제 서재에서 행해지는 필사와 사색의 감각적 디테일을 융합한 정밀한 에세이."
                           value={proposalDiff}
-                          onChange={(e) => setProposalDiff(e.target.value)}
+                          onChange={(e) => handleProposalFieldChange('diff', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="proposal-section-card">
+                        <div className="proposal-label-row">
+                          <label className="proposal-label">
+                            <Users size={15} style={{ color: 'var(--color-primary)' }} />
+                            5. 저자 소개 및 전문성
+                          </label>
+                          <span className="proposal-hint">이 책을 쓰는 저자의 이력, 전문적 자격 및 집필 배경</span>
+                        </div>
+                        <textarea
+                          className="proposal-textarea"
+                          placeholder="해당 분야 10년 차 실무자로서 겪은 생생한 현장 경험과 노하우, 원고를 신뢰할 수 있는 저자의 주요 이력 및 배경."
+                          value={proposalAuthor}
+                          onChange={(e) => handleProposalFieldChange('author', e.target.value)}
                         />
                       </div>
                     </div>
@@ -2460,19 +2828,30 @@ ${isFiction ? `
                             </div>
                             <div className="trio-options-list">
                               {narrativeOptions.speakers.map((opt) => (
-                                <label
-                                  key={opt.id}
-                                  className={`trio-radio-label ${narrativeConfig.speaker === opt.id ? 'active' : ''}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="narrative_speaker"
-                                    value={opt.id}
-                                    checked={narrativeConfig.speaker === opt.id}
-                                    onChange={() => handleUpdateNarrativeConfig('speaker', opt.id)}
-                                  />
-                                  <span className="trio-radio-text">{opt.label}</span>
-                                </label>
+                                <div key={opt.id} className="trio-option-item">
+                                  <label
+                                    className={`trio-radio-label ${narrativeConfig.speaker === opt.id ? 'active' : ''}`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="narrative_speaker"
+                                      value={opt.id}
+                                      checked={narrativeConfig.speaker === opt.id}
+                                      onChange={() => handleUpdateNarrativeConfig('speaker', opt.id)}
+                                    />
+                                    <span className="trio-radio-text">{opt.label}</span>
+                                  </label>
+                                  {opt.id === 'custom' && narrativeConfig.speaker === 'custom' && (
+                                    <input
+                                      type="text"
+                                      className="trio-custom-input"
+                                      placeholder="예: 3년 차 사모펀드 운용역"
+                                      value={narrativeConfig.customSpeaker || ''}
+                                      onChange={(e) => handleUpdateNarrativeConfig('customSpeaker', e.target.value)}
+                                      autoFocus
+                                    />
+                                  )}
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -2485,19 +2864,30 @@ ${isFiction ? `
                             </div>
                             <div className="trio-options-list">
                               {narrativeOptions.listeners.map((opt) => (
-                                <label
-                                  key={opt.id}
-                                  className={`trio-radio-label ${narrativeConfig.listener === opt.id ? 'active' : ''}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="narrative_listener"
-                                    value={opt.id}
-                                    checked={narrativeConfig.listener === opt.id}
-                                    onChange={() => handleUpdateNarrativeConfig('listener', opt.id)}
-                                  />
-                                  <span className="trio-radio-text">{opt.label}</span>
-                                </label>
+                                <div key={opt.id} className="trio-option-item">
+                                  <label
+                                    className={`trio-radio-label ${narrativeConfig.listener === opt.id ? 'active' : ''}`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="narrative_listener"
+                                      value={opt.id}
+                                      checked={narrativeConfig.listener === opt.id}
+                                      onChange={() => handleUpdateNarrativeConfig('listener', opt.id)}
+                                    />
+                                    <span className="trio-radio-text">{opt.label}</span>
+                                  </label>
+                                  {opt.id === 'custom' && narrativeConfig.listener === 'custom' && (
+                                    <input
+                                      type="text"
+                                      className="trio-custom-input"
+                                      placeholder="예: 사모펀드 예비 지원자, 취준생 후배"
+                                      value={narrativeConfig.customListener || ''}
+                                      onChange={(e) => handleUpdateNarrativeConfig('customListener', e.target.value)}
+                                      autoFocus
+                                    />
+                                  )}
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -2510,19 +2900,30 @@ ${isFiction ? `
                             </div>
                             <div className="trio-options-list">
                               {narrativeOptions.tones.map((opt) => (
-                                <label
-                                  key={opt.id}
-                                  className={`trio-radio-label ${narrativeConfig.tone === opt.id ? 'active' : ''}`}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="narrative_tone"
-                                    value={opt.id}
-                                    checked={narrativeConfig.tone === opt.id}
-                                    onChange={() => handleUpdateNarrativeConfig('tone', opt.id)}
-                                  />
-                                  <span className="trio-radio-text">{opt.label}</span>
-                                </label>
+                                <div key={opt.id} className="trio-option-item">
+                                  <label
+                                    className={`trio-radio-label ${narrativeConfig.tone === opt.id ? 'active' : ''}`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="narrative_tone"
+                                      value={opt.id}
+                                      checked={narrativeConfig.tone === opt.id}
+                                      onChange={() => handleUpdateNarrativeConfig('tone', opt.id)}
+                                    />
+                                    <span className="trio-radio-text">{opt.label}</span>
+                                  </label>
+                                  {opt.id === 'custom' && narrativeConfig.tone === 'custom' && (
+                                    <input
+                                      type="text"
+                                      className="trio-custom-input"
+                                      placeholder="예: 긴장감 넘치는 비즈니스 고백체"
+                                      value={narrativeConfig.customTone || ''}
+                                      onChange={(e) => handleUpdateNarrativeConfig('customTone', e.target.value)}
+                                      autoFocus
+                                    />
+                                  )}
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -2616,7 +3017,7 @@ ${isFiction ? `
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <span className="more-badge">선택 사항</span>
                                 <span style={{ fontWeight: 600, fontSize: '0.84rem' }}>
-                                  {isLiterature ? '배경 및 관계도 더 설정하기' : '저자 전문성 및 핵심 사례 더 설정하기'}
+                                  {isLiterature ? '배경 및 관계도 더 설정하기' : '핵심 소주제 및 화자 전개 방식 더 설정하기'}
                                 </span>
                               </div>
                               {isMoreSettingsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -2650,33 +3051,23 @@ ${isFiction ? `
                                 ) : (
                                   <>
                                     <div className="more-field-group">
-                                      <label className="more-field-label">저자 전문성 및 집필 배경</label>
+                                      <label className="more-field-label">다룰 핵심 소주제들</label>
                                       <textarea
                                         className="more-textarea"
-                                        placeholder="독자에게 신뢰를 줄 수 있는 저자의 현장 경험, 이력, 집필 동기를 메모하세요."
-                                        rows={3}
-                                        value={narrativeConfig.authorBackground || ''}
-                                        onChange={(e) => handleUpdateNarrativeConfig('authorBackground', e.target.value)}
+                                        placeholder={`책 전체를 관통하여 다룰 3~5가지 핵심 소주제나 키워드를 적어보세요.\n(예: 1. 바이브코딩 철학, 2. 1일 1앱 MVP 빠른 개발 실무, 3. 광고/결제 연동 수익화)`}
+                                        rows={4}
+                                        value={narrativeConfig.subTopics || ''}
+                                        onChange={(e) => handleUpdateNarrativeConfig('subTopics', e.target.value)}
                                       />
                                     </div>
                                     <div className="more-field-group">
-                                      <label className="more-field-label">핵심 실사례 및 데이터/레퍼런스</label>
+                                      <label className="more-field-label">화자의 전개 방식 및 서술 특성</label>
                                       <textarea
                                         className="more-textarea"
-                                        placeholder="본문에 인용하거나 증명에 활용할 대표 사례, 연구 결과, 통계 등을 기록하세요."
-                                        rows={3}
-                                        value={narrativeConfig.caseStudyMemo || ''}
-                                        onChange={(e) => handleUpdateNarrativeConfig('caseStudyMemo', e.target.value)}
-                                      />
-                                    </div>
-                                    <div className="more-field-group">
-                                      <label className="more-field-label">1줄 핵심 메시지</label>
-                                      <input
-                                        type="text"
-                                        className="more-input"
-                                        placeholder="독자가 책을 덮을 때 가슴에 남아야 할 단 하나의 핵심 메시지"
-                                        value={narrativeConfig.coreMessage || ''}
-                                        onChange={(e) => handleUpdateNarrativeConfig('coreMessage', e.target.value)}
+                                        placeholder={`단순 저자 이력이 아닌, 이 책에서 화자가 주제를 풀어내는 고유한 서술 방식이나 화자 캐릭터를 메모하세요.\n(예: 실패담 기반의 솔직한 조언, 소크라테스식 질문 던지기, 진료실 비유 상담 등)`}
+                                        rows={4}
+                                        value={narrativeConfig.narrativeApproach || ''}
+                                        onChange={(e) => handleUpdateNarrativeConfig('narrativeApproach', e.target.value)}
                                       />
                                     </div>
                                   </>
@@ -2732,7 +3123,16 @@ ${isFiction ? `
                               <h3 className="card-header-title">뼈대 구성</h3>
                               <span className="card-genre-pill">{activeBook?.genre || '소설'}</span>
                             </div>
-                            <div className="card-header-actions">
+                            <div className="card-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <button
+                                type="button"
+                                className="btn-add-stage-header"
+                                onClick={handleAddNewStage}
+                                title="새로운 플롯 단계 추가"
+                              >
+                                <Plus size={13} />
+                                <span>단계 추가</span>
+                              </button>
                               <button
                                 type="button"
                                 className="btn-bridge-action"
@@ -2758,8 +3158,7 @@ ${isFiction ? `
                               <>
                                 <div className="plot-switcher-wrapper">
                                   <div className="plot-genre-switcher">
-                                    <span className="plot-rec-label">추천 뼈대</span>
-                                    {recommendedPlots.map((plot) => (
+                                    {recommendedPlots.slice(0, 3).map((plot) => (
                                       <button
                                         key={plot.id}
                                         type="button"
@@ -2781,7 +3180,7 @@ ${isFiction ? `
                                           }
                                         }}
                                       >
-                                        <option value="" disabled>기타 뼈대 둘러보기 (44종)...</option>
+                                        <option value="" disabled>기타 추천 뼈대</option>
                                         {PLOT_CATEGORIES.map((cat) => {
                                           const catPlots = PLOT_LIBRARY.filter((p) => p.category === cat.id);
                                           return (
@@ -3034,15 +3433,7 @@ ${isFiction ? `
                             );
                           })}
 
-                          {/* 새 플롯 단계 추가 버튼 */}
-                          <button
-                            type="button"
-                            className="btn-add-stage-row"
-                            onClick={handleAddNewStage}
-                          >
-                            <Plus size={14} />
-                            새 플롯 단계 추가
-                          </button>
+
                         </div>
                       </div>
                     </section>
@@ -3314,6 +3705,26 @@ ${isFiction ? `
                 <Bot size={16} style={{ color: 'var(--color-primary)' }} />
                 <span className="ai-col-title">책임 편집장 (기획 코칭)</span>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  type="button"
+                  className="btn-vault-icon-action"
+                  onClick={handleOpenAiHistory}
+                  title="과거 대화 기록"
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
+                >
+                  <Clock size={15} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-vault-icon-action"
+                  onClick={handleResetPlanningChat}
+                  title="새 대화 시작"
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}
+                >
+                  <RotateCcw size={15} />
+                </button>
+              </div>
             </div>
 
             <div className="ai-chat-body" ref={chatBodyRef}>
@@ -3327,6 +3738,29 @@ ${isFiction ? `
                           __html: renderMarkdown(msg.text || '')
                         }}
                       />
+                      {/* 출간기획서 제안 카드 (Step 01) */}
+                      {msg.proposalData && (
+                        <div className="vault-ai-restructure-card">
+                          <div className="restructure-card-head">
+                            <span className="restructure-card-badge">편집장의 출간 기획안 제안</span>
+                          </div>
+                          <div style={{ fontSize: '0.82rem', lineHeight: 1.5, margin: '8px 0', color: 'var(--text-secondary)' }}>
+                            {msg.proposalData.title && <div><strong>도서명:</strong> {msg.proposalData.title}</div>}
+                            {msg.proposalData.genre && <div><strong>장르:</strong> {msg.proposalData.genre}</div>}
+                            {msg.proposalData.logline && <div><strong>핵심 컨셉:</strong> {msg.proposalData.logline}</div>}
+                            {msg.proposalData.target && <div><strong>타깃 독자:</strong> {msg.proposalData.target}</div>}
+                            {msg.proposalData.diff && <div><strong>차별점:</strong> {msg.proposalData.diff}</div>}
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-apply-vault-restructure"
+                            onClick={() => handleApplyAiProposal(msg.proposalData)}
+                          >
+                            <Check size={14} /> 이 기획안을 내 출간기획서에 직접 반영하기
+                          </button>
+                        </div>
+                      )}
+
                       {msg.restructureData && msg.restructureData.stages && msg.restructureData.stages.length > 0 && (
                         <div className="vault-ai-restructure-card">
                           <div className="restructure-card-head">
@@ -3372,15 +3806,16 @@ ${isFiction ? `
             </div>
 
             <div className="ai-quick-prompts">
-              <button type="button" className="prompt-chip" onClick={() => handleSendAiMessage('현재 로그라인의 매력도를 출판 관점에서 평가해줘.')}>
-                로그라인 평가
-              </button>
-              <button type="button" className="prompt-chip" onClick={() => handleSendAiMessage('현재 플롯의 클라이맥스 갈등과 전개를 보강해줘.')}>
-                플롯 갈등 보강
-              </button>
-              <button type="button" className="prompt-chip" onClick={() => handleSendAiMessage('베스트셀러 목차 표준과 비교하여 사각지대를 짚어줘.')}>
-                목차 표준 비교
-              </button>
+              {getStepQuickPrompts().map((qp, qIdx) => (
+                <button
+                  key={qIdx}
+                  type="button"
+                  className="prompt-chip"
+                  onClick={() => handleSendAiMessage(qp.prompt)}
+                >
+                  {qp.label}
+                </button>
+              ))}
             </div>
 
             <div className="ai-input-wrap">
@@ -3478,6 +3913,99 @@ ${isFiction ? `
       />
 
       {/* AI 모델 쿼터 현황 및 전환 모달 */}
+      {/* 기획 코칭 대화 히스토리 모달 */}
+      {isAiHistoryOpen && (
+        <div className="modal-overlay" onClick={() => setIsAiHistoryOpen(false)}>
+          <div
+            className="modal-box"
+            style={{ width: '480px', maxWidth: '92vw', padding: 0, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header" style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', padding: '1rem 1.3rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Clock size={18} style={{ color: 'var(--primary)' }} />
+                <h3 style={{ fontSize: '1.02rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>기획 코칭 대화 기록</h3>
+                {activeBook?.title && (
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>
+                    {activeBook.title}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsAiHistoryOpen(false)}
+                title="닫기"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ background: 'var(--bg-card)', padding: '1.25rem', maxHeight: '60vh', overflowY: 'auto' }}>
+              {aiHistorySessions.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', textAlign: 'center' }}>
+                  <Clock size={36} style={{ color: 'var(--text-dim)', opacity: 0.35, marginBottom: '0.85rem' }} />
+                  <p style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-main)', margin: '0 0 0.35rem 0' }}>
+                    아직 보관된 기획 대화가 없습니다.
+                  </p>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    새로고침(새 대화 시작) 버튼을 누르면 이전 대화가 자동으로 보관됩니다.
+                  </span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {aiHistorySessions.map((sess) => (
+                    <div
+                      key={sess.id}
+                      onClick={() => handleRestoreAiSession(sess)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-surface)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1, marginRight: '10px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--text-main)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {sess.title}
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                          {new Date(sess.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} • 메시지 {sess.messageCount}개
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteAiSession(sess.id, e)}
+                        title="기록 삭제"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '6px',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <ModelQuotasModal
         isOpen={isQuotaModalOpen}
         onClose={() => setIsQuotaModalOpen(false)}

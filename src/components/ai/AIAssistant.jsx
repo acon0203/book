@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import './AIAssistant.css';
 import { marked } from 'marked';
 import { bookService } from '../../services/bookService';
+import { storageService } from '../../services/storageService';
 import { getActiveModelQuota } from '../../utils/quotaManager';
 import {
-  Zap, Bot, Lightbulb, Copy, Check, RotateCcw, Clock, Send, Sparkles, X, ChevronRight, Bookmark, Layers
+  Zap, Bot, Lightbulb, Copy, Check, RotateCcw, Clock, Trash2, Send, Sparkles, X, ChevronRight, Bookmark, Layers
 } from 'lucide-react';
 
 const V5_TONE_DATA = {
@@ -124,6 +125,8 @@ export default function AIAssistant({
     }
   ]);
   const [chiefInput, setChiefInput] = useState('');
+  const [isChiefHistoryOpen, setIsChiefHistoryOpen] = useState(false);
+  const [chiefHistorySessions, setChiefHistorySessions] = useState([]);
   const [isChiefThinking, setIsChiefThinking] = useState(false);
   const chiefChatEndRef = useRef(null);
 
@@ -370,8 +373,12 @@ export default function AIAssistant({
     }
   };
 
-  // 총괄 편집장 대화 초기화
+  // 총괄 편집장 대화 초기화 (새 대화 시작 및 기존 세션 자동 보관)
   const handleResetChiefChat = () => {
+    const userMsgs = chiefMessages.filter(m => m.role === 'user');
+    if (userMsgs.length > 0) {
+      storageService.archiveAiChatSession(activeBook?.id, 'chief', chiefMessages);
+    }
     setChiefMessages([
       {
         id: 'welcome',
@@ -380,7 +387,34 @@ export default function AIAssistant({
         time: '방금 전'
       }
     ]);
-    showToast('편집장과의 대화가 초기화되었습니다.', 'info');
+    showToast('새 대화가 시작되었습니다. 이전 대화는 기록에 보관되었습니다.', 'info');
+  };
+
+  // 대화 히스토리 모달 열기
+  const handleOpenChiefHistory = () => {
+    const sessions = storageService.getAiChatHistory(activeBook?.id, 'chief');
+    setChiefHistorySessions(sessions);
+    setIsChiefHistoryOpen(true);
+  };
+
+  // 과거 대화 세션 복원
+  const handleRestoreChiefSession = (session) => {
+    if (!session?.messages) return;
+    const userMsgs = chiefMessages.filter(m => m.role === 'user');
+    if (userMsgs.length > 0) {
+      storageService.archiveAiChatSession(activeBook?.id, 'chief', chiefMessages);
+    }
+    setChiefMessages(session.messages);
+    setIsChiefHistoryOpen(false);
+    showToast(`'${session.title}' 대화 기록을 복원했습니다.`, 'success');
+  };
+
+  // 과거 대화 세션 삭제
+  const handleDeleteChiefSession = (sessionId, e) => {
+    e.stopPropagation();
+    const updated = storageService.deleteAiChatSession(activeBook?.id, 'chief', sessionId);
+    setChiefHistorySessions(updated);
+    showToast('대화 기록이 삭제되었습니다.', 'info');
   };
 
   const currentToneInfo = V5_TONE_DATA[draftTone] || V5_TONE_DATA.story;
@@ -655,6 +689,14 @@ export default function AIAssistant({
                     <button
                       type="button"
                       className="v5-chief-head-btn"
+                      onClick={handleOpenChiefHistory}
+                      title="과거 대화 기록"
+                    >
+                      <Clock size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="v5-chief-head-btn"
                       onClick={handleResetChiefChat}
                       title="새 대화 시작"
                     >
@@ -803,6 +845,98 @@ export default function AIAssistant({
               >
                 끝에 이어붙이기
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+    {/* 책임 편집장 대화 히스토리 모달 */}
+      {isChiefHistoryOpen && (
+        <div className="modal-overlay" onClick={() => setIsChiefHistoryOpen(false)}>
+          <div
+            className="modal-box"
+            style={{ width: '480px', maxWidth: '92vw', padding: 0, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header" style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', padding: '1rem 1.3rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Clock size={18} style={{ color: 'var(--primary)' }} />
+                <h3 style={{ fontSize: '1.02rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>책임 편집장 코칭 기록</h3>
+                {activeBook?.title && (
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>
+                    {activeBook.title}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsChiefHistoryOpen(false)}
+                title="닫기"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ background: 'var(--bg-card)', padding: '1.25rem', maxHeight: '60vh', overflowY: 'auto' }}>
+              {chiefHistorySessions.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', textAlign: 'center' }}>
+                  <Clock size={36} style={{ color: 'var(--text-dim)', opacity: 0.35, marginBottom: '0.85rem' }} />
+                  <p style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-main)', margin: '0 0 0.35rem 0' }}>
+                    아직 보관된 코칭 대화가 없습니다.
+                  </p>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    새로고침(새 대화 시작) 버튼을 누르면 이전 대화가 자동으로 보관됩니다.
+                  </span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {chiefHistorySessions.map((sess) => (
+                    <div
+                      key={sess.id}
+                      onClick={() => handleRestoreChiefSession(sess)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-surface)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--primary)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1, marginRight: '10px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--text-main)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {sess.title}
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                          {new Date(sess.createdAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} • 메시지 {sess.messageCount}개
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteChiefSession(sess.id, e)}
+                        title="기록 삭제"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '6px',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
